@@ -1082,12 +1082,13 @@ function shareResult() {
 function hideSplash() {
   const splash = document.getElementById('splash');
   if(splash) {
-    splash.classList.add('hide');
-    setTimeout(() => { if(splash) splash.style.display='none'; }, 600);
+    splash.style.transition = 'opacity 0.5s ease';
+    splash.style.opacity = '0';
+    setTimeout(() => { splash.style.display='none'; }, 500);
   }
 }
+// Splash ni 2.5 soniyada yashirish - ishonchli usul
 setTimeout(hideSplash, 2500);
-document.addEventListener('DOMContentLoaded', () => setTimeout(hideSplash, 2500));
 
 if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}
 let deferredPrompt;
