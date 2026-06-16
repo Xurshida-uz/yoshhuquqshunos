@@ -491,12 +491,22 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // Data
-const TOPICS = [
+let TOPICS = [
   {id:'const', name:'Konstitutsiyaviy huquq', icon:'🏛️'},
   {id:'civil',  name:'Fuqarolik huquqi',      icon:'👥'},
   {id:'crim',  name:'Jinoyat huquqi',         icon:'⚖️'},
   {id:'labor', name:'Mehnat huquqi',          icon:'💼'},
 ];
+
+// Firebase dan mavzularni yuklash
+async function loadTopicsFromDB() {
+  try {
+    const snap = await db.collection('topics').orderBy('order').get();
+    if(!snap.empty) {
+      TOPICS = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+    }
+  } catch(e) { console.log('Topics default ishlatiladi'); }
+}
 const ALL_Q = [
   {topic:'const',diff:'easy',  q:"O'zbekiston Konstitutsiyasi qachon qabul qilingan?", opts:["1991-yil 1-sentabr","1992-yil 8-dekabr","1993-yil 1-mart","1990-yil 20-iyun"], ans:1, law:"O'zbekiston Respublikasi Konstitutsiyasi 1992-yil 8-dekabrda qabul qilingan."},
   {topic:'const',diff:'easy',  q:"O'zbekiston Konstitutsiyasiga ko'ra, fuqarolar necha yoshdan saylov huquqiga ega?", opts:["16 yosh","18 yosh","21 yosh","25 yosh"], ans:1, law:"Konstitutsiyaning 117-moddasi: faol saylov huquqi 18 yoshdan boshlanadi."},
@@ -531,9 +541,10 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-function showApp() {
+async function showApp() {
   document.getElementById('s-auth').classList.remove('active');
   document.getElementById('s-app').classList.add('active');
+  await loadTopicsFromDB();
   initTopics();
 }
 
