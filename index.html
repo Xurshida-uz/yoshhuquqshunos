@@ -1045,7 +1045,7 @@ function lqShowResult(){
   document.getElementById('lq-rc').textContent=lqScore;
   document.getElementById('lq-rw').textContent=lqQuiz.length-lqScore;
   document.getElementById('lq-rt').textContent=avg+'s';
-  const msgs=['Qo'shilmang! Yana urinib ko'ring.','Yaxshi! Davom eting.','Zo'r natija!','Mukammal! 🏆'];
+  const msgs=["Qo'shilmang! Yana urinib ko'ring.","Yaxshi! Davom eting.","Zo'r natija!","Mukammal! 🏆"];
   document.getElementById('lq-res-msg').textContent=pct>=80?msgs[3]:pct>=60?msgs[2]:pct>=40?msgs[1]:msgs[0];
   document.getElementById('level-quiz-view').style.display='none';
   document.getElementById('level-result-view').style.display='block';
