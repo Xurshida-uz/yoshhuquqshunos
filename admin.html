@@ -397,7 +397,7 @@ async function addTopic() {
 }
 
 async function deleteTopic(id) {
-  if(!confirm('Bu mavzuni o'chirishni tasdiqlaysizmi? Mavzu savollar bilan birgalikda o'chirilmaydi!')) return;
+  if(!confirm("Bu mavzuni ochirishni tasdiqlaysizmi? Mavzu savollar bilan birgalikda ochirilmaydi!")) return;
   await db.collection('topics').doc(id).delete();
   loadTopics();
 }
