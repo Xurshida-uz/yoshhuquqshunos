@@ -81,6 +81,9 @@
     .phone-input:focus { border-color: var(--gold); }
     .otp-input { width: 100%; padding: 14px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 22px; text-align: center; letter-spacing: 8px; outline: none; margin-bottom: 12px; }
     .otp-input:focus { border-color: var(--gold); }
+    .emoji-btn { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg2); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .emoji-btn:hover { border-color: var(--gold); background: var(--gold-light); transform: scale(1.1); }
+    .emoji-btn.active { border-color: var(--gold); background: var(--gold-light); transform: scale(1.15); }
     .auth-btn { width: 100%; padding: 13px; background: var(--gold); color: white; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 500; cursor: pointer; margin-bottom: 8px; }
     .auth-btn:hover { background: var(--gold-dark); }
     .auth-btn:disabled { background: var(--border2); color: var(--text2); cursor: not-allowed; }
@@ -298,12 +301,17 @@
     </div>
     <div id="auth-name-view" style="display:none">
       <div class="auth-card">
-        <div class="auth-icon">👤</div>
-        <h2>Ismingiz</h2>
-        <p>Reyting da ko'rsatiladigan ism</p>
-        <input class="phone-input" id="name-input" type="text" placeholder="Ism Familiya" style="width:100%;margin-bottom:12px"/>
+        <div class="auth-icon">🎭</div>
+        <h2>Nickname tanlang</h2>
+        <p>Reyting da shunday ko'rinasiz — emoji, harf, raqam aralashtirsangiz bo'ladi!</p>
+        <div id="emoji-grid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;justify-content:center"></div>
+        <div style="position:relative;margin-bottom:12px">
+          <div id="selected-emoji" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none">⚖️</div>
+          <input class="phone-input" id="name-input" type="text" placeholder="Nickname (3-20 belgi)" style="width:100%;padding-left:40px"/>
+        </div>
+        <p style="font-size:11px;color:var(--text2);margin-bottom:12px">Harf, raqam, emoji — istalgan kombinatsiya. Masalan: ⚖️Lawyer007</p>
         <div class="auth-error" id="name-error" style="display:none"></div>
-        <button class="auth-btn" onclick="saveName()">Davom etish</button>
+        <button class="auth-btn" onclick="saveName()">Davom etish →</button>
       </div>
     </div>
   </div>
@@ -591,6 +599,7 @@ function verifyOTP() {
       } else {
         document.getElementById('auth-otp-view').style.display='none';
         document.getElementById('auth-name-view').style.display='block';
+        setTimeout(initEmojiGrid, 100);
       }
     })
     .catch(() => {
@@ -600,16 +609,42 @@ function verifyOTP() {
     });
 }
 
+const EMOJIS = ['⚖️','👨‍⚖️','👩‍⚖️','🏛️','📚','🎓','💼','🔍','✍️','📝','🏆','🥇','⭐','🔥','💡','🚀','💪','🦁','🐯','🦅','🌟','💎','🛡️','⚔️','🎯','🧠','👑','🌙','☀️','🌊'];
+let selectedEmoji = '⚖️';
+
+function initEmojiGrid() {
+  const grid = document.getElementById('emoji-grid');
+  if(!grid) return;
+  grid.innerHTML = EMOJIS.map((e,i) => 
+    `<button class="emoji-btn ${i===0?'active':''}" onclick="selectEmoji('${e}',this)">${e}</button>`
+  ).join('');
+}
+
+function selectEmoji(emoji, btn) {
+  selectedEmoji = emoji;
+  document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('selected-emoji').textContent = emoji;
+  const input = document.getElementById('name-input');
+  const val = input.value.replace(/^(\p{Emoji})+/u, '').trim();
+  input.value = emoji + val;
+}
+
 async function saveName() {
-  const name = document.getElementById('name-input').value.trim();
-  if(name.length < 2) {
+  const rawName = document.getElementById('name-input').value.trim();
+  if(rawName.length < 3) {
     document.getElementById('name-error').style.display='block';
-    document.getElementById('name-error').textContent='Ism kamida 2 harf bo\'lishi kerak';
+    document.getElementById('name-error').textContent='Nickname kamida 3 belgi bo\'lishi kerak';
+    return;
+  }
+  if(rawName.length > 20) {
+    document.getElementById('name-error').style.display='block';
+    document.getElementById('name-error').textContent='Nickname 20 belgidan oshmasligi kerak';
     return;
   }
   try {
     await db.collection('users').doc(currentUser.uid).set({
-      name: name,
+      name: rawName,
       phone: currentUser.phoneNumber || '',
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, {merge: true});
