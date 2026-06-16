@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Yosh Huquqshunos</title>
+  <meta name="description" content="Yosh Huquqshunos — O'zbek huquqi bo'yicha test ilovasi"/>
+  <meta name="theme-color" content="#BA7517"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icon-192.png"/>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #BA7517;
+      --gold-dark: #854F0B;
+      --gold-darker: #633806;
+      --gold-light: #FAEEDA;
+      --gold-mid: #EF9F27;
+      --green: #639922;
+      --green-light: #EAF3DE;
+      --red: #E24B4A;
+      --red-light: #FCEBEB;
+      --bg: #ffffff;
+      --bg2: #faf8f4;
+      --bg3: #f3efe6;
+      --border: rgba(186,117,23,0.15);
+      --border2: rgba(186,117,23,0.3);
+      --text: #1a1507;
+      --text2: #7a6030;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1507; --bg2: #231e0a; --bg3: #2e2710;
+        --border: rgba(239,159,39,0.15); --border2: rgba(239,159,39,0.3);
+        --text: #f5e9cc; --text2: #c49a45;
+        --gold-light: #412402; --green-light: #173404; --red-light: #501313;
+      }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* SPLASH */
+    #splash { position: fixed; inset: 0; background: var(--gold-darker); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; transition: opacity 0.6s ease; }
+    #splash.hide { opacity: 0; pointer-events: none; }
+    .splash-logo { font-size: 72px; margin-bottom: 16px; animation: splashPulse 1.5s ease-in-out infinite; }
+    .splash-title { font-size: 26px; font-weight: 500; color: #FAC775; margin-bottom: 8px; text-align: center; }
+    .splash-sub { font-size: 14px; color: rgba(250,199,117,0.7); margin-bottom: 48px; text-align: center; }
+    .splash-motto { font-size: 15px; color: #EF9F27; font-style: italic; text-align: center; padding: 0 32px; margin-bottom: 48px; line-height: 1.6; }
+    .splash-bar-wrap { width: 160px; height: 3px; background: rgba(255,255,255,0.15); border-radius: 99px; overflow: hidden; }
+    .splash-bar { height: 3px; background: #FAC775; border-radius: 99px; animation: splashLoad 2s ease forwards; }
+    @keyframes splashPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+    @keyframes splashLoad { 0%{width:0%} 100%{width:100%} }
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    header { background: var(--gold-darker); color: #FAC775; padding: 0 16px; height: 56px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
+    .header-titles { flex: 1; }
+    .header-titles h1 { font-size: 16px; font-weight: 500; color: #FAC775; line-height: 1.2; }
+    .header-titles p { font-size: 11px; color: #EF9F27; opacity: 0.8; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(239,159,39,0.3); border: 1px solid rgba(239,159,39,0.4); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; color: #FAC775; cursor: pointer; }
+
+    main { max-width: 600px; margin: 0 auto; padding: 16px; }
+    .section-title { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+    /* AUTH */
+    .auth-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; text-align: center; }
+    .auth-icon { font-size: 40px; margin-bottom: 12px; }
+    .auth-card h2 { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+    .auth-card p { font-size: 14px; color: var(--text2); margin-bottom: 20px; line-height: 1.5; }
+    .phone-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
+    .country-code { padding: 12px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 15px; width: 80px; text-align: center; }
+    .phone-input { flex: 1; padding: 12px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 15px; outline: none; }
+    .phone-input:focus { border-color: var(--gold); }
+    .otp-input { width: 100%; padding: 14px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 22px; text-align: center; letter-spacing: 8px; outline: none; margin-bottom: 12px; }
+    .otp-input:focus { border-color: var(--gold); }
+    .auth-btn { width: 100%; padding: 13px; background: var(--gold); color: white; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 500; cursor: pointer; margin-bottom: 8px; }
+    .auth-btn:hover { background: var(--gold-dark); }
+    .auth-btn:disabled { background: var(--border2); color: var(--text2); cursor: not-allowed; }
+    .skip-btn { width: 100%; padding: 10px; background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; color: var(--text2); cursor: pointer; }
+    .skip-btn:hover { background: var(--bg3); }
+    .auth-error { font-size: 13px; color: var(--red); margin-bottom: 8px; }
+
+    /* TABS */
+    .tabs { display: flex; gap: 4px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; margin-bottom: 20px; }
+    .tab { flex: 1; padding: 8px; border: none; border-radius: var(--radius-sm); background: none; font-size: 13px; color: var(--text2); cursor: pointer; transition: all .15s; }
+    .tab.active { background: var(--gold); color: white; font-weight: 500; }
+
+    /* HOME */
+    .topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .topic-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; text-align: left; transition: all .15s; }
+    .topic-card:hover { border-color: var(--border2); }
+    .topic-card.selected { border: 2px solid var(--gold); background: var(--gold-light); }
+    .topic-icon { font-size: 20px; margin-bottom: 6px; }
+    .topic-name { font-size: 13px; font-weight: 500; color: var(--text); }
+    .topic-count { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .diff-row { display: flex; gap: 8px; margin-bottom: 20px; }
+    .diff-btn { flex: 1; padding: 8px 4px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg2); font-size: 12px; color: var(--text2); cursor: pointer; }
+    .diff-btn.active { border: 2px solid var(--gold); background: var(--gold-light); color: var(--gold-dark); font-weight: 500; }
+    .start-btn { width: 100%; padding: 14px; background: var(--gold); color: white; border: none; border-radius: var(--radius); font-size: 15px; font-weight: 500; cursor: pointer; }
+    .start-btn:disabled { background: var(--border2); color: var(--text2); cursor: not-allowed; }
+
+    /* QUIZ */
+    .progress-wrap { margin-bottom: 16px; }
+    .progress-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .q-num { font-size: 13px; color: var(--text2); }
+    .progress-bar { height: 4px; background: var(--border); border-radius: 99px; }
+    .progress-fill { height: 4px; background: var(--gold); border-radius: 99px; transition: width .4s; }
+    .timer { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 99px; background: var(--gold-light); color: var(--gold-dark); }
+    .timer.urgent { background: var(--red-light); color: var(--red); }
+    .q-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+    .q-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .chip { font-size: 11px; padding: 3px 9px; border-radius: 99px; font-weight: 500; }
+    .chip-topic { background: var(--gold-light); color: var(--gold-dark); }
+    .chip-easy { background: var(--green-light); color: #3B6D11; }
+    .chip-medium { background: var(--gold-light); color: var(--gold-darker); }
+    .chip-hard { background: var(--red-light); color: #791F1F; }
+    .q-text { font-size: 15px; font-weight: 500; line-height: 1.55; }
+    .options { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+    .opt { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 14px; text-align: left; font-size: 14px; color: var(--text); cursor: pointer; display: flex; gap: 10px; align-items: flex-start; transition: all .15s; }
+    .opt:hover:not(:disabled) { background: var(--bg3); border-color: var(--border2); }
+    .opt.correct { background: var(--green-light); border-color: var(--green); color: #27500A; }
+    .opt.wrong { background: var(--red-light); border-color: var(--red); color: #791F1F; }
+    .opt-letter { min-width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; margin-top: 1px; color: var(--text2); }
+    .correct .opt-letter { background: var(--green); color: white; }
+    .wrong .opt-letter { background: var(--red); color: white; }
+    .explain { margin-top: 10px; padding: 10px 12px; background: var(--bg); border-radius: var(--radius-sm); font-size: 13px; color: var(--text2); line-height: 1.6; display: none; border: 1px solid var(--border); }
+    .law { font-weight: 500; color: var(--gold-dark); }
+    .nav { display: flex; justify-content: flex-end; margin-top: 10px; }
+    .next-btn { padding: 10px 22px; background: var(--gold); color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; display: none; font-weight: 500; }
+
+    /* RESULT */
+    .result-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; text-align: center; margin-bottom: 16px; }
+    .score-ring { width: 90px; height: 90px; border-radius: 50%; background: var(--gold-light); border: 2px solid var(--gold-mid); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .score-num { font-size: 28px; font-weight: 500; color: var(--gold); line-height: 1; }
+    .score-lbl { font-size: 11px; color: var(--gold-dark); margin-top: 2px; }
+    .res-msg { font-size: 15px; color: var(--text); margin-bottom: 16px; line-height: 1.5; }
+    .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 20px; }
+    .stat { background: var(--bg); border-radius: var(--radius-sm); padding: 10px; text-align: center; border: 1px solid var(--border); }
+    .stat-n { font-size: 22px; font-weight: 500; }
+    .stat-l { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .analysis { margin-bottom: 16px; }
+    .topic-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px; }
+    .topic-row-name { width: 150px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 99px; }
+    .bar-fill { height: 6px; border-radius: 99px; background: var(--gold); transition: width .6s; }
+    .topic-row-pct { width: 36px; text-align: right; color: var(--text2); font-size: 12px; }
+    .btn-row { display: flex; gap: 8px; }
+    .btn-sec { flex: 1; padding: 11px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); font-size: 14px; color: var(--text); cursor: pointer; }
+    .btn-pri { flex: 1; padding: 11px; background: var(--gold); color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; }
+    .share-btn { width: 100%; padding: 11px; background: #0088cc; color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px; }
+
+    /* PROFILE */
+    .profile-header { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; margin-bottom: 16px; }
+    .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--gold-light); border: 2px solid var(--gold); display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 12px; }
+    .profile-name { font-size: 17px; font-weight: 500; margin-bottom: 4px; }
+    .profile-phone { font-size: 13px; color: var(--text2); }
+    .profile-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 16px; }
+    .history-item { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .history-left { font-size: 13px; }
+    .history-topic { font-weight: 500; color: var(--text); }
+    .history-date { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .history-score { font-size: 18px; font-weight: 500; color: var(--gold); }
+    .logout-btn { width: 100%; padding: 11px; border: 1px solid var(--red-light); border-radius: var(--radius-sm); background: none; font-size: 14px; color: var(--red); cursor: pointer; margin-top: 8px; }
+
+    /* LEADERBOARD */
+    .leaderboard-item { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+    .rank-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+    .rank-1 { background: #FFD700; color: #7a5800; }
+    .rank-2 { background: #C0C0C0; color: #555; }
+    .rank-3 { background: #CD7F32; color: #5a3000; }
+    .rank-other { background: var(--bg3); color: var(--text2); }
+    .lb-name { flex: 1; font-size: 14px; font-weight: 500; }
+    .lb-score { font-size: 14px; font-weight: 500; color: var(--gold); }
+    .lb-time { font-size: 12px; color: var(--text2); }
+    .lb-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .lb-tab { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg2); font-size: 13px; color: var(--text2); cursor: pointer; text-align: center; }
+    .lb-tab.active { background: var(--gold); color: white; border-color: var(--gold); font-weight: 500; }
+
+    .level-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; display: flex; gap: 14px; align-items: flex-start; }
+    .level-card.locked { opacity: 0.85; }
+    .level-badge { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .level-badge-free { background: var(--green-light); }
+    .level-badge-locked { background: var(--bg3); }
+    .level-badge-unlocked { background: var(--gold-light); }
+    .level-info { flex: 1; }
+    .level-title { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+    .level-desc { font-size: 13px; color: var(--text2); line-height: 1.4; margin-bottom: 10px; }
+    .level-meta { display: flex; align-items: center; justify-content: space-between; }
+    .level-price { font-size: 13px; font-weight: 500; }
+    .price-free { color: var(--green); }
+    .price-paid { color: var(--gold-dark); }
+    .level-btn { padding: 8px 16px; border-radius: var(--radius-sm); border: none; font-size: 13px; font-weight: 500; cursor: pointer; }
+    .level-btn-free { background: var(--green); color: white; }
+    .level-btn-paid { background: var(--gold); color: white; }
+    .level-btn-locked { background: var(--bg3); color: var(--text2); cursor: not-allowed; }
+    .preview-box { margin-top: 10px; padding: 10px 12px; background: var(--bg); border: 1px dashed var(--border2); border-radius: var(--radius-sm); font-size: 13px; color: var(--text2); }
+    .preview-box strong { color: var(--text); display: block; margin-bottom: 4px; }
+    .progress-level { margin-top: 8px; }
+    .progress-level-bar { height: 4px; background: var(--border); border-radius: 99px; margin-top: 4px; }
+    .progress-level-fill { height: 4px; background: var(--green); border-radius: 99px; }
+    .course-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+    .course-thumb { width: 100%; height: 160px; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 48px; }
+    .course-body { padding: 14px; }
+    .course-title { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+    .course-desc { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 10px; }
+    .course-meta { display: flex; align-items: center; justify-content: space-between; }
+    .course-badge { font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 500; }
+    .badge-free { background: var(--green-light); color: var(--green); }
+    .badge-paid { background: var(--gold-light); color: var(--gold-dark); }
+    .course-btn { padding: 8px 16px; border-radius: var(--radius-sm); border: none; font-size: 13px; font-weight: 500; cursor: pointer; }
+    .course-btn-free { background: var(--green); color: white; }
+    .course-btn-paid { background: var(--gold); color: white; }
+    .course-type-row { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .course-type-chip { font-size: 11px; padding: 3px 8px; border-radius: 99px; background: var(--bg3); color: var(--text2); }
+
+    /* Payment modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--bg); border-radius: var(--radius) var(--radius) 0 0; padding: 24px; width: 100%; max-width: 600px; margin: 0 auto; }
+    .modal h3 { font-size: 16px; font-weight: 500; margin-bottom: 16px; }
+    .pay-option { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; text-decoration: none; color: var(--text); }
+    .pay-option:hover { background: var(--bg3); }
+    .pay-icon { font-size: 24px; }
+    .pay-name { font-size: 14px; font-weight: 500; }
+    .pay-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .modal-close { width: 100%; padding: 11px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: none; font-size: 14px; color: var(--text2); cursor: pointer; margin-top: 4px; }
+
+    footer { max-width: 600px; margin: 0 auto; padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: center; margin-top: 8px; }
+    footer a { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); text-decoration: none; color: var(--text); font-size: 14px; font-weight: 500; }
+    footer a:hover { background: var(--bg3); }
+
+    #install-banner { display: none; position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--gold-darker); color: #FAC775; padding: 12px 16px; border-radius: var(--radius); font-size: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); align-items: center; gap: 12px; z-index: 100; max-width: calc(100% - 32px); }
+    #install-banner .inst-btn { background: #FAC775; color: var(--gold-darker); border: none; padding: 6px 14px; border-radius: 99px; font-size: 13px; font-weight: 500; cursor: pointer; }
+    #install-banner .close-btn { background: none; border: none; color: #FAC775; font-size: 18px; cursor: pointer; }
+
+    #recaptcha-container { position: fixed; bottom: -9999px; left: -9999px; visibility: hidden; }
+    .loading { text-align: center; padding: 40px; color: var(--text2); font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <div class="splash-logo">⚖️</div>
+  <div class="splash-title">Yosh Huquqshunos</div>
+  <div class="splash-sub">O'zbek huquqi bo'yicha test</div>
+  <div class="splash-motto">"Yosh huquqshunos —<br>kelajak himoyachisi!"</div>
+  <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
+</div>
+
+<header>
+  <span style="font-size:22px">⚖️</span>
+  <div class="header-titles">
+    <h1>Yosh Huquqshunos</h1>
+    <p>O'zbek huquqi bo'yicha test</p>
+  </div>
+  <div class="header-right">
+    <div class="user-avatar" id="user-avatar" onclick="goTab('profile')" style="display:none">?</div>
+  </div>
+</header>
+
+<main>
+  <!-- AUTH -->
+  <div id="s-auth" class="screen active">
+    <div id="auth-phone-view">
+      <div class="auth-card">
+        <div class="auth-icon">📱</div>
+        <h2>Kirish</h2>
+        <p>Telefon raqamingizni kiriting — SMS orqali tasdiqlash kodi yuboramiz</p>
+        <div class="phone-input-wrap">
+          <input class="country-code" value="+998" readonly/>
+          <input class="phone-input" id="phone-input" type="tel" placeholder="901234567" maxlength="9"/>
+        </div>
+        <div id="recaptcha-container"></div>
+        <div class="auth-error" id="auth-error" style="display:none"></div>
+        <button class="auth-btn" id="send-otp-btn" onclick="sendOTP()">SMS yuborish</button>
+        <button class="skip-btn" onclick="skipAuth()">Kirmasdan davom etish</button>
+      </div>
+    </div>
+    <div id="auth-otp-view" style="display:none">
+      <div class="auth-card">
+        <div class="auth-icon">🔐</div>
+        <h2>Kodni kiriting</h2>
+        <p id="otp-hint">Telefoningizga SMS yuborildi</p>
+        <input class="otp-input" id="otp-input" type="number" placeholder="------" maxlength="6"/>
+        <div class="auth-error" id="otp-error" style="display:none"></div>
+        <button class="auth-btn" id="verify-btn" onclick="verifyOTP()">Tasdiqlash</button>
+        <button class="skip-btn" onclick="showPhoneView()">← Orqaga</button>
+      </div>
+    </div>
+    <div id="auth-name-view" style="display:none">
+      <div class="auth-card">
+        <div class="auth-icon">👤</div>
+        <h2>Ismingiz</h2>
+        <p>Reyting da ko'rsatiladigan ism</p>
+        <input class="phone-input" id="name-input" type="text" placeholder="Ism Familiya" style="width:100%;margin-bottom:12px"/>
+        <div class="auth-error" id="name-error" style="display:none"></div>
+        <button class="auth-btn" onclick="saveName()">Davom etish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="s-app" class="screen">
+    <div class="tabs">
+      <button class="tab active" onclick="goTab('home')" id="tab-home">🏠 Test</button>
+      <button class="tab" onclick="goTab('courses')" id="tab-courses">🎓 Darajalar</button>
+      <button class="tab" onclick="goTab('leaderboard')" id="tab-leaderboard">🏆 Reyting</button>
+      <button class="tab" onclick="goTab('profile')" id="tab-profile">👤 Profil</button>
+    </div>
+
+    <!-- HOME TAB -->
+    <div id="tab-content-home">
+      <p class="section-title">Mavzu tanlang</p>
+      <div class="topic-grid" id="topic-grid"></div>
+      <div class="divider"></div>
+      <p class="section-title">Qiyinlik darajasi</p>
+      <div class="diff-row">
+        <button class="diff-btn active" data-d="all" onclick="setDiff(this)">Barchasi</button>
+        <button class="diff-btn" data-d="easy" onclick="setDiff(this)">Boshlang'ich</button>
+        <button class="diff-btn" data-d="medium" onclick="setDiff(this)">O'rta</button>
+        <button class="diff-btn" data-d="hard" onclick="setDiff(this)">Murakkab</button>
+      </div>
+      <button class="start-btn" id="start-btn" onclick="startQuiz()" disabled>Mavzu tanlang</button>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="tab-content-quiz" style="display:none">
+      <div class="progress-wrap">
+        <div class="progress-top">
+          <span class="q-num" id="q-counter">Savol 1/10</span>
+          <span class="timer" id="timer">30s</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+      </div>
+      <div class="q-card">
+        <div class="q-meta" id="q-meta"></div>
+        <div class="q-text" id="q-text"></div>
+        <div class="options" id="q-opts"></div>
+        <div class="explain" id="explain"></div>
+      </div>
+      <div class="nav"><button class="next-btn" id="next-btn" onclick="nextQ()">Keyingisi →</button></div>
+    </div>
+
+    <!-- RESULT -->
+    <div id="tab-content-result" style="display:none">
+      <div class="result-card">
+        <div class="score-ring">
+          <span class="score-num" id="res-pct">0%</span>
+          <span class="score-lbl">natija</span>
+        </div>
+        <div class="res-msg" id="res-msg"></div>
+        <div class="stats">
+          <div class="stat"><div class="stat-n" style="color:var(--green)" id="rc">0</div><div class="stat-l">to'g'ri</div></div>
+          <div class="stat"><div class="stat-n" style="color:var(--red)" id="rw">0</div><div class="stat-l">noto'g'ri</div></div>
+          <div class="stat"><div class="stat-n" style="color:var(--gold)" id="rt">0s</div><div class="stat-l">o'rtacha vaqt</div></div>
+        </div>
+      </div>
+      <div class="analysis">
+        <p class="section-title">Mavzular bo'yicha natija</p>
+        <div id="topic-analysis"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-sec" onclick="goTab('home')">← Bosh sahifa</button>
+        <button class="btn-pri" onclick="startQuiz()">↺ Qayta boshlash</button>
+      </div>
+      <button class="share-btn" onclick="shareResult()">📤 Telegramda ulashish</button>
+    </div>
+
+    <!-- LEADERBOARD TAB -->
+    <div id="tab-content-leaderboard" style="display:none">
+      <div class="lb-tabs">
+        <button class="lb-tab active" onclick="showLB('score',this)">🏆 Eng yuqori ball</button>
+        <button class="lb-tab" onclick="showLB('speed',this)">⚡ Eng tez</button>
+      </div>
+      <div id="lb-list"><div class="loading">Yuklanmoqda...</div></div>
+    </div>
+
+    <!-- COURSES TAB -->
+    <div id="tab-content-courses" style="display:none">
+      <!-- Level list -->
+      <div id="level-list-view">
+        <div id="courses-content"></div>
+      </div>
+      <!-- Level quiz -->
+      <div id="level-quiz-view" style="display:none">
+        <div class="progress-wrap">
+          <div class="progress-top">
+            <span class="q-num" id="lq-counter">Savol 1/5</span>
+            <span class="timer" id="lq-timer">30s</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="lq-prog"></div></div>
+        </div>
+        <div class="q-card">
+          <div class="q-meta" id="lq-meta"></div>
+          <div class="q-text" id="lq-text"></div>
+          <div class="options" id="lq-opts"></div>
+          <div class="explain" id="lq-explain"></div>
+        </div>
+        <div class="nav"><button class="next-btn" id="lq-next-btn" onclick="lqNextQ()">Keyingisi →</button></div>
+      </div>
+      <!-- Level result -->
+      <div id="level-result-view" style="display:none">
+        <div class="result-card">
+          <div class="score-ring">
+            <span class="score-num" id="lq-res-pct">0%</span>
+            <span class="score-lbl">natija</span>
+          </div>
+          <div class="res-msg" id="lq-res-msg"></div>
+          <div class="stats">
+            <div class="stat"><div class="stat-n" style="color:var(--green)" id="lq-rc">0</div><div class="stat-l">to'g'ri</div></div>
+            <div class="stat"><div class="stat-n" style="color:var(--red)" id="lq-rw">0</div><div class="stat-l">noto'g'ri</div></div>
+            <div class="stat"><div class="stat-n" style="color:var(--gold)" id="lq-rt">0s</div><div class="stat-l">o'rtacha vaqt</div></div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-sec" onclick="backToLevels()">← Darajalar</button>
+          <button class="btn-pri" onclick="lqRestart()">↺ Qayta</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE TAB -->
+    <div id="tab-content-profile" style="display:none">
+      <div id="profile-content"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <a href="https://t.me/yosh_huquqshunos_uz" target="_blank">📱 Telegram</a>
+  <a href="https://www.youtube.com/@YoshHuquqshunos" target="_blank">▶️ YouTube</a>
+</footer>
+
+<!-- Payment Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3 id="modal-course-title">Kurs nomi</h3>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:16px">Narxi: <b id="modal-course-price" style="color:var(--gold)"></b></p>
+    <a class="pay-option" href="https://t.me/yosh_huquqshunos_uz" target="_blank">
+      <span class="pay-icon">📱</span>
+      <div><div class="pay-name">Telegram orqali</div><div class="pay-desc">Admin bilan bog'laning va to'lovni tasdiqlang</div></div>
+    </a>
+    <a class="pay-option" href="https://my.click.uz" target="_blank">
+      <span class="pay-icon">💳</span>
+      <div><div class="pay-name">Click</div><div class="pay-desc">Click ilovasi orqali to'lash</div></div>
+    </a>
+    <a class="pay-option" href="https://checkout.paycom.uz" target="_blank">
+      <span class="pay-icon">💰</span>
+      <div><div class="pay-name">Payme</div><div class="pay-desc">Payme ilovasi orqali to'lash</div></div>
+    </a>
+    <button class="modal-close" onclick="closeModal()">Yopish</button>
+  </div>
+</div>
+
+<div id="install-banner">
+  <span>📲 Ilovani o'rnating</span>
+  <button class="inst-btn" onclick="doInstall()">O'rnatish</button>
+  <button class="close-btn" onclick="this.parentElement.style.display='none'">✕</button>
+</div>
+
+<script>
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyC_ZP_n5H97f9yaPPmjqwrmDaPux8GvBX4",
+  authDomain: "yoshhuquqshunos.firebaseapp.com",
+  projectId: "yoshhuquqshunos",
+  storageBucket: "yoshhuquqshunos.firebasestorage.app",
+  messagingSenderId: "145645920762",
+  appId: "1:145645920762:web:498ebdef77cd229013c443",
+  measurementId: "G-5WY0J9ZNCT"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// Data
+const TOPICS = [
+  {id:'const', name:'Konstitutsiyaviy huquq', icon:'🏛️'},
+  {id:'civil',  name:'Fuqarolik huquqi',      icon:'👥'},
+  {id:'crim',  name:'Jinoyat huquqi',         icon:'⚖️'},
+  {id:'labor', name:'Mehnat huquqi',          icon:'💼'},
+];
+const ALL_Q = [
+  {topic:'const',diff:'easy',  q:"O'zbekiston Konstitutsiyasi qachon qabul qilingan?", opts:["1991-yil 1-sentabr","1992-yil 8-dekabr","1993-yil 1-mart","1990-yil 20-iyun"], ans:1, law:"O'zbekiston Respublikasi Konstitutsiyasi 1992-yil 8-dekabrda qabul qilingan."},
+  {topic:'const',diff:'easy',  q:"O'zbekiston Konstitutsiyasiga ko'ra, fuqarolar necha yoshdan saylov huquqiga ega?", opts:["16 yosh","18 yosh","21 yosh","25 yosh"], ans:1, law:"Konstitutsiyaning 117-moddasi: faol saylov huquqi 18 yoshdan boshlanadi."},
+  {topic:'const',diff:'medium',q:"Prezident lavozimiga saylanish uchun minimal yosh necta?", opts:["30 yosh","35 yosh","40 yosh","45 yosh"], ans:1, law:"Konstitutsiyaning 90-moddasi: Prezidentlikka nomzod 35 yoshdan kichik bo'lmasligi kerak."},
+  {topic:'const',diff:'medium',q:"O'zbekiston parlamentining nomi nima?", opts:["Majlis","Oliy Majlis","Kengash","Qonunchilik palatasi"], ans:1, law:"Konstitutsiyaning 76-moddasi: O'zbekiston Respublikasining oliy vakillik organi Oliy Majlis hisoblanadi."},
+  {topic:'const',diff:'hard',  q:"Konstitutsiyaviy sud a'zolari necha yilga tayinlanadi?", opts:["5 yil","7 yil","10 yil","Muddatsiz"], ans:2, law:"Konstitutsiyaviy sud to'g'risidagi qonunga ko'ra, sud a'zolari 10 yilga tayinlanadi."},
+  {topic:'civil', diff:'easy', q:"Fuqarolik huquq layoqati qachon boshlanadi?", opts:["18 yoshdan","Tug'ilgan paytdan","16 yoshdan","Nikohdan"], ans:1, law:"Fuqarolik kodeksining 17-moddasi: huquq layoqati tug'ilgan paytdan boshlanadi."},
+  {topic:'civil', diff:'easy', q:"To'liq fuqarolik muomala layoqati nechi yoshdan boshlanadi?", opts:["14 yosh","16 yosh","18 yosh","21 yosh"], ans:2, law:"Fuqarolik kodeksining 21-moddasi: to'liq muomala layoqati 18 yoshga to'lganda paydo bo'ladi."},
+  {topic:'civil', diff:'medium',q:"Nikoh shartnomasi qachon tuziladi?", opts:["Rasmiy nikohdan oldin","Rasmiy nikoh paytida yoki undan keyin","Faqat nikohdan keyin","Istalgan vaqtda"], ans:1, law:"Oila kodeksining 24-moddasi: nikoh shartnomasi nikoh paytida yoki nikohdan keyin tuzilishi mumkin."},
+  {topic:'civil', diff:'hard', q:"Oddiy da'vo muddati qancha?", opts:["1 yil","2 yil","3 yil","5 yil"], ans:2, law:"Fuqarolik kodeksining 150-moddasi: umumiy da'vo muddati uch yilni tashkil etadi."},
+  {topic:'crim',  diff:'easy', q:"Jinoyat kodeksiga ko'ra, jinoiy javobgarlik yoshi qancha?", opts:["12 yosh","14 yosh","16 yosh","18 yosh"], ans:2, law:"Jinoyat kodeksining 17-moddasi: jinoiy javobgarlik 16 yoshdan, og'ir jinoyatlarda 14 yoshdan boshlanadi."},
+  {topic:'crim',  diff:'easy', q:"Jinoyat qonuniyligining asosiy printsipi nima?", opts:["Adolat","Qonuniylik","Tenglik","Insoniylik"], ans:1, law:"Jinoyat kodeksining 3-moddasi: qonuniylik printsipi — qonunda nazarda tutilmagan harakat jinoyat sanalmaydi."},
+  {topic:'crim',  diff:'medium',q:"Zaruriy mudofaa shartlaridan biri qaysi?", opts:["Hujum davom etishi","Hujum tugagandan keyin mudofaa","Faqat qurol bilan mudofaa","Faqat politsiya tomonidan mudofaa"], ans:0, law:"Jinoyat kodeksining 38-moddasi: zaruriy mudofaa hujum davom etayotgan paytda qo'llanilishi kerak."},
+  {topic:'crim',  diff:'hard', q:"Jinoyat qasdining ikki turi qaysilar?", opts:["To'g'ri va egri qasd","Ogohlik va beparvolik","Reja va tasodif","Shaxsiy va ijtimoiy qasd"], ans:0, law:"Jinoyat kodeksining 21-moddasi: qasdning to'g'ri va egri turlari mavjud."},
+  {topic:'labor', diff:'easy', q:"Mehnat kodeksiga ko'ra, haftalik ish vaqti qancha soat?", opts:["36 soat","40 soat","48 soat","45 soat"], ans:1, law:"Mehnat kodeksining 117-moddasi: normal haftalik ish vaqti 40 soatdan oshmasligi kerak."},
+  {topic:'labor', diff:'easy', q:"Yillik asosiy ta'til qancha kun?", opts:["14 kun","21 kun","24 kun","30 kun"], ans:2, law:"Mehnat kodeksining 134-moddasi: yillik asosiy haq to'lanadigan ta'til 24 ish kunini tashkil etadi."},
+  {topic:'labor', diff:'medium',q:"Ish haqini to'lashdan qochishlik qanday javobgarlikka sabab bo'ladi?", opts:["Faqat ma'muriy","Jinoiy va ma'muriy","Faqat fuqarolik","Intizomiy"], ans:1, law:"Mehnat va Jinoyat kodeksiga ko'ra, ish haqi to'lanmasa ma'muriy va jinoiy javobgarlik nazarda tutilgan."},
+  {topic:'labor', diff:'hard', q:"Sinov muddati maksimal qancha bo'lishi mumkin?", opts:["1 oy","2 oy","3 oy","6 oy"], ans:2, law:"Mehnat kodeksining 81-moddasi: sinov muddati uch oydan oshmasligi kerak, rahbarlar uchun 6 oy."},
+];
+
+const DIFF_MAP = {easy:"Boshlang'ich", medium:"O'rta", hard:"Murakkab"};
+let selTopics=[], selDiff='all', quiz=[], cur=0, score=0, answered=false, timerInt=null, tLeft=30, times=[], tStats={};
+let currentUser=null, confirmResult=null, lastResult=null;
+
+// AUTH
+auth.onAuthStateChanged(user => {
+  currentUser = user;
+  if(user) {
+    document.getElementById('user-avatar').style.display='flex';
+    document.getElementById('user-avatar').textContent = user.phoneNumber ? user.phoneNumber.slice(-2) : '👤';
+    showApp();
+  }
+});
+
+function showApp() {
+  document.getElementById('s-auth').classList.remove('active');
+  document.getElementById('s-app').classList.add('active');
+  initTopics();
+}
+
+function skipAuth() {
+  showApp();
+}
+
+function showPhoneView() {
+  document.getElementById('auth-otp-view').style.display='none';
+  document.getElementById('auth-phone-view').style.display='block';
+}
+
+async function sendOTP() {
+  const phone = document.getElementById('phone-input').value.trim();
+  if(phone.length < 9) { showAuthError('Telefon raqamni to\'liq kiriting'); return; }
+  const fullPhone = '+998' + phone;
+  const btn = document.getElementById('send-otp-btn');
+  btn.disabled = true; btn.textContent = 'Yuborilmoqda...';
+  hideAuthError();
+
+  try {
+    if(window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+      window.recaptchaVerifier = null;
+    }
+    document.getElementById('recaptcha-container').innerHTML = '';
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+      size: 'normal',
+      callback: async (response) => {
+        const result = await auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier);
+        confirmResult = result;
+        document.getElementById('otp-hint').textContent = fullPhone + ' ga SMS yuborildi';
+        document.getElementById('auth-phone-view').style.display='none';
+        document.getElementById('auth-otp-view').style.display='block';
+        btn.disabled=false; btn.textContent='SMS yuborish';
+      },
+      'expired-callback': () => {
+        showAuthError('reCAPTCHA muddati tugadi. Qayta urinib ko\'ring.');
+        btn.disabled=false; btn.textContent='SMS yuborish';
+        window.recaptchaVerifier = null;
+      }
+    });
+    await window.recaptchaVerifier.render();
+  } catch(err) {
+    showAuthError('Xatolik: ' + (err.message||'SMS yuborilmadi'));
+    btn.disabled=false; btn.textContent='SMS yuborish';
+    window.recaptchaVerifier = null;
+  }
+}
+
+function verifyOTP() {
+  const code = document.getElementById('otp-input').value.trim();
+  if(code.length < 6) { document.getElementById('otp-error').style.display='block'; document.getElementById('otp-error').textContent='6 raqamli kod kiriting'; return; }
+  const btn = document.getElementById('verify-btn');
+  btn.disabled=true; btn.textContent='Tekshirilmoqda...';
+  confirmResult.confirm(code)
+    .then(async result => {
+      currentUser=result.user;
+      // Check if user already has a name
+      const userDoc = await db.collection('users').doc(currentUser.uid).get();
+      if(userDoc.exists && userDoc.data().name) {
+        showApp();
+      } else {
+        document.getElementById('auth-otp-view').style.display='none';
+        document.getElementById('auth-name-view').style.display='block';
+      }
+    })
+    .catch(() => {
+      document.getElementById('otp-error').style.display='block';
+      document.getElementById('otp-error').textContent='Kod noto\'g\'ri. Qayta urinib ko\'ring.';
+      btn.disabled=false; btn.textContent='Tasdiqlash';
+    });
+}
+
+async function saveName() {
+  const name = document.getElementById('name-input').value.trim();
+  if(name.length < 2) {
+    document.getElementById('name-error').style.display='block';
+    document.getElementById('name-error').textContent='Ism kamida 2 harf bo\'lishi kerak';
+    return;
+  }
+  try {
+    await db.collection('users').doc(currentUser.uid).set({
+      name: name,
+      phone: currentUser.phoneNumber || '',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge: true});
+    showApp();
+  } catch(e) {
+    document.getElementById('name-error').style.display='block';
+    document.getElementById('name-error').textContent='Xatolik yuz berdi';
+  }
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent=msg; el.style.display='block';
+}
+function hideAuthError() { document.getElementById('auth-error').style.display='none'; }
+
+// TABS
+function goTab(tab) {
+  ['home','courses','leaderboard','profile'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    const el = document.getElementById('tab-content-'+t);
+    if(el) el.style.display = t===tab ? 'block' : 'none';
+  });
+  document.getElementById('tab-content-quiz').style.display='none';
+  document.getElementById('tab-content-result').style.display='none';
+  if(tab==='leaderboard') loadLeaderboard('score');
+  if(tab==='profile') renderProfile();
+  if(tab==='courses') renderCourses();
+}
+
+// TOPICS
+function initTopics() {
+  const grid = document.getElementById('topic-grid');
+  if(grid.innerHTML) return;
+  TOPICS.forEach(t => {
+    const cnt = ALL_Q.filter(q=>q.topic===t.id).length;
+    grid.innerHTML += `<button class="topic-card" data-id="${t.id}" onclick="toggleTopic('${t.id}',this)">
+      <div class="topic-icon">${t.icon}</div>
+      <div class="topic-name">${t.name}</div>
+      <div class="topic-count">${cnt} savol</div>
+    </button>`;
+  });
+}
+
+function toggleTopic(id,el){
+  const i=selTopics.indexOf(id);
+  if(i>-1){selTopics.splice(i,1);el.classList.remove('selected')}
+  else{selTopics.push(id);el.classList.add('selected')}
+  updateBtn();
+}
+function setDiff(el){
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); selDiff=el.dataset.d; updateBtn();
+}
+function countQ(){return ALL_Q.filter(q=>selTopics.includes(q.topic)&&(selDiff==='all'||q.diff===selDiff)).length;}
+function updateBtn(){
+  const btn=document.getElementById('start-btn');
+  const n=countQ();
+  btn.disabled=selTopics.length===0;
+  btn.textContent=selTopics.length?`Boshlash — ${n} savol`:'Mavzu tanlang';
+}
+function shuffle(a){return a.sort(()=>Math.random()-.5)}
+
+// QUIZ
+function startQuiz(){
+  let pool=ALL_Q.filter(q=>selTopics.includes(q.topic)&&(selDiff==='all'||q.diff===selDiff));
+  if(!pool.length){alert("Bu tanlov uchun savol yo'q!");return}
+  quiz=shuffle([...pool]).slice(0,Math.min(10,pool.length));
+  cur=0;score=0;answered=false;times=[];
+  tStats={};TOPICS.forEach(t=>{tStats[t.id]={c:0,t:0}});
+  ['home','leaderboard','profile'].forEach(t=>{
+    document.getElementById('tab-content-'+t).style.display='none';
+    document.getElementById('tab-'+t).classList.remove('active');
+  });
+  document.getElementById('tab-content-result').style.display='none';
+  document.getElementById('tab-content-quiz').style.display='block';
+  renderQ();
+}
+
+function renderQ(){
+  answered=false;clearInterval(timerInt);tLeft=30;
+  const q=quiz[cur];
+  document.getElementById('q-counter').textContent=`Savol ${cur+1}/${quiz.length}`;
+  document.getElementById('prog').style.width=`${cur/quiz.length*100}%`;
+  const tm=document.getElementById('timer');
+  tm.textContent='30s';tm.className='timer';
+  timerInt=setInterval(()=>{
+    tLeft--;tm.textContent=tLeft+'s';
+    if(tLeft<=10)tm.className='timer urgent';
+    if(tLeft<=0){clearInterval(timerInt);autoAnswer();}
+  },1000);
+  const topicName=TOPICS.find(t=>t.id===q.topic)?.name||'';
+  document.getElementById('q-meta').innerHTML=`<span class="chip chip-topic">${topicName}</span><span class="chip chip-${q.diff}">${DIFF_MAP[q.diff]}</span>`;
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('q-opts').innerHTML=q.opts.map((o,i)=>
+    `<button class="opt" id="opt${i}" onclick="pick(${i})"><span class="opt-letter">${['A','B','C','D'][i]}</span><span>${o}</span></button>`).join('');
+  document.getElementById('explain').style.display='none';
+  document.getElementById('next-btn').style.display='none';
+}
+
+function autoAnswer(){
+  if(answered)return;answered=true;times.push(30);
+  const q=quiz[cur];tStats[q.topic].t++;
+  document.querySelectorAll('.opt').forEach(b=>b.disabled=true);
+  document.getElementById('opt'+q.ans).classList.add('correct');
+  const ex=document.getElementById('explain');
+  ex.innerHTML=`⏰ Vaqt tugadi. <span class="law">To'g'ri javob:</span> ${q.opts[q.ans]} — ${q.law}`;
+  ex.style.display='block';document.getElementById('next-btn').style.display='block';
+}
+
+function pick(i){
+  if(answered)return;answered=true;clearInterval(timerInt);times.push(30-tLeft);
+  const q=quiz[cur];tStats[q.topic].t++;
+  document.querySelectorAll('.opt').forEach(b=>b.disabled=true);
+  document.getElementById('opt'+i).classList.add(i===q.ans?'correct':'wrong');
+  if(i!==q.ans)document.getElementById('opt'+q.ans).classList.add('correct');
+  if(i===q.ans){score++;tStats[q.topic].c++;}
+  const ex=document.getElementById('explain');
+  ex.innerHTML=`<span class="law">Huquqiy asos:</span> ${q.law}`;
+  ex.style.display='block';document.getElementById('next-btn').style.display='block';
+}
+
+function nextQ(){cur++;if(cur>=quiz.length){showResult();return}renderQ();}
+
+function showResult(){
+  clearInterval(timerInt);
+  const pct=Math.round(score/quiz.length*100);
+  const avg=times.length?Math.round(times.reduce((a,b)=>a+b,0)/times.length):0;
+  lastResult={pct, score, total:quiz.length, avg, topics:selTopics.map(t=>TOPICS.find(x=>x.id===t)?.name).join(', '), date:new Date()};
+
+  document.getElementById('res-pct').textContent=pct+'%';
+  document.getElementById('rc').textContent=score;
+  document.getElementById('rw').textContent=quiz.length-score;
+  document.getElementById('rt').textContent=avg+'s';
+  const msgs=['Qo\'shilmang! Ko\'proq mashq qiling.','Yaxshi harakat! Davom eting.','Zo\'r natija! Bilimingiz yaxshi.','Mukammal! Huquqni a\'lo bilasiz! 🏆'];
+  document.getElementById('res-msg').textContent=pct>=80?msgs[3]:pct>=60?msgs[2]:pct>=40?msgs[1]:msgs[0];
+  document.getElementById('topic-analysis').innerHTML=TOPICS.filter(t=>tStats[t.id]?.t>0).map(t=>{
+    const s=tStats[t.id];const p=Math.round(s.c/s.t*100);
+    return `<div class="topic-row"><span class="topic-row-name">${t.name}</span><div class="bar-wrap"><div class="bar-fill" style="width:${p}%"></div></div><span class="topic-row-pct">${p}%</span></div>`;
+  }).join('');
+
+  document.getElementById('tab-content-quiz').style.display='none';
+  document.getElementById('tab-content-result').style.display='block';
+
+  if(currentUser) saveResult(pct, avg);
+}
+
+// FIRESTORE
+async function saveResult(pct, avg) {
+  try {
+    const uid = currentUser.uid;
+    const phone = currentUser.phoneNumber || 'Noma\'lum';
+    await db.collection('results').add({
+      uid, phone, pct, avg,
+      topics: selTopics,
+      total: quiz.length,
+      correct: score,
+      date: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // update user best
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    if(!userDoc.exists || userDoc.data().bestPct < pct) {
+      await userRef.set({phone, bestPct:pct, bestAvg:avg, updatedAt:firebase.firestore.FieldValue.serverTimestamp()}, {merge:true});
+    }
+  } catch(e) { console.log('Save error:', e); }
+}
+
+async function loadLeaderboard(type) {
+  const list = document.getElementById('lb-list');
+  list.innerHTML='<div class="loading">Yuklanmoqda...</div>';
+  try {
+    const field = type==='score' ? 'bestPct' : 'bestAvg';
+    const order = type==='score' ? 'desc' : 'asc';
+    const snap = await db.collection('users').orderBy(field, order).limit(20).get();
+    if(snap.empty){list.innerHTML='<div class="loading">Hali natijalar yo\'q</div>';return;}
+    list.innerHTML = snap.docs.map((doc,i)=>{
+      const d=doc.data();
+      const rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';
+      const val = type==='score' ? (d.bestPct||0)+'%' : (d.bestAvg||0)+'s';
+      const phone = d.name || (d.phone ? d.phone.replace(/(\+998)(\d{2})(\d{3})(\d{2})(\d{2})/,'$1 $2 ***-**-$5') : '***');
+      return `<div class="leaderboard-item">
+        <span class="rank-badge ${rankClass}">${i+1}</span>
+        <span class="lb-name">${phone}</span>
+        <span class="lb-score">${val}</span>
+      </div>`;
+    }).join('');
+  } catch(e) { list.innerHTML='<div class="loading">Xatolik yuz berdi</div>'; }
+}
+
+function showLB(type, el) {
+  document.querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  loadLeaderboard(type);
+}
+
+async function renderProfile() {
+  const el = document.getElementById('profile-content');
+  if(!currentUser) {
+    el.innerHTML=`<div class="auth-card" style="text-align:center">
+      <div class="auth-icon">👤</div>
+      <h2>Kirmagansiz</h2>
+      <p>Natijalarni saqlash va reyting uchun kiring</p>
+      <button class="auth-btn" onclick="document.getElementById('s-app').classList.remove('active');document.getElementById('s-auth').classList.add('active')">Kirish</button>
+    </div>`;
+    return;
+  }
+  const phone = currentUser.phoneNumber || '';
+  const userDoc2 = await db.collection('users').doc(currentUser.uid).get();
+  el.innerHTML=`<div class="profile-header">
+    <div class="profile-avatar">⚖️</div>
+    <div class="profile-name">${userDoc2.exists && userDoc2.data().name ? userDoc2.data().name : phone}</div>
+  </div>
+  <p class="section-title">So'nggi natijalar</p>
+  <div id="history-list"><div class="loading">Yuklanmoqda...</div></div>
+  <button class="logout-btn" onclick="logout()">Chiqish</button>`;
+
+  try {
+    const snap = await db.collection('results').where('uid','==',currentUser.uid).orderBy('date','desc').limit(10).get();
+    const histEl = document.getElementById('history-list');
+    if(snap.empty){histEl.innerHTML='<div class="loading">Hali natija yo\'q</div>';return;}
+    histEl.innerHTML = snap.docs.map(doc=>{
+      const d=doc.data();
+      const date = d.date?.toDate ? d.date.toDate().toLocaleDateString('uz-UZ') : '';
+      return `<div class="history-item">
+        <div class="history-left">
+          <div class="history-topic">${(d.topics||[]).map(t=>TOPICS.find(x=>x.id===t)?.icon||'').join(' ')}</div>
+          <div class="history-date">${date} · o'rtacha ${d.avg||0}s</div>
+        </div>
+        <span class="history-score">${d.pct||0}%</span>
+      </div>`;
+    }).join('');
+  } catch(e) { document.getElementById('history-list').innerHTML='<div class="loading">Xatolik</div>'; }
+}
+
+const COURSES = [
+  {
+    id: 1,
+    title: "O'zbekiston Konstitutsiyasi asoslari",
+    desc: "Konstitutsiyaning asosiy qoidalari, fuqarolar huquq va majburiyatlari haqida to'liq kurs.",
+    icon: "🏛️",
+    type: ["video", "matn"],
+    free: true,
+    youtube: "https://www.youtube.com/@YoshHuquqshunos",
+    price: null
+  },
+  {
+    id: 2,
+    title: "Fuqarolik huquqi: Shartnomalar",
+    desc: "Shartnoma tuzish, bajarish va bekor qilish bo'yicha amaliy kurs.",
+    icon: "📝",
+    type: ["video", "pdf"],
+    free: false,
+    price: "99 000 so'm",
+    telegram: "https://t.me/yosh_huquqshunos_uz",
+    click: "https://my.click.uz",
+    payme: "https://checkout.paycom.uz"
+  },
+  {
+    id: 3,
+    title: "Mehnat huquqi va ish munosabatlari",
+    desc: "Ish shartnomasi, ish haqi, ta'til va mehnat nizolari bo'yicha kurs.",
+    icon: "💼",
+    type: ["video", "matn", "pdf"],
+    free: false,
+    price: "149 000 so'm",
+    telegram: "https://t.me/yosh_huquqshunos_uz",
+    click: "https://my.click.uz",
+    payme: "https://checkout.paycom.uz"
+  },
+  {
+    id: 4,
+    title: "Jinoyat huquqi: Asosiy tushunchalar",
+    desc: "Jinoyat va jazoning asosiy tushunchalari, himoya usullari.",
+    icon: "⚖️",
+    type: ["video"],
+    free: true,
+    youtube: "https://www.youtube.com/@YoshHuquqshunos",
+    price: null
+  },
+];
+
+let selectedCourse = null;
+
+const LEVELS = [
+  {
+    id: 1,
+    title: "Level 1 — Boshlang'ich",
+    desc: "Barcha mavzularda asosiy huquqiy bilimlar. Bepul!",
+    icon: "🟢",
+    free: true,
+    questions: 5,
+    diff: "easy",
+    price: null,
+    unlocked: true
+  },
+  {
+    id: 2,
+    title: "Level 2 — O'rta",
+    desc: "Chuqurroq savollar, real hayotdan misollar. To'lovdan keyin ochiladi.",
+    icon: "🔵",
+    free: false,
+    questions: 10,
+    diff: "medium",
+    price: "19 000 so'm",
+    unlocked: false,
+    preview: "Fuqarolik kodeksiga ko'ra, shartnoma qanday sharoitda haqiqiy emas?"
+  },
+  {
+    id: 3,
+    title: "Level 3 — Murakkab",
+    desc: "Professionallar darajasi. Advokatlik imtihoniga tayyorlanish uchun.",
+    icon: "🔴",
+    free: false,
+    questions: 15,
+    diff: "hard",
+    price: "29 000 so'm",
+    unlocked: false,
+    preview: "Jinoyat qasdining to'g'ri va egri turlarining farqi nima?"
+  },
+  {
+    id: 4,
+    title: "Level 4 — Ekspert",
+    desc: "Eng murakkab savollar. Huquq sohasidagi eng yaxshilar uchun.",
+    icon: "⭐",
+    free: false,
+    questions: 20,
+    diff: "hard",
+    price: "49 000 so'm",
+    unlocked: false,
+    preview: "Konstitutsiyaviy sud va Oliy sudning vakolatlari qanday farqlanadi?"
+  },
+];
+
+let lqQuiz=[], lqCur=0, lqScore=0, lqAnswered=false, lqTimer=null, lqTLeft=30, lqTimes=[], currentLevel=null;
+
+function renderCourses() {
+  const el = document.getElementById('courses-content');
+  el.innerHTML = '<p class="section-title" style="margin-bottom:14px">Test darajalari</p>' +
+  LEVELS.map(l => {
+    const isLocked = !l.free && !l.unlocked;
+    return `<div class="level-card ${isLocked?'locked':''}">
+      <div class="level-badge ${l.free?'level-badge-free':l.unlocked?'level-badge-unlocked':'level-badge-locked'}">${l.free?'🟢':isLocked?'🔒':'🔓'}</div>
+      <div class="level-info">
+        <div class="level-title">${l.title}</div>
+        <div class="level-desc">${l.desc}</div>
+        ${l.free ? '<div class="progress-level"><div style="font-size:11px;color:var(--text2)">📚 '+l.questions+' ta savol · Bepul</div></div>' : '<div style="font-size:11px;color:var(--text2);margin-bottom:8px">📚 '+l.questions+' ta savol</div>'}
+        ${isLocked && l.preview ? `<div class="preview-box"><strong>🔍 Namuna savol:</strong>${l.preview}</div>` : ''}
+        <div class="level-meta" style="margin-top:10px">
+          <span class="level-price ${l.free?'price-free':'price-paid'}">${l.free?'Bepul':l.price}</span>
+          <button class="level-btn ${l.free?'level-btn-free':isLocked?'level-btn-paid':'level-btn-free'}" onclick="${isLocked?'openPayment('+l.id+')':'startLevelQuiz('+l.id+')'}">
+            ${l.free?'Boshlash':isLocked?'Sotib olish':'Boshlash'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openPayment(id) {
+  const l = LEVELS.find(x=>x.id===id);
+  if(!l) return;
+  selectedCourse = l;
+  document.getElementById('modal-course-title').textContent = l.title;
+  document.getElementById('modal-course-price').textContent = l.price;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function startLevelQuiz(id) {
+  const l = LEVELS.find(x=>x.id===id);
+  if(!l) return;
+  currentLevel = l;
+  let pool = ALL_Q.filter(q => l.diff==='easy' ? q.diff==='easy' : l.diff==='medium' ? q.diff==='medium' : q.diff==='hard');
+  if(pool.length < l.questions) pool = ALL_Q;
+  lqQuiz = pool.sort(()=>Math.random()-.5).slice(0, l.questions);
+  lqCur=0; lqScore=0; lqAnswered=false; lqTimes=[];
+  document.getElementById('level-list-view').style.display='none';
+  document.getElementById('level-result-view').style.display='none';
+  document.getElementById('level-quiz-view').style.display='block';
+  lqRenderQ();
+}
+
+function lqRenderQ() {
+  lqAnswered=false; clearInterval(lqTimer); lqTLeft=30;
+  const q=lqQuiz[lqCur];
+  document.getElementById('lq-counter').textContent=`Savol ${lqCur+1}/${lqQuiz.length}`;
+  document.getElementById('lq-prog').style.width=`${lqCur/lqQuiz.length*100}%`;
+  const tm=document.getElementById('lq-timer');
+  tm.textContent='30s'; tm.className='timer';
+  lqTimer=setInterval(()=>{
+    lqTLeft--; tm.textContent=lqTLeft+'s';
+    if(lqTLeft<=10) tm.className='timer urgent';
+    if(lqTLeft<=0){clearInterval(lqTimer); lqAutoAnswer();}
+  },1000);
+  const topicName=TOPICS.find(t=>t.id===q.topic)?.name||'';
+  document.getElementById('lq-meta').innerHTML=`<span class="chip chip-topic">${topicName}</span><span class="chip chip-${q.diff}">${DIFF_MAP[q.diff]}</span>`;
+  document.getElementById('lq-text').textContent=q.q;
+  document.getElementById('lq-opts').innerHTML=q.opts.map((o,i)=>
+    `<button class="opt" id="lqopt${i}" onclick="lqPick(${i})"><span class="opt-letter">${['A','B','C','D'][i]}</span><span>${o}</span></button>`).join('');
+  document.getElementById('lq-explain').style.display='none';
+  document.getElementById('lq-next-btn').style.display='none';
+}
+
+function lqAutoAnswer(){
+  if(lqAnswered)return; lqAnswered=true; lqTimes.push(30);
+  const q=lqQuiz[lqCur];
+  document.querySelectorAll('#lq-opts .opt').forEach(b=>b.disabled=true);
+  document.getElementById('lqopt'+q.ans).classList.add('correct');
+  const ex=document.getElementById('lq-explain');
+  ex.innerHTML=`⏰ Vaqt tugadi. <span class="law">To'g'ri:</span> ${q.opts[q.ans]}`;
+  ex.style.display='block'; document.getElementById('lq-next-btn').style.display='block';
+}
+
+function lqPick(i){
+  if(lqAnswered)return; lqAnswered=true; clearInterval(lqTimer); lqTimes.push(30-lqTLeft);
+  const q=lqQuiz[lqCur];
+  document.querySelectorAll('#lq-opts .opt').forEach(b=>b.disabled=true);
+  document.getElementById('lqopt'+i).classList.add(i===q.ans?'correct':'wrong');
+  if(i!==q.ans) document.getElementById('lqopt'+q.ans).classList.add('correct');
+  if(i===q.ans) lqScore++;
+  const ex=document.getElementById('lq-explain');
+  ex.innerHTML=`<span class="law">Huquqiy asos:</span> ${q.law}`;
+  ex.style.display='block'; document.getElementById('lq-next-btn').style.display='block';
+}
+
+function lqNextQ(){ lqCur++; if(lqCur>=lqQuiz.length){lqShowResult();return} lqRenderQ(); }
+
+function lqShowResult(){
+  clearInterval(lqTimer);
+  const pct=Math.round(lqScore/lqQuiz.length*100);
+  const avg=lqTimes.length?Math.round(lqTimes.reduce((a,b)=>a+b,0)/lqTimes.length):0;
+  document.getElementById('lq-res-pct').textContent=pct+'%';
+  document.getElementById('lq-rc').textContent=lqScore;
+  document.getElementById('lq-rw').textContent=lqQuiz.length-lqScore;
+  document.getElementById('lq-rt').textContent=avg+'s';
+  const msgs=['Qo'shilmang! Yana urinib ko'ring.','Yaxshi! Davom eting.','Zo'r natija!','Mukammal! 🏆'];
+  document.getElementById('lq-res-msg').textContent=pct>=80?msgs[3]:pct>=60?msgs[2]:pct>=40?msgs[1]:msgs[0];
+  document.getElementById('level-quiz-view').style.display='none';
+  document.getElementById('level-result-view').style.display='block';
+}
+
+function lqRestart(){ if(currentLevel) startLevelQuiz(currentLevel.id); }
+function backToLevels(){
+  clearInterval(lqTimer);
+  document.getElementById('level-quiz-view').style.display='none';
+  document.getElementById('level-result-view').style.display='none';
+  document.getElementById('level-list-view').style.display='block';
+}
+
+function openCourse(id) {
+  openPayment(id);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function logout() {
+  auth.signOut().then(()=>{ currentUser=null; document.getElementById('user-avatar').style.display='none'; goTab('home'); });
+}
+
+function shareResult() {
+  if(!lastResult) return;
+  const text = `Yosh Huquqshunos testida ${lastResult.pct}% natija qo'lga kiritdim!\n\n✅ To'g'ri: ${lastResult.score}/${lastResult.total}\n⚡ O'rtacha vaqt: ${lastResult.avg}s\n\nSen ham sinab ko'r 👇\nhttps://yoshhuquqshunos.netlify.app`;
+  window.open('https://t.me/share/url?url=https://yoshhuquqshunos.netlify.app&text='+encodeURIComponent(text));
+}
+
+// Splash screen
+// Splash screen - ishonchli usul
+function hideSplash() {
+  const splash = document.getElementById('splash');
+  if(splash) {
+    splash.classList.add('hide');
+    setTimeout(() => { if(splash) splash.style.display='none'; }, 600);
+  }
+}
+setTimeout(hideSplash, 2500);
+document.addEventListener('DOMContentLoaded', () => setTimeout(hideSplash, 2500));
+
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  document.getElementById('install-banner').style.display='flex';
+});
+function doInstall(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('install-banner').style.display='none';});
+}
+</script>
+</body>
+</html>
