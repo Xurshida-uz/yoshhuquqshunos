@@ -108,6 +108,7 @@
   <main>
     <div class="tabs">
       <button class="tab active" onclick="goAdminTab('stats')" id="atab-stats">📊 Statistika</button>
+      <button class="tab" onclick="goAdminTab('topics')" id="atab-topics">📚 Mavzular</button>
       <button class="tab" onclick="goAdminTab('questions')" id="atab-questions">📝 Savollar</button>
       <button class="tab" onclick="goAdminTab('levels')" id="atab-levels">🔒 Darajalar</button>
       <button class="tab" onclick="goAdminTab('users')" id="atab-users">👥 Foydalanuvchilar</button>
@@ -126,6 +127,42 @@
           <table>
             <thead><tr><th>Foydalanuvchi</th><th>Natija</th><th>Vaqt</th><th>Sana</th></tr></thead>
             <tbody id="recent-results"><tr><td colspan="4" class="loading">Yuklanmoqda...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOPICS -->
+    <div id="acontent-topics" style="display:none">
+      <div class="card">
+        <h3>Yangi mavzu qo'shish</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Mavzu nomi</label>
+            <input class="form-input" id="topic-name" placeholder="Masalan: Soliq huquqi"/>
+          </div>
+          <div class="form-group">
+            <label>Emoji ikonka</label>
+            <input class="form-input" id="topic-icon" placeholder="Masalan: 💰" maxlength="4"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Mavzu ID (lotin harflari)</label>
+          <input class="form-input" id="topic-id" placeholder="Masalan: tax"/>
+        </div>
+        <div class="form-group">
+          <label>Tartib raqami</label>
+          <input class="form-input" id="topic-order" type="number" placeholder="1, 2, 3..."/>
+        </div>
+        <button class="btn-add" onclick="addTopic()">+ Mavzu qo'shish</button>
+        <div class="success-msg" id="topic-success" style="display:none">✅ Mavzu qo'shildi!</div>
+      </div>
+      <div class="card">
+        <h3>Mavjud mavzular</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ikonka</th><th>Nomi</th><th>ID</th><th>Tartib</th><th>Amal</th></tr></thead>
+            <tbody id="topics-table"><tr><td colspan="5" class="loading">Yuklanmoqda...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -307,11 +344,62 @@ function showPanel() {
 }
 
 function goAdminTab(tab) {
-  ['stats','questions','levels','users'].forEach(t => {
+  ['stats','topics','questions','levels','users'].forEach(t => {
     document.getElementById('atab-'+t).classList.toggle('active', t===tab);
     document.getElementById('acontent-'+t).style.display = t===tab ? 'block' : 'none';
   });
   if(tab==='users') loadUsers();
+  if(tab==='topics') loadTopics();
+}
+
+// TOPICS
+async function loadTopics() {
+  const tbody = document.getElementById('topics-table');
+  tbody.innerHTML = '<tr><td colspan="5" class="loading">Yuklanmoqda...</td></tr>';
+  try {
+    // Avval Firebase dan yuklash
+    const snap = await db.collection('topics').orderBy('order').get();
+    let topics = snap.empty ? 
+      [{id:'const',name:'Konstitutsiyaviy huquq',icon:'🏛️',order:1},
+       {id:'civil',name:'Fuqarolik huquqi',icon:'👥',order:2},
+       {id:'crim',name:'Jinoyat huquqi',icon:'⚖️',order:3},
+       {id:'labor',name:'Mehnat huquqi',icon:'💼',order:4}] :
+      snap.docs.map(d=>({id:d.id,...d.data()}));
+    
+    tbody.innerHTML = topics.map(t => `<tr>
+      <td style="font-size:20px">${t.icon||'📚'}</td>
+      <td>${t.name}</td>
+      <td><code>${t.id}</code></td>
+      <td>${t.order||'—'}</td>
+      <td><button class="btn-del" onclick="deleteTopic('${t.id}')">O'chirish</button></td>
+    </tr>`).join('');
+  } catch(e) { tbody.innerHTML='<tr><td colspan="5">Xatolik</td></tr>'; }
+}
+
+async function addTopic() {
+  const name = document.getElementById('topic-name').value.trim();
+  const icon = document.getElementById('topic-icon').value.trim();
+  const id = document.getElementById('topic-id').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+  const order = parseInt(document.getElementById('topic-order').value) || 99;
+  
+  if(!name || !icon || !id) { alert("Barcha maydonlarni to'ldiring!"); return; }
+  
+  try {
+    await db.collection('topics').doc(id).set({ name, icon, order, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    document.getElementById('topic-success').style.display='block';
+    setTimeout(()=>document.getElementById('topic-success').style.display='none', 3000);
+    document.getElementById('topic-name').value='';
+    document.getElementById('topic-icon').value='';
+    document.getElementById('topic-id').value='';
+    document.getElementById('topic-order').value='';
+    loadTopics();
+  } catch(e) { alert('Xatolik: '+e.message); }
+}
+
+async function deleteTopic(id) {
+  if(!confirm('Bu mavzuni o'chirishni tasdiqlaysizmi? Mavzu savollar bilan birgalikda o'chirilmaydi!')) return;
+  await db.collection('topics').doc(id).delete();
+  loadTopics();
 }
 
 // STATS
