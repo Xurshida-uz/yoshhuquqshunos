@@ -392,6 +392,7 @@
         <button class="btn-sec" onclick="goTab('home')">← Bosh sahifa</button>
         <button class="btn-pri" onclick="startQuiz()">↺ Qayta boshlash</button>
       </div>
+      <button class="btn-pri" id="retry-wrong-btn" onclick="retryWrongAnswers()" style="width:100%;margin-top:8px;background:var(--red);display:none">❌ Xatolar ustida ishlash</button>
       <button class="share-btn" onclick="shareResult()">📤 Telegramda ulashish</button>
     </div>
 
@@ -832,6 +833,15 @@ function showResult(){
     `;
   }
 
+  // Xatolar tugmasini ko'rsatish
+  const retryBtn = document.getElementById('retry-wrong-btn');
+  if(wrongAnswers.length > 0) {
+    retryBtn.style.display='block';
+    retryBtn.textContent=`❌ Xatolar ustida ishlash (${wrongAnswers.length} ta)`;
+  } else {
+    retryBtn.style.display='none';
+  }
+
   document.getElementById('tab-content-quiz').style.display='none';
   document.getElementById('tab-content-result').style.display='block';
 
@@ -1150,6 +1160,19 @@ function closeModal() {
 
 function logout() {
   auth.signOut().then(()=>{ currentUser=null; document.getElementById('user-avatar').style.display='none'; goTab('home'); });
+}
+
+function retryWrongAnswers() {
+  if(!wrongAnswers.length) return;
+  // Xato savollarni ALL_Q dan topib qayta test qilish
+  const wrongQs = wrongAnswers.map(w => ALL_Q.find(q => q.q === w.q)).filter(Boolean);
+  if(!wrongQs.length) return;
+  quiz = wrongQs.sort(()=>Math.random()-.5);
+  cur=0; score=0; answered=false; times=[]; wrongAnswers=[];
+  tStats={}; TOPICS.forEach(t=>{tStats[t.id]={c:0,t:0}});
+  document.getElementById('tab-content-result').style.display='none';
+  document.getElementById('tab-content-quiz').style.display='block';
+  renderQ();
 }
 
 function shareResult() {
