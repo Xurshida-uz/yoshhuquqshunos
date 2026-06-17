@@ -158,6 +158,17 @@
     .btn-row { display: flex; gap: 8px; }
     .btn-sec { flex: 1; padding: 11px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg2); font-size: 14px; color: var(--text); cursor: pointer; }
     .btn-pri { flex: 1; padding: 11px; background: var(--gold); color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; }
+    /* WRONG ANSWERS */
+    .wrong-analysis { margin-top: 16px; margin-bottom: 16px; }
+    .wrong-item { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+    .wrong-q { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 10px; line-height: 1.5; }
+    .wrong-answers-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .wrong-user-ans { font-size: 13px; padding: 8px 12px; background: var(--red-light); border-radius: var(--radius-sm); color: #791F1F; display: flex; align-items: center; gap: 6px; }
+    .wrong-correct-ans { font-size: 13px; padding: 8px 12px; background: var(--green-light); border-radius: var(--radius-sm); color: #27500A; display: flex; align-items: center; gap: 6px; }
+    .wrong-law { font-size: 12px; color: var(--text2); padding: 8px 12px; background: var(--bg); border-radius: var(--radius-sm); border: 1px solid var(--border); line-height: 1.5; }
+    .all-correct-box { background: var(--green-light); border: 1px solid var(--green); border-radius: var(--radius); padding: 20px; text-align: center; margin-top: 16px; margin-bottom: 16px; }
+    .all-correct-box .icon { font-size: 32px; margin-bottom: 8px; }
+    .all-correct-box p { font-size: 15px; font-weight: 500; color: #27500A; }
     .share-btn { width: 100%; padding: 11px; background: #0088cc; color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px; }
 
     /* PROFILE */
@@ -376,6 +387,7 @@
         <p class="section-title">Mavzular bo'yicha natija</p>
         <div id="topic-analysis"></div>
       </div>
+      <div class="wrong-analysis" id="wrong-analysis"></div>
       <div class="btn-row">
         <button class="btn-sec" onclick="goTab('home')">← Bosh sahifa</button>
         <button class="btn-pri" onclick="startQuiz()">↺ Qayta boshlash</button>
@@ -528,7 +540,7 @@ const ALL_Q = [
 ];
 
 const DIFF_MAP = {easy:"Boshlang'ich", medium:"O'rta", hard:"Murakkab"};
-let selTopics=[], selDiff='all', quiz=[], cur=0, score=0, answered=false, timerInt=null, tLeft=30, times=[], tStats={};
+let selTopics=[], selDiff='all', quiz=[], cur=0, score=0, answered=false, timerInt=null, tLeft=30, times=[], tStats={}, wrongAnswers=[];
 let currentUser=null, confirmResult=null, lastResult=null;
 
 // AUTH
@@ -724,7 +736,7 @@ function startQuiz(){
   let pool=ALL_Q.filter(q=>selTopics.includes(q.topic)&&(selDiff==='all'||q.diff===selDiff));
   if(!pool.length){alert("Bu tanlov uchun savol yo'q!");return}
   quiz=shuffle([...pool]).slice(0,Math.min(10,pool.length));
-  cur=0;score=0;answered=false;times=[];
+  cur=0;score=0;answered=false;times=[];wrongAnswers=[];
   tStats={};TOPICS.forEach(t=>{tStats[t.id]={c:0,t:0}});
   ['home','leaderboard','profile'].forEach(t=>{
     document.getElementById('tab-content-'+t).style.display='none';
@@ -761,6 +773,7 @@ function autoAnswer(){
   const q=quiz[cur];tStats[q.topic].t++;
   document.querySelectorAll('.opt').forEach(b=>b.disabled=true);
   document.getElementById('opt'+q.ans).classList.add('correct');
+  wrongAnswers.push({q: q.q, userAns: '⏰ Vaqt tugadi', correctAns: q.opts[q.ans], law: q.law, topic: q.topic});
   const ex=document.getElementById('explain');
   ex.innerHTML=`⏰ Vaqt tugadi. <span class="law">To'g'ri javob:</span> ${q.opts[q.ans]} — ${q.law}`;
   ex.style.display='block';document.getElementById('next-btn').style.display='block';
@@ -773,6 +786,7 @@ function pick(i){
   document.getElementById('opt'+i).classList.add(i===q.ans?'correct':'wrong');
   if(i!==q.ans)document.getElementById('opt'+q.ans).classList.add('correct');
   if(i===q.ans){score++;tStats[q.topic].c++;}
+  else { wrongAnswers.push({q: q.q, userAns: q.opts[i], correctAns: q.opts[q.ans], law: q.law, topic: q.topic}); }
   const ex=document.getElementById('explain');
   ex.innerHTML=`<span class="law">Huquqiy asos:</span> ${q.law}`;
   ex.style.display='block';document.getElementById('next-btn').style.display='block';
@@ -796,6 +810,27 @@ function showResult(){
     const s=tStats[t.id];const p=Math.round(s.c/s.t*100);
     return `<div class="topic-row"><span class="topic-row-name">${t.name}</span><div class="bar-wrap"><div class="bar-fill" style="width:${p}%"></div></div><span class="topic-row-pct">${p}%</span></div>`;
   }).join('');
+
+  // Xato javoblar tahlili
+  const wrongEl = document.getElementById('wrong-analysis');
+  if(wrongAnswers.length === 0) {
+    wrongEl.innerHTML = `<div class="all-correct-box"><div class="icon">🎉</div><p>Zo'r! Siz barcha savollarga to'g'ri javob berdingiz!</p></div>`;
+  } else {
+    const topicName = (topicId) => TOPICS.find(t=>t.id===topicId)?.name || '';
+    wrongEl.innerHTML = `
+      <p class="section-title">Xato javoblar tahlili (${wrongAnswers.length} ta)</p>
+      ${wrongAnswers.map((w,i) => `
+        <div class="wrong-item">
+          <div class="wrong-q">${i+1}. ${w.q}</div>
+          <div class="wrong-answers-row">
+            <div class="wrong-user-ans">❌ Sizning javobingiz: ${w.userAns}</div>
+            <div class="wrong-correct-ans">✅ To'g'ri javob: ${w.correctAns}</div>
+          </div>
+          <div class="wrong-law">📖 ${w.law}</div>
+        </div>
+      `).join('')}
+    `;
+  }
 
   document.getElementById('tab-content-quiz').style.display='none';
   document.getElementById('tab-content-result').style.display='block';
