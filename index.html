@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Yosh Huquqshunos</title>
-  <meta name="description" content="Yosh Huquqshunos — O'zbek huquqi bo'yicha test ilovasi"/>
-  <meta name="theme-color" content="#BA7517"/>
+  <title>Dunyo Quiz</title>
+  <meta name="description" content="Dunyo Quiz — Har kuni test yeching, bilimni oshiring!"/>
+  <meta name="theme-color" content="#2563EB"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.png"/>
 
@@ -16,31 +16,31 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --gold: #BA7517;
-      --gold-dark: #854F0B;
-      --gold-darker: #633806;
-      --gold-light: #FAEEDA;
-      --gold-mid: #EF9F27;
-      --green: #639922;
-      --green-light: #EAF3DE;
-      --red: #E24B4A;
-      --red-light: #FCEBEB;
+      --gold: #2563EB;
+      --gold-dark: #1D4ED8;
+      --gold-darker: #1E3A8A;
+      --gold-light: #EFF6FF;
+      --gold-mid: #3B82F6;
+      --green: #16A34A;
+      --green-light: #DCFCE7;
+      --red: #DC2626;
+      --red-light: #FEE2E2;
       --bg: #ffffff;
-      --bg2: #faf8f4;
-      --bg3: #f3efe6;
-      --border: rgba(186,117,23,0.15);
-      --border2: rgba(186,117,23,0.3);
-      --text: #1a1507;
-      --text2: #7a6030;
-      --radius: 12px;
+      --bg2: #F8FAFC;
+      --bg3: #EFF6FF;
+      --border: rgba(37,99,235,0.12);
+      --border2: rgba(37,99,235,0.25);
+      --text: #0F172A;
+      --text2: #475569;
+      --radius: 14px;
       --radius-sm: 8px;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #1a1507; --bg2: #231e0a; --bg3: #2e2710;
-        --border: rgba(239,159,39,0.15); --border2: rgba(239,159,39,0.3);
-        --text: #f5e9cc; --text2: #c49a45;
-        --gold-light: #412402; --green-light: #173404; --red-light: #501313;
+        --bg: #0F172A; --bg2: #1E293B; --bg3: #1E3A5F;
+        --border: rgba(59,130,246,0.15); --border2: rgba(59,130,246,0.3);
+        --text: #F1F5F9; --text2: #94A3B8;
+        --gold-light: #1E3A5F; --green-light: #14532D; --red-light: #7F1D1D;
       }
     }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
@@ -97,6 +97,26 @@
     .tab.active { background: var(--gold); color: white; font-weight: 500; }
 
     /* HOME */
+    /* SECTIONS */
+    .section-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: all .2s; text-decoration: none; }
+    .section-card:hover { border-color: var(--gold); box-shadow: 0 2px 12px rgba(37,99,235,0.1); transform: translateY(-1px); }
+    .section-card.coming-soon { opacity: 0.65; cursor: default; }
+    .section-card.coming-soon:hover { transform: none; box-shadow: none; border-color: var(--border); }
+    .section-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+    .section-icon-active { background: var(--gold-light); }
+    .section-icon-soon { background: var(--bg3); }
+    .section-info { flex: 1; }
+    .section-name { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+    .section-desc { font-size: 13px; color: var(--text2); }
+    .section-badge { font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 500; flex-shrink: 0; }
+    .badge-active { background: var(--green-light); color: var(--green); }
+    .badge-soon { background: var(--bg3); color: var(--text2); }
+    .section-arrow { font-size: 16px; color: var(--text2); flex-shrink: 0; }
+
+    /* Coming soon toast */
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 99px; font-size: 14px; z-index: 300; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
+    .toast.show { opacity: 1; }
+
     .topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
     .topic-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; text-align: left; transition: all .15s; }
     .topic-card:hover { border-color: var(--border2); }
@@ -263,18 +283,18 @@
 
 <!-- SPLASH SCREEN -->
 <div id="splash">
-  <div class="splash-logo">⚖️</div>
-  <div class="splash-title">Yosh Huquqshunos</div>
-  <div class="splash-sub">O'zbek huquqi bo'yicha test</div>
-  <div class="splash-motto">"Yosh huquqshunos —<br>kelajak himoyachisi!"</div>
+  <div class="splash-logo">🌍</div>
+  <div class="splash-title">Dunyo Quiz</div>
+  <div class="splash-sub">Bilimlar olami</div>
+  <div class="splash-motto">"Har kuni test yeching,<br>bilimni oshiring!"</div>
   <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
 </div>
 
 <header>
-  <span style="font-size:22px">⚖️</span>
+  <span style="font-size:22px">🌍</span>
   <div class="header-titles">
-    <h1>Yosh Huquqshunos</h1>
-    <p>O'zbek huquqi bo'yicha test</p>
+    <h1>Dunyo Quiz</h1>
+    <p>Har kuni test yeching, bilimni oshiring!</p>
   </div>
   <div class="header-right">
     <div class="user-avatar" id="user-avatar" onclick="goTab('profile')" style="display:none">?</div>
@@ -330,7 +350,7 @@
   <!-- MAIN APP -->
   <div id="s-app" class="screen">
     <div class="tabs">
-      <button class="tab active" onclick="goTab('home')" id="tab-home">🏠 Test</button>
+      <button class="tab active" onclick="goTab('home')" id="tab-home">🏠 Bosh sahifa</button>
       <button class="tab" onclick="goTab('courses')" id="tab-courses">🎓 Darajalar</button>
       <button class="tab" onclick="goTab('leaderboard')" id="tab-leaderboard">🏆 Reyting</button>
       <button class="tab" onclick="goTab('profile')" id="tab-profile">👤 Profil</button>
@@ -338,17 +358,30 @@
 
     <!-- HOME TAB -->
     <div id="tab-content-home">
-      <p class="section-title">Mavzu tanlang</p>
-      <div class="topic-grid" id="topic-grid"></div>
-      <div class="divider"></div>
-      <p class="section-title">Qiyinlik darajasi</p>
-      <div class="diff-row">
-        <button class="diff-btn active" data-d="all" onclick="setDiff(this)">Barchasi</button>
-        <button class="diff-btn" data-d="easy" onclick="setDiff(this)">Boshlang'ich</button>
-        <button class="diff-btn" data-d="medium" onclick="setDiff(this)">O'rta</button>
-        <button class="diff-btn" data-d="hard" onclick="setDiff(this)">Murakkab</button>
+      <!-- Bosh sahifa: bo'limlar -->
+      <div id="home-sections-view">
+        <div style="margin-bottom:20px">
+          <h2 style="font-size:20px;font-weight:600;color:var(--text);margin-bottom:4px">Salom! 👋</h2>
+          <p style="font-size:14px;color:var(--text2)">Qaysi bo'limda test topshirmoqchisiz?</p>
+        </div>
+        <div id="sections-grid"></div>
       </div>
-      <button class="start-btn" id="start-btn" onclick="startQuiz()" disabled>Mavzu tanlang</button>
+
+      <!-- Yosh Huquqshunos ichki sahifasi -->
+      <div id="home-quiz-view" style="display:none">
+        <button onclick="backToSections()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--gold);font-size:14px;cursor:pointer;margin-bottom:16px;padding:0">← Orqaga</button>
+        <p class="section-title">Mavzu tanlang</p>
+        <div class="topic-grid" id="topic-grid"></div>
+        <div class="divider"></div>
+        <p class="section-title">Qiyinlik darajasi</p>
+        <div class="diff-row">
+          <button class="diff-btn active" data-d="all" onclick="setDiff(this)">Barchasi</button>
+          <button class="diff-btn" data-d="easy" onclick="setDiff(this)">Boshlang'ich</button>
+          <button class="diff-btn" data-d="medium" onclick="setDiff(this)">O'rta</button>
+          <button class="diff-btn" data-d="hard" onclick="setDiff(this)">Murakkab</button>
+        </div>
+        <button class="start-btn" id="start-btn" onclick="startQuiz()" disabled>Mavzu tanlang</button>
+      </div>
     </div>
 
     <!-- QUIZ -->
@@ -482,6 +515,8 @@
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <div id="install-banner">
   <span>📲 Ilovani o'rnating</span>
   <button class="inst-btn" onclick="doInstall()">O'rnatish</button>
@@ -558,7 +593,7 @@ async function showApp() {
   document.getElementById('s-auth').classList.remove('active');
   document.getElementById('s-app').classList.add('active');
   await loadTopicsFromDB();
-  initTopics();
+  initSections();
 }
 
 function skipAuth() {
@@ -694,9 +729,58 @@ function goTab(tab) {
   });
   document.getElementById('tab-content-quiz').style.display='none';
   document.getElementById('tab-content-result').style.display='none';
+  if(tab==='home') {
+    document.getElementById('home-sections-view').style.display='block';
+    document.getElementById('home-quiz-view').style.display='none';
+    initSections();
+  }
   if(tab==='leaderboard') loadLeaderboard('score');
   if(tab==='profile') renderProfile();
   if(tab==='courses') renderCourses();
+}
+
+const SECTIONS = [
+  { id: 'huquq', name: 'Yosh Huquqshunos', desc: "O'zbek huquqi bo'yicha testlar", icon: '⚖️', active: true },
+  { id: 'abiturient', name: 'Abituriyent testlari', desc: 'DTM va fanlar bo'yicha tayyorgarlik', icon: '🎓', active: false },
+  { id: 'english', name: 'Ingliz tili', desc: 'Grammar, vocabulary, reading', icon: '🇬🇧', active: false },
+  { id: 'geo', name: 'Geografiya', desc: 'Dunyo mamlakatlari va poytaxtlar', icon: '🌍', active: false },
+  { id: 'mantiq', name: 'Mantiqiy testlar', desc: 'IQ va mantiqiy fikrlash', icon: '🧠', active: false },
+];
+
+function initSections() {
+  const grid = document.getElementById('sections-grid');
+  if(!grid) return;
+  grid.innerHTML = SECTIONS.map(s => `
+    <div class="section-card ${s.active?'':'coming-soon'}" onclick="${s.active?'openSection(''+s.id+'')':'showToast()'}">
+      <div class="section-icon ${s.active?'section-icon-active':'section-icon-soon'}">${s.icon}</div>
+      <div class="section-info">
+        <div class="section-name">${s.name}</div>
+        <div class="section-desc">${s.desc}</div>
+      </div>
+      <span class="section-badge ${s.active?'badge-active':'badge-soon'}">${s.active?'Faol':'Tez orada'}</span>
+      ${s.active?'<span class="section-arrow">→</span>':''}
+    </div>
+  `).join('');
+}
+
+function openSection(id) {
+  if(id === 'huquq') {
+    document.getElementById('home-sections-view').style.display='none';
+    document.getElementById('home-quiz-view').style.display='block';
+    initTopics();
+  }
+}
+
+function backToSections() {
+  document.getElementById('home-quiz-view').style.display='none';
+  document.getElementById('home-sections-view').style.display='block';
+}
+
+function showToast() {
+  const toast = document.getElementById('toast');
+  toast.textContent = "🚀 Tez orada qo'shiladi!";
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 2500);
 }
 
 // TOPICS
