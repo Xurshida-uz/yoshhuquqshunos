@@ -301,7 +301,7 @@
         </div>
         <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Masalan: ⚡QuizChampion yoki 🌍Geografchi</p>
         <div class="err-msg" id="name-error"></div>
-        <button class="btn-main" onclick="saveName()">Boshlash →</button>
+        <button class="btn-main" onclick="saveName(currentUser || auth.currentUser)">Boshlash →</button>
       </div>
     </div>
   </div>
@@ -765,42 +765,22 @@ function clearLR() {
 
 // ==================== FIREBASE AUTH ====================
 let autoSaveInProgress = false;
-let authInitialized = false; // Birinchi marta auth tekshirilganini bilish uchun
 
 auth.onAuthStateChanged(async user => {
-  const prevUser = currentUser;
-  currentUser = user;
-  const av = document.getElementById('user-avatar');
+  // currentUser ni faqat null bo'lsa yangilaymiz
+  // OTP dan keyin set qilingan user ni o'chirmaymiz
+  if (user) {
+    currentUser = user;
+  } else if (!currentUser) {
+    currentUser = null;
+  }
+  // Agar currentUser allaqachon set bo'lgan bo'lsa — o'zgartirmaymiz
 
+  const av = document.getElementById('user-avatar');
   if (user) {
     if (av) { av.style.display = 'flex'; av.textContent = user.phoneNumber ? user.phoneNumber.slice(-2) : '👤'; }
-    
-    // Auto-save faqat:
-    // 1. Avval login yo'q edi (prevUser === null)
-    // 2. lastResult bor va saqlanmagan
-    // 3. Duplicate save bo'lmayapti
-    const shouldAutoSave = prevUser === null && 
-                           lastResult && 
-                           !lastResult.savedToDb && 
-                           !autoSaveInProgress;
-
-    if (shouldAutoSave) {
-      autoSaveInProgress = true;
-      try {
-        await saveResult(null, null, true);
-        clearLR();
-        showToast('✅ Natijangiz saqlandi!');
-      } catch(e) {
-        console.log('Auto-save error:', e);
-      } finally {
-        autoSaveInProgress = false;
-      }
-    }
-
-    // Auth screen ochiq bo'lsa yop
-    if (document.getElementById('s-auth').classList.contains('active')) {
-      showApp();
-    }
+    // onAuthStateChanged da auto-save qilmaymiz
+    // Bu verifyOTP da amalga oshiriladi
   } else {
     if (av) av.style.display = 'none';
   }
@@ -877,10 +857,38 @@ function verifyOTP() {
   btn.disabled = true; btn.textContent = 'Tekshirilmoqda...';
   confirmResult.confirm(code)
     .then(async result => {
-      currentUser = result.user;
-      const doc = await db.collection('users').doc(currentUser.uid).get();
-      if (doc.exists && doc.data().name) { showApp(); }
-      else {
+      // 1. user ni to'g'ridan olish - onAuthStateChanged ga tayanmaymiz
+      const user = result.user;
+      currentUser = user;
+      console.log('[OTP success]', user.uid);
+
+      // 2. Guest natijani saqlash (agar bor bo'lsa)
+      if (lastResult && !lastResult.savedToDb && !autoSaveInProgress) {
+        autoSaveInProgress = true;
+        try {
+          console.log('[saving guest result for]', user.uid);
+          await saveResultForUser(user, lastResult);
+          clearLR();
+          showToast('✅ Natijangiz saqlandi!');
+        } catch(e) {
+          console.error('[guest save error]', e.code, e.message);
+        } finally {
+          autoSaveInProgress = false;
+        }
+      }
+
+      // 3. Foydalanuvchi nomi bormi tekshirish
+      try {
+        const doc = await db.collection('users').doc(user.uid).get();
+        if (doc.exists && doc.data().name) {
+          showApp();
+        } else {
+          document.getElementById('auth-otp-view').style.display = 'none';
+          document.getElementById('auth-name-view').style.display = 'block';
+          setTimeout(initEmojiGrid, 100);
+        }
+      } catch(e) {
+        console.error('[verifyOTP DB error]', e.code, e.message);
         document.getElementById('auth-otp-view').style.display = 'none';
         document.getElementById('auth-name-view').style.display = 'block';
         setTimeout(initEmojiGrid, 100);
@@ -925,6 +933,7 @@ async function saveName() {
       name,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
+    currentUser = user;
     showApp();
   } catch (e) {
     console.error('[saveName error]', e.code, e.message);
@@ -1240,6 +1249,37 @@ function shareResult() {
 }
 
 // ==================== FIRESTORE ====================
+// User ni to'g'ridan qabul qiluvchi helper
+async function saveResultForUser(user, lr) {
+  console.log('[saving guest result for]', user.uid);
+  await db.collection('results').add({
+    uid: user.uid,
+    pct: lr.pct,
+    avg: lr.avg,
+    cat: lr.catId || '',
+    total: lr.total,
+    correct: lr.score,
+    date: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  const userRef = db.collection('users').doc(user.uid);
+  const userDoc = await userRef.get();
+  if (!userDoc.exists || (userDoc.data().bestPct || 0) < lr.pct) {
+    await userRef.set({
+      bestPct: lr.pct,
+      bestAvg: lr.avg,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    const name = userDoc.exists && userDoc.data().name ? userDoc.data().name : '???';
+    await db.collection('leaderboard').doc(user.uid).set({
+      name,
+      bestPct: lr.pct,
+      bestAvg: lr.avg,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  }
+  if (lr) lr.savedToDb = true;
+}
+
 async function saveResult(pct, avg, fromLastResult = false) {
   try {
     // lastResult dan yoki hozirgi o'yindan ma'lumot olish
@@ -1385,7 +1425,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: savename-fix-6");
+console.log("DUNYO QUIZ version: otp-flow-fix-8");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
