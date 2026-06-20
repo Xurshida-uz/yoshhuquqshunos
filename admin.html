@@ -108,6 +108,7 @@
   <main>
     <div class="tabs">
       <button class="tab active" onclick="goAdminTab('stats')" id="atab-stats">📊 Statistika</button>
+      <button class="tab" onclick="goAdminTab('sections')" id="atab-sections">🏠 Bo'limlar</button>
       <button class="tab" onclick="goAdminTab('topics')" id="atab-topics">📚 Mavzular</button>
       <button class="tab" onclick="goAdminTab('questions')" id="atab-questions">📝 Savollar</button>
       <button class="tab" onclick="goAdminTab('levels')" id="atab-levels">🔒 Darajalar</button>
@@ -127,6 +128,55 @@
           <table>
             <thead><tr><th>Foydalanuvchi</th><th>Natija</th><th>Vaqt</th><th>Sana</th></tr></thead>
             <tbody id="recent-results"><tr><td colspan="4" class="loading">Yuklanmoqda...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTIONS -->
+    <div id="acontent-sections" style="display:none">
+      <div class="card">
+        <h3>Yangi bo'lim qo'shish</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Bo'lim nomi</label>
+            <input class="form-input" id="sec-name" placeholder="Masalan: Matematika"/>
+          </div>
+          <div class="form-group">
+            <label>Emoji ikonka</label>
+            <input class="form-input" id="sec-icon" placeholder="Masalan: 📐" maxlength="4"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tavsif</label>
+          <input class="form-input" id="sec-desc" placeholder="Qisqa tavsif"/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Bo'lim ID (lotin)</label>
+            <input class="form-input" id="sec-id" placeholder="Masalan: math"/>
+          </div>
+          <div class="form-group">
+            <label>Tartib raqami</label>
+            <input class="form-input" id="sec-order" type="number" placeholder="1, 2, 3..."/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Holati</label>
+          <select class="form-input" id="sec-active">
+            <option value="false">Tez orada (nofaol)</option>
+            <option value="true">Faol</option>
+          </select>
+        </div>
+        <button class="btn-add" onclick="addSection()">+ Bo'lim qo'shish</button>
+        <div class="success-msg" id="sec-success" style="display:none">✅ Bo'lim qo'shildi!</div>
+      </div>
+      <div class="card">
+        <h3>Mavjud bo'limlar</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ikonka</th><th>Nomi</th><th>Tavsif</th><th>Holati</th><th>Amal</th></tr></thead>
+            <tbody id="sections-table"><tr><td colspan="5" class="loading">Yuklanmoqda...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -344,12 +394,72 @@ function showPanel() {
 }
 
 function goAdminTab(tab) {
-  ['stats','topics','questions','levels','users'].forEach(t => {
+  ['stats','sections','topics','questions','levels','users'].forEach(t => {
     document.getElementById('atab-'+t).classList.toggle('active', t===tab);
     document.getElementById('acontent-'+t).style.display = t===tab ? 'block' : 'none';
   });
   if(tab==='users') loadUsers();
   if(tab==='topics') loadTopics();
+  if(tab==='sections') loadSections();
+}
+
+// SECTIONS
+const DEFAULT_SECTIONS = [
+  { id: 'huquq', name: 'Yosh Huquqshunos', desc: "O'zbek huquqi bo'yicha testlar", icon: '⚖️', active: true, order: 1 },
+  { id: 'abiturient', name: 'Abituriyent testlari', desc: "DTM va fanlar bo'yicha tayyorgarlik", icon: '🎓', active: false, order: 2 },
+  { id: 'english', name: 'Ingliz tili', desc: 'Grammar, vocabulary, reading', icon: '🇬🇧', active: false, order: 3 },
+  { id: 'geo', name: 'Geografiya', desc: 'Dunyo mamlakatlari va poytaxtlar', icon: '🌍', active: false, order: 4 },
+  { id: 'mantiq', name: 'Mantiqiy testlar', desc: 'IQ va mantiqiy fikrlash', icon: '🧠', active: false, order: 5 },
+];
+
+async function loadSections() {
+  const tbody = document.getElementById('sections-table');
+  tbody.innerHTML = '<tr><td colspan="5" class="loading">Yuklanmoqda...</td></tr>';
+  try {
+    const snap = await db.collection('sections').orderBy('order').get();
+    let sections = snap.empty ? DEFAULT_SECTIONS : snap.docs.map(d=>({id:d.id,...d.data()}));
+    tbody.innerHTML = sections.map(s => `<tr>
+      <td style="font-size:20px">${s.icon||'📚'}</td>
+      <td><b>${s.name}</b></td>
+      <td style="color:var(--text2);font-size:12px">${s.desc||''}</td>
+      <td>
+        <label class="toggle" style="display:inline-flex">
+          <input type="checkbox" ${s.active?'checked':''} onchange="toggleSection('${s.id}',this.checked)"/>
+          <span class="toggle-slider"></span>
+        </label>
+      </td>
+      <td><button class="btn-del" onclick="deleteSection('${s.id}')">O'chirish</button></td>
+    </tr>`).join('');
+  } catch(e) { tbody.innerHTML='<tr><td colspan="5">Xatolik</td></tr>'; }
+}
+
+async function addSection() {
+  const name = document.getElementById('sec-name').value.trim();
+  const icon = document.getElementById('sec-icon').value.trim();
+  const desc = document.getElementById('sec-desc').value.trim();
+  const id = document.getElementById('sec-id').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+  const order = parseInt(document.getElementById('sec-order').value) || 99;
+  const active = document.getElementById('sec-active').value === 'true';
+  if(!name||!icon||!id) { alert("Majburiy maydonlarni to'ldiring!"); return; }
+  try {
+    await db.collection('sections').doc(id).set({ name, icon, desc, order, active, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    document.getElementById('sec-success').style.display='block';
+    setTimeout(()=>document.getElementById('sec-success').style.display='none', 3000);
+    ['sec-name','sec-icon','sec-desc','sec-id','sec-order'].forEach(i=>document.getElementById(i).value='');
+    loadSections();
+  } catch(e) { alert('Xatolik: '+e.message); }
+}
+
+async function toggleSection(id, active) {
+  try {
+    await db.collection('sections').doc(id).set({ active }, { merge: true });
+  } catch(e) { alert('Xatolik: '+e.message); }
+}
+
+async function deleteSection(id) {
+  if(!confirm("Bu bo'limni o'chirishni tasdiqlaysizmi?")) return;
+  await db.collection('sections').doc(id).delete();
+  loadSections();
 }
 
 // TOPICS
