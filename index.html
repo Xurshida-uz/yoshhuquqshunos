@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dunyo Quiz</title>
-  <meta name="description" content="Dunyo Quiz — Bilimingizni sinang!"/>
+  <title>Dunyo Quiz — Onlayn testlar | Bayroqlar, Geografiya, Tarix</title>
+  <meta name="description" content="Dunyo Quiz — O'zbek tilida onlayn testlar. Bayroqlar, Geografiya, Tarix, Hayvonlar, Mantiq, Ingliz tili. Bepul o'ynang!"/>
   <meta name="theme-color" content="#6C63FF"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.png"/>
@@ -103,7 +103,7 @@
     .btn-main{width:100%;padding:14px;background:linear-gradient(135deg,var(--purple),var(--pink));color:white;border:none;border-radius:var(--radius-xs);font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s}
     .btn-main:active{opacity:.9}
     .btn-main:disabled{opacity:.5;cursor:not-allowed}
-    .btn-skip{width:100%;padding:11px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-xs);font-size:14px;color:var(--text2);cursor:pointer}
+    .btn-skip{width:100%;padding:11px;background:var(--bg);border:1.5px solid var(--purple);border-radius:var(--radius-xs);font-size:14px;color:var(--purple);cursor:pointer;font-weight:600}
     .err-msg{font-size:13px;color:var(--red);margin-bottom:10px;display:none}
 
     /* EMOJI PICKER */
@@ -231,6 +231,7 @@
 
     /* UTILITIES */
     .loading{text-align:center;padding:32px;color:var(--text2);font-size:14px}
+    @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
     .divider{height:1px;background:var(--border);margin:20px 0}
   </style>
 </head>
@@ -249,7 +250,7 @@
 </div>
 
 <!-- AUTH SCREEN -->
-<div id="s-auth" class="screen active">
+<div id="s-auth" class="screen">
   <div style="max-width:640px;margin:0 auto;padding:24px 16px">
     <div style="text-align:center;margin-bottom:24px;padding-top:20px">
       <div style="font-size:36px;font-weight:800;color:var(--purple)">DUNYO <span style="color:var(--pink)">QUIZ</span></div>
@@ -269,7 +270,7 @@
         <div class="err-msg" id="auth-error"></div>
         <button class="btn-main" id="send-otp-btn" onclick="sendOTP()">SMS yuborish →</button>
         <div style="margin-top:12px">
-          <button class="btn-skip" onclick="skipAuth()">Kirmasdan davom etish</button>
+          <button class="btn-skip" onclick="skipAuth()">▶ Kirmasdan o'ynash</button>
         </div>
       </div>
     </div>
@@ -307,7 +308,7 @@
 </div>
 
 <!-- MAIN APP -->
-<div id="s-app" class="screen">
+<div id="s-app" class="screen active">
 
   <!-- HOME TAB -->
   <div id="tab-home" style="display:none">
@@ -317,7 +318,7 @@
     </div>
     <main>
       <div class="hero">
-        <div class="hero-badge">🔥 YANGI SAVOLAR QO'SHILDI</div>
+        <div class="hero-badge">🔥 YANGI SAVOLLAR QO'SHILDI</div>
         <h2>Bilimingizni sinang!</h2>
         <p>Har kuni yangi testlar. Reyting tizimi. O'z natijangizni do'stlar bilan ulashing.</p>
         <button class="hero-btn" onclick="scrollToCats()">Testni boshlash →</button>
@@ -749,16 +750,30 @@ let currentCat = null, lastResult = null;
 // ==================== FIREBASE AUTH ====================
 auth.onAuthStateChanged(user => {
   currentUser = user;
+  const av = document.getElementById('user-avatar');
   if (user) {
-    const av = document.getElementById('user-avatar');
     if (av) { av.style.display = 'flex'; av.textContent = user.phoneNumber ? user.phoneNumber.slice(-2) : '👤'; }
-    showApp();
+    // Auth screen ochiq bo'lsa yop
+    if (document.getElementById('s-auth').classList.contains('active')) {
+      showApp();
+    }
+  } else {
+    if (av) av.style.display = 'none';
   }
 });
+
+// App ni darhol ishga tushir
+initApp();
 
 async function showApp() {
   document.getElementById('s-auth').classList.remove('active');
   document.getElementById('s-app').classList.add('active');
+  renderCategories();
+  goTab('home');
+}
+
+async function initApp() {
+  // App ni darhol ko'rsat, auth keyinroq
   renderCategories();
   goTab('home');
 }
@@ -881,13 +896,22 @@ function goTab(tab) {
 function renderCategories() {
   const grid = document.getElementById('cat-grid');
   if (!grid) return;
+  const seoNames = {
+    bayroqlar: 'Bayroqlar testi',
+    geografiya: 'Geografiya testi',
+    tarix: 'Tarix testi',
+    hayvonlar: 'Hayvonlar testi',
+    mantiq: 'Mantiqiy savollar',
+    ingliz: 'Ingliz tili testi'
+  };
   grid.innerHTML = CATEGORIES.map(c => {
     const badge = c.badge === 'new' ? '<span class="cat-badge badge-new">YANGI</span>' :
                   c.badge === 'hot' ? '<span class="cat-badge badge-hot">🔥 HOT</span>' : '';
+    const displayName = seoNames[c.id] || c.name;
     return `<div class="cat-card" style="border-color:${c.color}20" onclick="startCategory('${c.id}')">
       ${badge}
       <span class="cat-emoji">${c.emoji}</span>
-      <div class="cat-name">${c.name}</div>
+      <div class="cat-name">${displayName}</div>
       <div class="cat-count" style="color:${c.color}">${c.count} ta savol</div>
     </div>`;
   }).join('');
@@ -919,6 +943,7 @@ function startCategory(catId) {
   if (!pool.length) { showToast("Bu kategoriyada savollar yo'q hali!"); return; }
   quiz = shuffle([...pool]);
   cur = 0; score = 0; answered = false; times = []; wrongAnswers = [];
+  // Guest sifatida o'ynash mumkin - login kerak emas
   document.getElementById('cat-label').textContent = currentCat.emoji + ' ' + currentCat.name;
   document.querySelector('.nav-bar').style.display = 'none';
   ['home','leaderboard','profile'].forEach(t => { const el = document.getElementById('tab-' + t); if (el) el.style.display = 'none'; });
@@ -1062,7 +1087,12 @@ function showResult() {
   document.getElementById('tab-result').style.display = 'block';
   document.querySelector('.nav-bar').style.display = 'flex';
 
-  if (currentUser) saveResult(pct, avg);
+  if (currentUser) {
+    saveResult(pct, avg);
+  } else {
+    // Guest uchun login taklifi ko'rsat
+    setTimeout(() => showLoginPrompt(pct), 800);
+  }
 }
 
 function retryWrong() {
@@ -1080,6 +1110,37 @@ function retryWrong() {
 function restartQuiz() {
   if (!currentCat) return;
   startCategory(currentCat.id);
+}
+
+function showLoginPrompt(pct) {
+  const existing = document.getElementById('login-prompt-banner');
+  if (existing) existing.remove();
+  const banner = document.createElement('div');
+  banner.id = 'login-prompt-banner';
+  banner.style.cssText = `
+    position:fixed;bottom:80px;left:16px;right:16px;
+    background:linear-gradient(135deg,var(--purple),var(--pink));
+    color:white;border-radius:16px;padding:16px 20px;
+    box-shadow:0 8px 32px rgba(108,99,255,0.3);
+    z-index:200;animation:slideUp .3s ease
+  `;
+  banner.innerHTML = `
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">🏆 ${pct}% natija!</div>
+    <div style="font-size:13px;opacity:.9;margin-bottom:12px">Natijangizni saqlash va reytingda ko'rinish uchun kiring</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="openAuthFromPrompt()" style="flex:1;padding:9px;background:white;color:var(--purple);border:none;border-radius:99px;font-size:13px;font-weight:700;cursor:pointer">Kirish →</button>
+      <button onclick="document.getElementById('login-prompt-banner').remove()" style="padding:9px 14px;background:rgba(255,255,255,.2);color:white;border:none;border-radius:99px;font-size:13px;cursor:pointer">Keyinroq</button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+  setTimeout(() => { if(banner.parentNode) banner.remove(); }, 8000);
+}
+
+function openAuthFromPrompt() {
+  const banner = document.getElementById('login-prompt-banner');
+  if (banner) banner.remove();
+  document.getElementById('s-app').classList.remove('active');
+  document.getElementById('s-auth').classList.add('active');
 }
 
 function shareResult() {
@@ -1157,11 +1218,12 @@ function showLB(type, el) {
 async function renderProfile() {
   const el = document.getElementById('profile-content');
   if (!currentUser) {
-    el.innerHTML = `<div class="login-prompt">
-      <span class="auth-emoji">👤</span>
-      <h3>Kirmagansiz</h3>
-      <p>Natijalarni saqlash va reytingda ko'rinish uchun kiring!</p>
-      <button class="btn-main" onclick="document.getElementById('s-app').classList.remove('active');document.getElementById('s-auth').classList.add('active')">Kirish →</button>
+    el.innerHTML = `<div class="login-prompt" style="padding:40px 20px;text-align:center">
+      <div style="font-size:56px;margin-bottom:16px">👤</div>
+      <h3 style="font-size:20px;font-weight:700;margin-bottom:8px">Hali kirmagansiz</h3>
+      <p style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6">Natijalarni saqlash va reytingda ko'rinish uchun kiring. Bu bepul!</p>
+      <button class="btn-main" onclick="openAuthFromPrompt()" style="max-width:280px;margin:0 auto">Kirish →</button>
+      <p style="font-size:12px;color:var(--text3);margin-top:16px">Telefon raqam orqali — 30 sekund</p>
     </div>`; return;
   }
   const doc = await db.collection('users').doc(currentUser.uid).get();
