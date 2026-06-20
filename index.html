@@ -880,7 +880,7 @@ function goTab(tab) {
 // ==================== CATEGORIES ====================
 function renderCategories() {
   const grid = document.getElementById('cat-grid');
-  if (!grid || grid.innerHTML) return;
+  if (!grid) return;
   grid.innerHTML = CATEGORIES.map(c => {
     const badge = c.badge === 'new' ? '<span class="cat-badge badge-new">YANGI</span>' :
                   c.badge === 'hot' ? '<span class="cat-badge badge-hot">🔥 HOT</span>' : '';
