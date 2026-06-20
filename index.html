@@ -926,7 +926,10 @@ async function saveName() {
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
     showApp();
-  } catch (e) { showErr('name-error', 'Xatolik'); }
+  } catch (e) {
+    console.error('[saveName error]', e.code, e.message);
+    showErr('name-error', `Xatolik: ${e.code || e.message || 'Qayta urining'}`);
+  }
 }
 function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.style.display = 'block'; }
 
@@ -1382,7 +1385,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: recaptcha-fix-5");
+console.log("DUNYO QUIZ version: savename-fix-6");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
