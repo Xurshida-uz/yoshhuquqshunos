@@ -765,21 +765,29 @@ function clearLR() {
 
 // ==================== FIREBASE AUTH ====================
 let autoSaveInProgress = false;
+let authInitialized = false; // Birinchi marta auth tekshirilganini bilish uchun
 
 auth.onAuthStateChanged(async user => {
-  const wasGuest = !currentUser;
+  const prevUser = currentUser;
   currentUser = user;
   const av = document.getElementById('user-avatar');
+
   if (user) {
     if (av) { av.style.display = 'flex'; av.textContent = user.phoneNumber ? user.phoneNumber.slice(-2) : '👤'; }
     
-    // Login bo'lgandan keyin saqlanmagan natijani saqlash
-    // Duplicate save oldini olish: autoSaveInProgress flag
-    if (wasGuest && lastResult && !lastResult.savedToDb && !autoSaveInProgress) {
+    // Auto-save faqat:
+    // 1. Avval login yo'q edi (prevUser === null)
+    // 2. lastResult bor va saqlanmagan
+    // 3. Duplicate save bo'lmayapti
+    const shouldAutoSave = prevUser === null && 
+                           lastResult && 
+                           !lastResult.savedToDb && 
+                           !autoSaveInProgress;
+
+    if (shouldAutoSave) {
       autoSaveInProgress = true;
       try {
-        await saveResult(lastResult.pct, lastResult.avg, true);
-        // savedToDb = true, localStorage tozalash
+        await saveResult(null, null, true);
         clearLR();
         showToast('✅ Natijangiz saqlandi!');
       } catch(e) {
@@ -1200,10 +1208,11 @@ async function saveResult(pct, avg, fromLastResult = false) {
     const saveTotal = fromLastResult ? lastResult.total : quiz.length;
     const saveCorrect = fromLastResult ? lastResult.score : score;
 
-    // 1. Natijani saqlash (private)
+    // 1. Natijani saqlash (private) — phone YO'Q
     await db.collection('results').add({
       uid: currentUser.uid,
-      pct: savePct, avg: saveAvg,
+      pct: savePct,
+      avg: saveAvg,
       cat: saveCatId,
       total: saveTotal,
       correct: saveCorrect,
@@ -1223,6 +1232,7 @@ async function saveResult(pct, avg, fromLastResult = false) {
       // 3. Public leaderboard koleksiyasini yangilash (phone YO'Q)
       const lbRef = db.collection('leaderboard').doc(currentUser.uid);
       const name = userDoc.exists && userDoc.data().name ? userDoc.data().name : '???';
+      // leaderboard: faqat public ma'lumotlar — phone HECH QACHON
       await lbRef.set({
         name,
         bestPct: savePct,
