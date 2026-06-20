@@ -593,6 +593,7 @@ async function showApp() {
   document.getElementById('s-auth').classList.remove('active');
   document.getElementById('s-app').classList.add('active');
   await loadTopicsFromDB();
+  await loadSectionsFromDB();
   initSections();
 }
 
@@ -739,13 +740,22 @@ function goTab(tab) {
   if(tab==='courses') renderCourses();
 }
 
-const SECTIONS = [
-  { id: 'huquq', name: 'Yosh Huquqshunos', desc: "O'zbek huquqi bo'yicha testlar", icon: '⚖️', active: true },
-  { id: 'abiturient', name: 'Abituriyent testlari', desc: "DTM va fanlar bo'yicha tayyorgarlik", icon: '🎓', active: false },
-  { id: 'english', name: 'Ingliz tili', desc: 'Grammar, vocabulary, reading', icon: '🇬🇧', active: false },
-  { id: 'geo', name: 'Geografiya', desc: 'Dunyo mamlakatlari va poytaxtlar', icon: '🌍', active: false },
-  { id: 'mantiq', name: 'Mantiqiy testlar', desc: 'IQ va mantiqiy fikrlash', icon: '🧠', active: false },
+let SECTIONS = [
+  { id: 'huquq', name: 'Yosh Huquqshunos', desc: "O'zbek huquqi bo'yicha testlar", icon: '⚖️', active: true, order: 1 },
+  { id: 'abiturient', name: 'Abituriyent testlari', desc: "DTM va fanlar bo'yicha tayyorgarlik", icon: '🎓', active: false, order: 2 },
+  { id: 'english', name: 'Ingliz tili', desc: 'Grammar, vocabulary, reading', icon: '🇬🇧', active: false, order: 3 },
+  { id: 'geo', name: 'Geografiya', desc: 'Dunyo mamlakatlari va poytaxtlar', icon: '🌍', active: false, order: 4 },
+  { id: 'mantiq', name: 'Mantiqiy testlar', desc: 'IQ va mantiqiy fikrlash', icon: '🧠', active: false, order: 5 },
 ];
+
+async function loadSectionsFromDB() {
+  try {
+    const snap = await db.collection('sections').orderBy('order').get();
+    if(!snap.empty) {
+      SECTIONS = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+    }
+  } catch(e) { console.log('Sections default ishlatiladi'); }
+}
 
 function initSections() {
   const grid = document.getElementById('sections-grid');
