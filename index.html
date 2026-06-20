@@ -836,31 +836,37 @@ async function sendOTP() {
   btn.disabled = true; btn.textContent = 'Yuborilmoqda...';
   hideErr('auth-error');
   try {
-    if (window.recaptchaVerifier) { window.recaptchaVerifier.clear(); window.recaptchaVerifier = null; }
+    // Avvalgi verifier ni tozalash
+    if (window.recaptchaVerifier) {
+      try { window.recaptchaVerifier.clear(); } catch(e) {}
+      window.recaptchaVerifier = null;
+    }
     document.getElementById('recaptcha-container').innerHTML = '';
+
+    // Invisible reCAPTCHA — foydalanuvchi hech narsa bosmaydi
     window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-      size: 'normal',
-      callback: async (r) => {
-        const result = await auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier);
-        confirmResult = result;
-        document.getElementById('otp-hint').textContent = fullPhone + ' ga SMS yuborildi';
-        document.getElementById('auth-phone-view').style.display = 'none';
-        document.getElementById('auth-otp-view').style.display = 'block';
-        btn.disabled = false; btn.textContent = 'SMS yuborish →';
-      },
+      size: 'invisible',
       'expired-callback': () => {
-        showErr('auth-error', '⏰ reCAPTCHA muddati tugadi. Qayta bosing.');
-        btn.disabled = false; btn.textContent = 'SMS yuborish →';
         window.recaptchaVerifier = null;
       }
     });
-    await window.recaptchaVerifier.render();
+
+    // To'g'ridan SMS yuborish
+    const result = await auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier);
+    confirmResult = result;
+    document.getElementById('otp-hint').textContent = fullPhone + ' ga SMS yuborildi';
+    document.getElementById('auth-phone-view').style.display = 'none';
+    document.getElementById('auth-otp-view').style.display = 'block';
+    btn.disabled = false; btn.textContent = 'SMS yuborish →';
+
   } catch (e) {
     const errMsg = firebaseErrMsg(e);
     showErr('auth-error', errMsg);
     console.error('[Auth Error]', e.code, e.message);
     btn.disabled = false; btn.textContent = 'SMS yuborish →';
+    try { window.recaptchaVerifier.clear(); } catch(ex) {}
     window.recaptchaVerifier = null;
+    document.getElementById('recaptcha-container').innerHTML = '';
   }
 }
 
@@ -1376,7 +1382,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: auth-errors-4");
+console.log("DUNYO QUIZ version: recaptcha-fix-5");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
