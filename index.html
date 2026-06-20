@@ -129,7 +129,7 @@
 
     .quiz-body{padding:0 16px 24px;max-width:640px;margin:0 auto}
     .q-cat-chip{display:inline-flex;align-items:center;gap:6px;background:var(--purple-light);color:var(--purple);font-size:12px;font-weight:600;padding:5px 12px;border-radius:99px;margin-bottom:16px}
-    .q-text{font-size:18px;font-weight:700;line-height:1.5;margin-bottom:20px;color:var(--text)}
+    .q-text{font-size:18px;font-weight:700;line-height:1.5;margin-bottom:20px;color:var(--text);min-height:60px}
     .q-img{width:100%;border-radius:var(--radius-sm);margin-bottom:16px;max-height:200px;object-fit:cover}
 
     /* OPTIONS */
@@ -936,7 +936,20 @@ function renderQ() {
   document.getElementById('q-chip').innerHTML = currentCat ? `${currentCat.emoji} ${currentCat.name}` : '';
   // Bayroq emojini katta ko'rsatish
   if (q.flag) {
-    document.getElementById('q-text').innerHTML = `Bu qaysi davlatning bayrog'i?<div style="font-size:80px;text-align:center;margin:16px 0;line-height:1">${q.flag}</div>`;
+    document.getElementById('q-text').innerHTML = `
+      <div style="font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">Bu qaysi davlatning bayrog'i?</div>
+      <div style="
+        display:flex;align-items:center;justify-content:center;
+        background:linear-gradient(135deg,#f8f9ff,#eef0ff);
+        border-radius:20px;
+        border:2px solid rgba(108,99,255,0.12);
+        padding:28px 20px;
+        margin-bottom:8px;
+        box-shadow:0 4px 20px rgba(108,99,255,0.1)
+      ">
+        <span style="font-size:120px;line-height:1;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.15))">${q.flag}</span>
+      </div>
+    `; 
   } else {
     document.getElementById('q-text').textContent = q.q;
   }
