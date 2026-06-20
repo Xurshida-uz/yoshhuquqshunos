@@ -746,13 +746,49 @@ let currentUser = null, confirmResult = null;
 let quiz = [], cur = 0, score = 0, answered = false;
 let timerInt = null, tLeft = 20, times = [], wrongAnswers = [];
 let currentCat = null, lastResult = null;
+const LR_KEY = 'dunyoquiz_lastResult';
+
+function saveLR(data) {
+  lastResult = data;
+  try { localStorage.setItem(LR_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function loadLR() {
+  try {
+    const raw = localStorage.getItem(LR_KEY);
+    if (raw) lastResult = JSON.parse(raw);
+  } catch(e) {}
+}
+function clearLR() {
+  lastResult = null;
+  try { localStorage.removeItem(LR_KEY); } catch(e) {}
+}
 
 // ==================== FIREBASE AUTH ====================
-auth.onAuthStateChanged(user => {
+let autoSaveInProgress = false;
+
+auth.onAuthStateChanged(async user => {
+  const wasGuest = !currentUser;
   currentUser = user;
   const av = document.getElementById('user-avatar');
   if (user) {
     if (av) { av.style.display = 'flex'; av.textContent = user.phoneNumber ? user.phoneNumber.slice(-2) : '👤'; }
+    
+    // Login bo'lgandan keyin saqlanmagan natijani saqlash
+    // Duplicate save oldini olish: autoSaveInProgress flag
+    if (wasGuest && lastResult && !lastResult.savedToDb && !autoSaveInProgress) {
+      autoSaveInProgress = true;
+      try {
+        await saveResult(lastResult.pct, lastResult.avg, true);
+        // savedToDb = true, localStorage tozalash
+        clearLR();
+        showToast('✅ Natijangiz saqlandi!');
+      } catch(e) {
+        console.log('Auto-save error:', e);
+      } finally {
+        autoSaveInProgress = false;
+      }
+    }
+
     // Auth screen ochiq bo'lsa yop
     if (document.getElementById('s-auth').classList.contains('active')) {
       showApp();
@@ -773,7 +809,7 @@ async function showApp() {
 }
 
 async function initApp() {
-  // App ni darhol ko'rsat, auth keyinroq
+  loadLR(); // localStorage dan lastResult ni yukla
   renderCategories();
   goTab('home');
 }
@@ -1047,7 +1083,12 @@ function showResult() {
   clearInterval(timerInt);
   const pct = Math.round(score / quiz.length * 100);
   const avg = times.length ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
-  lastResult = { pct, score, total: quiz.length, avg, cat: currentCat?.name || '' };
+  saveLR({ 
+    pct, score, total: quiz.length, avg, 
+    cat: currentCat?.name || '',
+    catId: currentCat?.id || '',
+    savedToDb: false
+  });
 
   const emojis = pct >= 90 ? '🏆' : pct >= 70 ? '🌟' : pct >= 50 ? '💪' : '📚';
   const msgs = pct >= 90 ? 'Ajoyib! Siz haqqoniy bilimdonziz!' :
@@ -1150,36 +1191,42 @@ function shareResult() {
 }
 
 // ==================== FIRESTORE ====================
-async function saveResult(pct, avg) {
+async function saveResult(pct, avg, fromLastResult = false) {
   try {
+    // lastResult dan yoki hozirgi o'yindan ma'lumot olish
+    const savePct = fromLastResult ? lastResult.pct : pct;
+    const saveAvg = fromLastResult ? lastResult.avg : avg;
+    const saveCatId = fromLastResult ? lastResult.catId : (currentCat?.id || '');
+    const saveTotal = fromLastResult ? lastResult.total : quiz.length;
+    const saveCorrect = fromLastResult ? lastResult.score : score;
+
     // 1. Natijani saqlash (private)
     await db.collection('results').add({
       uid: currentUser.uid,
-      pct, avg,
-      cat: currentCat?.id || '',
-      total: quiz.length,
-      correct: score,
+      pct: savePct, avg: saveAvg,
+      cat: saveCatId,
+      total: saveTotal,
+      correct: saveCorrect,
       date: firebase.firestore.FieldValue.serverTimestamp()
     });
 
     // 2. Private users koleksiyasini yangilash
     const userRef = db.collection('users').doc(currentUser.uid);
     const userDoc = await userRef.get();
-    if (!userDoc.exists || (userDoc.data().bestPct || 0) < pct) {
+    if (!userDoc.exists || (userDoc.data().bestPct || 0) < savePct) {
       await userRef.set({
-        bestPct: pct,
-        bestAvg: avg,
+        bestPct: savePct,
+        bestAvg: saveAvg,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
 
       // 3. Public leaderboard koleksiyasini yangilash (phone YO'Q)
       const lbRef = db.collection('leaderboard').doc(currentUser.uid);
-      const lbDoc = await lbRef.get();
       const name = userDoc.exists && userDoc.data().name ? userDoc.data().name : '???';
       await lbRef.set({
         name,
-        bestPct: pct,
-        bestAvg: avg,
+        bestPct: savePct,
+        bestAvg: saveAvg,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
     }
