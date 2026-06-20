@@ -388,7 +388,7 @@
     </div>
     <div class="lb-wrap">
       <div class="lb-tabs">
-        <button class="lb-tab active" onclick="showLB('score',this)">🏆 Yuqori ball</button>
+        <button class="lb-tab active" onclick="showLB('score',this)">🏆 Eng yuqori ball</button>
         <button class="lb-tab" onclick="showLB('speed',this)">⚡ Eng tez</button>
       </div>
       <div id="lb-list"><div class="loading">Yuklanmoqda...</div></div>
@@ -1344,6 +1344,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
+console.log("DUNYO QUIZ version: typo-fix-2");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
