@@ -751,7 +751,7 @@ function initSections() {
   const grid = document.getElementById('sections-grid');
   if(!grid) return;
   grid.innerHTML = SECTIONS.map(s => `
-    <div class="section-card ${s.active?'':'coming-soon'}" onclick="${s.active?'openSection(''+s.id+'')':'showToast()'}">
+    <div class="section-card ${s.active?'':'coming-soon'}" onclick="${s.active?`openSection('${s.id}')`:' showToast()'}">
       <div class="section-icon ${s.active?'section-icon-active':'section-icon-soon'}">${s.icon}</div>
       <div class="section-info">
         <div class="section-name">${s.name}</div>
