@@ -926,23 +926,23 @@ function showErr(id, msg) { const el = document.getElementById(id); el.textConte
 
 function firebaseErrMsg(e) {
   const codes = {
-    'auth/invalid-phone-number':     '📵 Telefon raqam noto'g'ri formatda. (+998XXXXXXXXX)',
-    'auth/too-many-requests':        '⏳ Juda ko'p urinish. Biroz kuting va qayta urining.',
-    'auth/quota-exceeded':           '📵 SMS kvota tugadi. Iltimos, keyinroq urinib ko'ring.',
-    'auth/invalid-verification-code':'🔐 Kod noto'g'ri. Qayta tekshiring.',
-    'auth/code-expired':             '⏰ Kod muddati tugadi. Yangi SMS so'rang.',
-    'auth/missing-phone-number':     '📱 Telefon raqam kiritilmagan.',
-    'auth/invalid-app-credential':   '🔒 reCAPTCHA xatosi. Sahifani yangilab qayta urinib ko'ring.',
-    'auth/captcha-check-failed':     '🤖 reCAPTCHA tasdiqlanmadi. Qayta urinib ko'ring.',
-    'auth/network-request-failed':   '🌐 Internet aloqasi yo'q. Ulanishni tekshiring.',
-    'auth/billing-not-enabled':      '💳 SMS xizmati hozircha ishlamayapti. Keyinroq urinib ko'ring.',
-    'auth/operation-not-allowed':    '🚫 Telefon orqali kirish vaqtincha o'chirilgan.',
-    'auth/user-disabled':            '🚫 Bu foydalanuvchi bloklangan.',
-    'auth/session-expired':          '⏰ Sessiya muddati tugadi. Qayta boshlang.',
+    'auth/invalid-phone-number':     "📵 Telefon raqam noto'g'ri formatda. (+998XXXXXXXXX)",
+    'auth/too-many-requests':        "⏳ Juda ko'p urinish. Biroz kuting va qayta urining.",
+    'auth/quota-exceeded':           "📵 SMS kvota tugadi. Iltimos, keyinroq urinib ko'ring.",
+    'auth/invalid-verification-code':"🔐 Kod noto'g'ri. Qayta tekshiring.",
+    'auth/code-expired':             "⏰ Kod muddati tugadi. Yangi SMS so'rang.",
+    'auth/missing-phone-number':     "📱 Telefon raqam kiritilmagan.",
+    'auth/invalid-app-credential':   "🔒 reCAPTCHA xatosi. Sahifani yangilab qayta urinib ko'ring.",
+    'auth/captcha-check-failed':     "🤖 reCAPTCHA tasdiqlanmadi. Qayta urinib ko'ring.",
+    'auth/network-request-failed':   "🌐 Internet aloqasi yo'q. Ulanishni tekshiring.",
+    'auth/billing-not-enabled':      "💳 SMS xizmati hozircha ishlamayapti. Keyinroq urinib ko'ring.",
+    'auth/operation-not-allowed':    "🚫 Telefon orqali kirish vaqtincha o'chirilgan.",
+    'auth/user-disabled':            "🚫 Bu foydalanuvchi bloklangan.",
+    'auth/session-expired':          "⏰ Sessiya muddati tugadi. Qayta boshlang.",
   };
   const uz = codes[e.code];
   if (uz) return uz;
-  return `❌ Xatolik (${e.code || 'nomalum'}): ${e.message || 'Qayta urinib ko'ring.'}`;
+  return `❌ Xatolik (${e.code || 'nomalum'}): ${e.message || "Qayta urinib ko'ring."}`;
 }
 function hideErr(id) { document.getElementById(id).style.display = 'none'; }
 
@@ -1376,7 +1376,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: auth-errors-3");
+console.log("DUNYO QUIZ version: auth-errors-4");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
