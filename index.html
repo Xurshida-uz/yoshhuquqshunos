@@ -437,6 +437,223 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+
+// ==================== BAYROQLAR QUIZ DATA ====================
+const FLAGS = [
+  { flag: '🇦🇫', name: 'Afgʻoniston', wrong: ['Pokiston', 'Eron'] },
+  { flag: '🇦🇱', name: 'Albaniya', wrong: ['Serbiya', 'Xorvatiya'] },
+  { flag: '🇩🇿', name: 'Jazoir', wrong: ['Marokash', 'Tunis'] },
+  { flag: '🇦🇩', name: 'Andorra', wrong: ['Monako', 'San-Marino'] },
+  { flag: '🇦🇴', name: 'Angola', wrong: ['Mozambik', 'Zambiya'] },
+  { flag: '🇦🇬', name: 'Antigua va Barbuda', wrong: ['Barbados', 'Yamayka'] },
+  { flag: '🇦🇷', name: 'Argentina', wrong: ['Chili', 'Urugvay'] },
+  { flag: '🇦🇲', name: 'Armaniston', wrong: ['Gruziya', 'Ozarbayjon'] },
+  { flag: '🇦🇺', name: 'Avstraliya', wrong: ['Yangi Zelandiya', 'Papua Yangi Gvineya'] },
+  { flag: '🇦🇹', name: 'Avstriya', wrong: ['Germaniya', 'Shveytsariya'] },
+  { flag: '🇦🇿', name: 'Ozarbayjon', wrong: ['Armaniston', 'Gruziya'] },
+  { flag: '🇧🇸', name: 'Bagama orollari', wrong: ['Kuba', 'Yamayka'] },
+  { flag: '🇧🇭', name: 'Bahrayn', wrong: ['Qatar', 'Quvayt'] },
+  { flag: '🇧🇩', name: 'Bangladesh', wrong: ['Hindiston', 'Shri-Lanka'] },
+  { flag: '🇧🇧', name: 'Barbados', wrong: ['Antigua', 'Trinidad'] },
+  { flag: '🇧🇾', name: 'Belarus', wrong: ['Ukraina', 'Latviya'] },
+  { flag: '🇧🇪', name: 'Belgiya', wrong: ['Niderlandiya', 'Lyuksemburg'] },
+  { flag: '🇧🇿', name: 'Beliz', wrong: ['Gvatemala', 'Gonduras'] },
+  { flag: '🇧🇯', name: 'Benin', wrong: ['Togo', 'Gana'] },
+  { flag: '🇧🇹', name: 'Butan', wrong: ['Nepal', 'Hindiston'] },
+  { flag: '🇧🇴', name: 'Boliviya', wrong: ['Peru', 'Paragvay'] },
+  { flag: '🇧🇦', name: 'Bosniya va Gersegovina', wrong: ['Xorvatiya', 'Serbiya'] },
+  { flag: '🇧🇼', name: 'Botsvana', wrong: ['Zimbabve', 'Namibiya'] },
+  { flag: '🇧🇷', name: 'Braziliya', wrong: ['Argentina', 'Kolumbiya'] },
+  { flag: '🇧🇳', name: 'Bruney', wrong: ['Malayziya', 'Singapur'] },
+  { flag: '🇧🇬', name: 'Bolgariya', wrong: ['Ruminiya', 'Serbiya'] },
+  { flag: '🇧🇫', name: 'Burkina-Faso', wrong: ['Mali', 'Niger'] },
+  { flag: '🇧🇮', name: 'Burundi', wrong: ['Ruanda', 'Uganda'] },
+  { flag: '🇨🇻', name: 'Kabo-Verde', wrong: ['Senegal', 'Gambiya'] },
+  { flag: '🇰🇭', name: 'Kambodja', wrong: ['Tailand', 'Vyetnam'] },
+  { flag: '🇨🇲', name: 'Kamerun', wrong: ['Nigeri', 'Gabon'] },
+  { flag: '🇨🇦', name: 'Kanada', wrong: ['AQSh', 'Avstraliya'] },
+  { flag: '🇨🇫', name: 'Markaziy Afrika Respublikasi', wrong: ['Kamerun', 'Kongo'] },
+  { flag: '🇹🇩', name: 'Chad', wrong: ['Niger', 'Sudan'] },
+  { flag: '🇨🇱', name: 'Chili', wrong: ['Argentina', 'Peru'] },
+  { flag: '🇨🇳', name: 'Xitoy', wrong: ['Yaponiya', 'Koreya'] },
+  { flag: '🇨🇴', name: 'Kolumbiya', wrong: ['Venesuela', 'Ekvador'] },
+  { flag: '🇰🇲', name: 'Komor orollari', wrong: ['Madagaskar', 'Mavrikiy'] },
+  { flag: '🇨🇬', name: 'Kongo Respublikasi', wrong: ['Kamerun', 'Gabon'] },
+  { flag: '🇨🇩', name: 'Kongo DRespublikasi', wrong: ['Angola', 'Zambiya'] },
+  { flag: '🇨🇷', name: 'Kosta-Rika', wrong: ['Panama', 'Nikaragua'] },
+  { flag: '🇭🇷', name: 'Xorvatiya', wrong: ['Serbiya', 'Sloveniya'] },
+  { flag: '🇨🇺', name: 'Kuba', wrong: ['Yamayka', 'Gaiti'] },
+  { flag: '🇨🇾', name: 'Kipr', wrong: ['Gretsiya', 'Malta'] },
+  { flag: '🇨🇿', name: 'Chexiya', wrong: ['Slovakiya', 'Avstriya'] },
+  { flag: '🇩🇰', name: 'Daniya', wrong: ['Norvegiya', 'Shvetsiya'] },
+  { flag: '🇩🇯', name: 'Jibuti', wrong: ['Somali', 'Efiopiya'] },
+  { flag: '🇩🇲', name: 'Dominika', wrong: ['Dominikan Respublikasi', 'Sent-Lusiya'] },
+  { flag: '🇩🇴', name: 'Dominikan Respublikasi', wrong: ['Kuba', 'Gaiti'] },
+  { flag: '🇪🇨', name: 'Ekvador', wrong: ['Peru', 'Kolumbiya'] },
+  { flag: '🇪🇬', name: 'Misr', wrong: ['Liviya', 'Sudan'] },
+  { flag: '🇸🇻', name: 'Salvador', wrong: ['Gvatemala', 'Gonduras'] },
+  { flag: '🇬🇶', name: 'Ekvatorial Gvineya', wrong: ['Gabon', 'Kamerun'] },
+  { flag: '🇪🇷', name: 'Eritreya', wrong: ['Efiopiya', 'Jibuti'] },
+  { flag: '🇪🇪', name: 'Estoniya', wrong: ['Latviya', 'Litva'] },
+  { flag: '🇸🇿', name: 'Esvatini', wrong: ['Lesoto', 'Mozambik'] },
+  { flag: '🇪🇹', name: 'Efiopiya', wrong: ['Kenyа', 'Sudan'] },
+  { flag: '🇫🇯', name: 'Fiji', wrong: ['Samoa', 'Tonga'] },
+  { flag: '🇫🇮', name: 'Finlandiya', wrong: ['Shvetsiya', 'Estoniya'] },
+  { flag: '🇫🇷', name: 'Fransiya', wrong: ['Belgiya', 'Italiya'] },
+  { flag: '🇬🇦', name: 'Gabon', wrong: ['Kamerun', 'Kongo'] },
+  { flag: '🇬🇲', name: 'Gambiya', wrong: ['Senegal', 'Gvineya'] },
+  { flag: '🇬🇪', name: 'Gruziya', wrong: ['Armaniston', 'Ozarbayjon'] },
+  { flag: '🇩🇪', name: 'Germaniya', wrong: ['Avstriya', 'Shveytsariya'] },
+  { flag: '🇬🇭', name: 'Gana', wrong: ['Kot-d'Ivuar', 'Togo'] },
+  { flag: '🇬🇷', name: 'Gretsiya', wrong: ['Kipr', 'Albaniya'] },
+  { flag: '🇬🇩', name: 'Grenada', wrong: ['Barbados', 'Sent-Vinsent'] },
+  { flag: '🇬🇹', name: 'Gvatemala', wrong: ['Meksika', 'Belize'] },
+  { flag: '🇬🇳', name: 'Gvineya', wrong: ['Senegal', 'Syerra-Leone'] },
+  { flag: '🇬🇼', name: 'Gvineya-Bisau', wrong: ['Gvineya', 'Senegal'] },
+  { flag: '🇬🇾', name: 'Gayana', wrong: ['Surinam', 'Venesuela'] },
+  { flag: '🇭🇹', name: 'Gaiti', wrong: ['Kuba', 'Dominikan R.'] },
+  { flag: '🇭🇳', name: 'Gonduras', wrong: ['Nikaragua', 'Salvador'] },
+  { flag: '🇭🇺', name: 'Vengriya', wrong: ['Chexiya', 'Avstriya'] },
+  { flag: '🇮🇸', name: 'Islandiya', wrong: ['Norvegiya', 'Irlandiya'] },
+  { flag: '🇮🇳', name: 'Hindiston', wrong: ['Pokiston', 'Bangladesh'] },
+  { flag: '🇮🇩', name: 'Indoneziya', wrong: ['Malayziya', 'Filippin'] },
+  { flag: '🇮🇷', name: 'Eron', wrong: ['Iroq', 'Afgʻoniston'] },
+  { flag: '🇮🇶', name: 'Iroq', wrong: ['Eron', 'Suriya'] },
+  { flag: '🇮🇪', name: 'Irlandiya', wrong: ['Britaniya', 'Islandiya'] },
+  { flag: '🇮🇱', name: 'Isroil', wrong: ['Iordaniya', 'Livan'] },
+  { flag: '🇮🇹', name: 'Italiya', wrong: ['Ispaniya', 'Fransiya'] },
+  { flag: '🇯🇲', name: 'Yamayka', wrong: ['Kuba', 'Trinid va Tobago'] },
+  { flag: '🇯🇵', name: 'Yaponiya', wrong: ['Koreya', 'Xitoy'] },
+  { flag: '🇯🇴', name: 'Iordaniya', wrong: ['Isroil', 'Suriya'] },
+  { flag: '🇰🇿', name: 'Qozogʻiston', wrong: ['Oʻzbekiston', 'Qirgʻiziston'] },
+  { flag: '🇰🇪', name: 'Keniya', wrong: ['Tanzaniya', 'Uganda'] },
+  { flag: '🇰🇮', name: 'Kiribati', wrong: ['Tuvalu', 'Nauru'] },
+  { flag: '🇰🇵', name: 'Shimoliy Koreya', wrong: ['Janubiy Koreya', 'Xitoy'] },
+  { flag: '🇰🇷', name: 'Janubiy Koreya', wrong: ['Yaponiya', 'Shimoliy Koreya'] },
+  { flag: '🇽🇰', name: 'Kosovo', wrong: ['Serbiya', 'Albaniya'] },
+  { flag: '🇰🇼', name: 'Quvayt', wrong: ['Qatar', 'Bahrayn'] },
+  { flag: '🇰🇬', name: 'Qirgʻiziston', wrong: ['Tojikiston', 'Qozogʻiston'] },
+  { flag: '🇱🇦', name: 'Laos', wrong: ['Tailand', 'Kambodja'] },
+  { flag: '🇱🇻', name: 'Latviya', wrong: ['Litva', 'Estoniya'] },
+  { flag: '🇱🇧', name: 'Livan', wrong: ['Suriya', 'Isroil'] },
+  { flag: '🇱🇸', name: 'Lesoto', wrong: ['Esvatini', 'Namibiya'] },
+  { flag: '🇱🇷', name: 'Liberiya', wrong: ['Syerra-Leone', 'Gvineya'] },
+  { flag: '🇱🇾', name: 'Liviya', wrong: ['Misr', 'Tunis'] },
+  { flag: '🇱🇮', name: 'Lixtenshteyn', wrong: ['Shveytsariya', 'Avstriya'] },
+  { flag: '🇱🇹', name: 'Litva', wrong: ['Latviya', 'Estoniya'] },
+  { flag: '🇱🇺', name: 'Lyuksemburg', wrong: ['Belgiya', 'Niderlandiya'] },
+  { flag: '🇲🇬', name: 'Madagaskar', wrong: ['Mozambik', 'Tanzaniya'] },
+  { flag: '🇲🇼', name: 'Malavi', wrong: ['Zambiya', 'Mozambik'] },
+  { flag: '🇲🇾', name: 'Malayziya', wrong: ['Indoneziya', 'Tailand'] },
+  { flag: '🇲🇻', name: 'Maldiv orollari', wrong: ['Shri-Lanka', 'Hindiston'] },
+  { flag: '🇲🇱', name: 'Mali', wrong: ['Niger', 'Burkina-Faso'] },
+  { flag: '🇲🇹', name: 'Malta', wrong: ['Kipr', 'Italiya'] },
+  { flag: '🇲🇭', name: 'Marshall orollari', wrong: ['Mikroneziya', 'Palau'] },
+  { flag: '🇲🇷', name: 'Mavritaniya', wrong: ['Marokash', 'Senegal'] },
+  { flag: '🇲🇺', name: 'Mavrikiy', wrong: ['Seyshel', 'Madagaskar'] },
+  { flag: '🇲🇽', name: 'Meksika', wrong: ['Gvatemala', 'Kolumbiya'] },
+  { flag: '🇫🇲', name: 'Mikroneziya', wrong: ['Palau', 'Marshall orollari'] },
+  { flag: '🇲🇩', name: 'Moldova', wrong: ['Ruminiya', 'Ukraina'] },
+  { flag: '🇲🇨', name: 'Monako', wrong: ['Andorra', 'San-Marino'] },
+  { flag: '🇲🇳', name: 'Mongʻoliya', wrong: ['Xitoy', 'Qozogʻiston'] },
+  { flag: '🇲🇪', name: 'Chernogoriya', wrong: ['Serbiya', 'Bosniya'] },
+  { flag: '🇲🇦', name: 'Marokash', wrong: ['Jazoir', 'Tunis'] },
+  { flag: '🇲🇿', name: 'Mozambik', wrong: ['Tanzaniya', 'Zimbabve'] },
+  { flag: '🇲🇲', name: 'Myanma', wrong: ['Tailand', 'Bangladesh'] },
+  { flag: '🇳🇦', name: 'Namibiya', wrong: ['Botsvana', 'Angola'] },
+  { flag: '🇳🇷', name: 'Nauru', wrong: ['Tuvalu', 'Kiribati'] },
+  { flag: '🇳🇵', name: 'Nepal', wrong: ['Butan', 'Hindiston'] },
+  { flag: '🇳🇱', name: 'Niderlandiya', wrong: ['Belgiya', 'Germaniya'] },
+  { flag: '🇳🇿', name: 'Yangi Zelandiya', wrong: ['Avstraliya', 'Fiji'] },
+  { flag: '🇳🇮', name: 'Nikaragua', wrong: ['Gonduras', 'Kosta-Rika'] },
+  { flag: '🇳🇪', name: 'Niger', wrong: ['Mali', 'Chad'] },
+  { flag: '🇳🇬', name: 'Nigeriya', wrong: ['Kamerun', 'Benin'] },
+  { flag: '🇲🇰', name: 'Shimoliy Makedoniya', wrong: ['Albaniya', 'Gretsiya'] },
+  { flag: '🇳🇴', name: 'Norvegiya', wrong: ['Shvetsiya', 'Daniya'] },
+  { flag: '🇴🇲', name: 'Ummon', wrong: ['Yaman', 'BAA'] },
+  { flag: '🇵🇰', name: 'Pokiston', wrong: ['Hindiston', 'Afgʻoniston'] },
+  { flag: '🇵🇼', name: 'Palau', wrong: ['Mikroneziya', 'Marshall orollari'] },
+  { flag: '🇵🇸', name: 'Falastin', wrong: ['Iordaniya', 'Isroil'] },
+  { flag: '🇵🇦', name: 'Panama', wrong: ['Kosta-Rika', 'Kolumbiya'] },
+  { flag: '🇵🇬', name: 'Papua Yangi Gvineya', wrong: ['Indoneziya', 'Fiji'] },
+  { flag: '🇵🇾', name: 'Paragvay', wrong: ['Urugvay', 'Boliviya'] },
+  { flag: '🇵🇪', name: 'Peru', wrong: ['Ekvador', 'Boliviya'] },
+  { flag: '🇵🇭', name: 'Filippin', wrong: ['Indoneziya', 'Malayziya'] },
+  { flag: '🇵🇱', name: 'Polsha', wrong: ['Chexiya', 'Germaniya'] },
+  { flag: '🇵🇹', name: 'Portugaliya', wrong: ['Ispaniya', 'Fransiya'] },
+  { flag: '🇶🇦', name: 'Qatar', wrong: ['Bahrayn', 'Quvayt'] },
+  { flag: '🇷🇴', name: 'Ruminiya', wrong: ['Moldova', 'Bolgariya'] },
+  { flag: '🇷🇺', name: 'Rossiya', wrong: ['Belarus', 'Ukraina'] },
+  { flag: '🇷🇼', name: 'Ruanda', wrong: ['Burundi', 'Uganda'] },
+  { flag: '🇰🇳', name: 'Sent-Kits va Nevis', wrong: ['Antigua', 'Dominika'] },
+  { flag: '🇱🇨', name: 'Sent-Lusiya', wrong: ['Dominika', 'Barbados'] },
+  { flag: '🇻🇨', name: 'Sent-Vinsent va Grenadinlar', wrong: ['Grenada', 'Barbados'] },
+  { flag: '🇼🇸', name: 'Samoa', wrong: ['Tonga', 'Fiji'] },
+  { flag: '🇸🇲', name: 'San-Marino', wrong: ['Monako', 'Andorra'] },
+  { flag: '🇸🇹', name: 'San-Tome va Prinsipi', wrong: ['Kabo-Verde', 'Komor'] },
+  { flag: '🇸🇦', name: 'Saudiya Arabistoni', wrong: ['BAA', 'Qatar'] },
+  { flag: '🇸🇳', name: 'Senegal', wrong: ['Gambiya', 'Gvineya'] },
+  { flag: '🇷🇸', name: 'Serbiya', wrong: ['Xorvatiya', 'Bosniya'] },
+  { flag: '🇸🇨', name: 'Seyshel', wrong: ['Mavrikiy', 'Madagaskar'] },
+  { flag: '🇸🇱', name: 'Syerra-Leone', wrong: ['Liberiya', 'Gvineya'] },
+  { flag: '🇸🇬', name: 'Singapur', wrong: ['Malayziya', 'Bruney'] },
+  { flag: '🇸🇰', name: 'Slovakiya', wrong: ['Chexiya', 'Vengriya'] },
+  { flag: '🇸🇮', name: 'Sloveniya', wrong: ['Xorvatiya', 'Avstriya'] },
+  { flag: '🇸🇧', name: 'Solomon orollari', wrong: ['Vanuatu', 'Papua Y.G.'] },
+  { flag: '🇸🇴', name: 'Somali', wrong: ['Efiopiya', 'Keniya'] },
+  { flag: '🇿🇦', name: 'Janubiy Afrika', wrong: ['Botsvana', 'Zimbabve'] },
+  { flag: '🇸🇸', name: 'Janubiy Sudan', wrong: ['Sudan', 'Efiopiya'] },
+  { flag: '🇪🇸', name: 'Ispaniya', wrong: ['Portugaliya', 'Fransiya'] },
+  { flag: '🇱🇰', name: 'Shri-Lanka', wrong: ['Maldiv', 'Hindiston'] },
+  { flag: '🇸🇩', name: 'Sudan', wrong: ['Misr', 'Janubiy Sudan'] },
+  { flag: '🇸🇷', name: 'Surinam', wrong: ['Gayana', 'Venesuela'] },
+  { flag: '🇸🇪', name: 'Shvetsiya', wrong: ['Norvegiya', 'Daniya'] },
+  { flag: '🇨🇭', name: 'Shveytsariya', wrong: ['Avstriya', 'Lixtenshteyn'] },
+  { flag: '🇸🇾', name: 'Suriya', wrong: ['Iroq', 'Livan'] },
+  { flag: '🇹🇼', name: 'Tayvan', wrong: ['Yaponiya', 'Xitoy'] },
+  { flag: '🇹🇯', name: 'Tojikiston', wrong: ['Oʻzbekiston', 'Qirgʻiziston'] },
+  { flag: '🇹🇿', name: 'Tanzaniya', wrong: ['Keniya', 'Mozambik'] },
+  { flag: '🇹🇭', name: 'Tailand', wrong: ['Kambodja', 'Myanma'] },
+  { flag: '🇹🇱', name: 'Sharqiy Timor', wrong: ['Indoneziya', 'Papua Y.G.'] },
+  { flag: '🇹🇬', name: 'Togo', wrong: ['Benin', 'Gana'] },
+  { flag: '🇹🇴', name: 'Tonga', wrong: ['Samoa', 'Fiji'] },
+  { flag: '🇹🇹', name: 'Trinidad va Tobago', wrong: ['Barbados', 'Yamayka'] },
+  { flag: '🇹🇳', name: 'Tunis', wrong: ['Liviya', 'Jazoir'] },
+  { flag: '🇹🇷', name: 'Turkiya', wrong: ['Ozarbayjon', 'Eron'] },
+  { flag: '🇹🇲', name: 'Turkmaniston', wrong: ['Oʻzbekiston', 'Qozogʻiston'] },
+  { flag: '🇹🇻', name: 'Tuvalu', wrong: ['Nauru', 'Kiribati'] },
+  { flag: '🇺🇬', name: 'Uganda', wrong: ['Ruanda', 'Keniya'] },
+  { flag: '🇺🇦', name: 'Ukraina', wrong: ['Moldova', 'Belarus'] },
+  { flag: '🇦🇪', name: 'Birlashgan Arab Amirliklari', wrong: ['Qatar', 'Saudiya Arabistoni'] },
+  { flag: '🇬🇧', name: 'Britaniya', wrong: ['Irlandiya', 'Niderlandiya'] },
+  { flag: '🇺🇸', name: 'AQSh', wrong: ['Kanada', 'Avstraliya'] },
+  { flag: '🇺🇾', name: 'Urugvay', wrong: ['Argentina', 'Paragvay'] },
+  { flag: '🇺🇿', name: 'Oʻzbekiston', wrong: ['Qozogʻiston', 'Tojikiston'] },
+  { flag: '🇻🇺', name: 'Vanuatu', wrong: ['Solomon orollari', 'Fiji'] },
+  { flag: '🇻🇦', name: 'Vatikan', wrong: ['San-Marino', 'Monako'] },
+  { flag: '🇻🇪', name: 'Venesuela', wrong: ['Kolumbiya', 'Gayana'] },
+  { flag: '🇻🇳', name: 'Vyetnam', wrong: ['Laos', 'Kambodja'] },
+  { flag: '🇾🇪', name: 'Yaman', wrong: ['Ummon', 'Saudiya Arabistoni'] },
+  { flag: '🇿🇲', name: 'Zambiya', wrong: ['Zimbabve', 'Malavi'] },
+  { flag: '🇿🇼', name: 'Zimbabve', wrong: ['Zambiya', 'Mozambik'] },
+];
+
+// Bayroqlar quizini yaratish funksiyasi
+function generateFlagQuiz(count = 10) {
+  const shuffled = shuffle([...FLAGS]).slice(0, count);
+  return shuffled.map(item => {
+    const opts = shuffle([item.name, item.wrong[0], item.wrong[1]]);
+    return {
+      q: `Bu qaysi davlatning bayrog'i?\n${item.flag}`,
+      flag: item.flag,
+      opts,
+      ans: opts.indexOf(item.name),
+      law: `Bu ${item.name} davlatining bayrog'i.`,
+      cat: 'geografiya'
+    };
+  });
+}
+
 // ==================== QUIZ DATA ====================
 // Har bir savol: { q, opts:[3ta], ans(0-2), law, cat, img(ixtiyoriy) }
 const QUIZ_DATA = {
@@ -458,11 +675,11 @@ const QUIZ_DATA = {
     { q: "Dunyo bo'yicha eng uzun daryo qaysi?", opts: ["Amazon", "Nil", "Yangtsze"], ans: 1, law: "Nil daryosi 6650 km uzunligi bilan dunyoning eng uzun daryosi hisoblanadi." },
     { q: "Osiyo va Yevropani ajratib turuvchi tog' tizmasi?", opts: ["Qoraqum", "Ural", "Hindukush"], ans: 1, law: "Ural tog' tizmasi Osiyo va Yevropani ajratib turuvchi tabiiy chegara hisoblanadi." },
     { q: "Dunyodagi eng katta cho'l qaysi?", opts: ["Saxara", "Gobi", "Qoraqum"], ans: 0, law: "Sahara cho'li 9,2 mln km² maydoni bilan dunyoning eng katta issiq cho'li hisoblanadi." },
-    { q: "Britaniya orollari qaysi okean tarkibiga kiradi?", opts: ["Atlantika", "Tinch", "Shimoliy Muz"], ans: 0, law: "Britaniya orollari Atlantika okeanining Shimoliy dengizida joylashgan." },
     { q: "Qaysi mamlakat aholisi soni bo'yicha dunyoda birinchi?", opts: ["Hindiston", "Xitoy", "AQSh"], ans: 0, law: "2023-yildan boshlab Hindiston aholisi (1,43 mlrd) Xitoyni ortda qoldirdi." },
     { q: "Dunyo bo'yicha eng baland tog' qaysi?", opts: ["K2", "Everest", "Kangchenjunga"], ans: 1, law: "Everest (8848 m) dengiz sathidan eng baland tog' cho'qqisi hisoblanadi." },
-    { q: "Qaysi davlat eng ko'p neft qazib chiqaradi?", opts: ["Rossiya", "Saudiya Arabistoni", "AQSh"], ans: 2, law: "AQSh hozirda kuniga 13 mln barrel neft qazib, dunyoda birinchi o'rinda turadi." },
     { q: "O'rta Osiyo mamlakatlar soni nechta?", opts: ["4", "5", "6"], ans: 1, law: "O'rta Osiyoda 5 ta davlat bor: O'zbekiston, Qozog'iston, Qirg'iziston, Tojikiston, Turkmaniston." },
+    { q: "Qaysi davlat eng ko'p neft qazib chiqaradi?", opts: ["Rossiya", "Saudiya Arabistoni", "AQSh"], ans: 2, law: "AQSh hozirda kuniga 13 mln barrel neft qazib, dunyoda birinchi o'rinda turadi." },
+    { q: "Dunyo bo'yicha eng kichik davlat qaysi?", opts: ["Monako", "Vatikan", "San-Marino"], ans: 1, law: "Vatikan 0,44 km² maydoni bilan dunyoning eng kichik mustaqil davlati hisoblanadi." },
   ],
   tarix: [
     { q: "Birinchi jahon urushi qachon boshlangan?", opts: ["1912", "1914", "1916"], ans: 1, law: "Birinchi jahon urushi 1914-yil 28-iyulda boshlangan va 1918-yil 11-noyabrda tugagan." },
@@ -515,7 +732,7 @@ const QUIZ_DATA = {
 };
 
 const CATEGORIES = [
-  { id: 'bayroqlar', name: 'Bayroqlar', emoji: '🚩', color: '#FF6B9D', bg: '#FFF0F6', count: 10, badge: 'hot' },
+  { id: 'bayroqlar', name: 'Bayroqlar', emoji: '🚩', color: '#FF6B9D', bg: '#FFF0F6', count: 195, badge: 'hot' },
   { id: 'geografiya', name: 'Geografiya', emoji: '🌍', color: '#3B82F6', bg: '#EFF6FF', count: 10, badge: 'new' },
   { id: 'tarix', name: 'Tarix', emoji: '📜', color: '#F59E0B', bg: '#FEF3C7', count: 10, badge: '' },
   { id: 'hayvonlar', name: 'Hayvonlar', emoji: '🦁', color: '#22C55E', bg: '#DCFCE7', count: 10, badge: 'new' },
@@ -684,6 +901,20 @@ function scrollToCats() {
 function startCategory(catId) {
   currentCat = CATEGORIES.find(c => c.id === catId);
   if (!currentCat) return;
+
+  // Bayroqlar uchun dinamik generator
+  if (catId === 'bayroqlar') {
+    quiz = generateFlagQuiz(10);
+    cur = 0; score = 0; answered = false; times = []; wrongAnswers = [];
+    document.getElementById('cat-label').textContent = currentCat.emoji + ' ' + currentCat.name;
+    document.querySelector('.nav-bar').style.display = 'none';
+    ['home','leaderboard','profile'].forEach(t => { const el = document.getElementById('tab-' + t); if (el) el.style.display = 'none'; });
+    document.getElementById('tab-result').style.display = 'none';
+    document.getElementById('tab-quiz').style.display = 'block';
+    renderQ();
+    return;
+  }
+
   const pool = QUIZ_DATA[catId] || [];
   if (!pool.length) { showToast("Bu kategoriyada savollar yo'q hali!"); return; }
   quiz = shuffle([...pool]);
@@ -703,7 +934,12 @@ function renderQ() {
   document.getElementById('q-label').textContent = `Savol ${cur + 1}/${total}`;
   document.getElementById('q-prog-fill').style.width = `${(cur / total) * 100}%`;
   document.getElementById('q-chip').innerHTML = currentCat ? `${currentCat.emoji} ${currentCat.name}` : '';
-  document.getElementById('q-text').textContent = q.q;
+  // Bayroq emojini katta ko'rsatish
+  if (q.flag) {
+    document.getElementById('q-text').innerHTML = `Bu qaysi davlatning bayrog'i?<div style="font-size:80px;text-align:center;margin:16px 0;line-height:1">${q.flag}</div>`;
+  } else {
+    document.getElementById('q-text').textContent = q.q;
+  }
   document.getElementById('q-opts').innerHTML = q.opts.map((o, i) =>
     `<button class="opt-btn" id="opt${i}" onclick="pick(${i})">
       <span class="opt-letter">${['A','B','C'][i]}</span>${o}
