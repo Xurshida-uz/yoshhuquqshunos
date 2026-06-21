@@ -745,7 +745,7 @@ const CATEGORIES = [
 let currentUser = null, confirmResult = null;
 let quiz = [], cur = 0, score = 0, answered = false;
 let timerInt = null, tLeft = 20, times = [], wrongAnswers = [];
-let currentCat = null, lastResult = null;
+let currentCat = null, lastResult = null, currentResult = null;
 const LR_KEY = 'dunyoquiz_lastResult';
 
 function saveLR(data) {
@@ -759,8 +759,10 @@ function loadLR() {
   } catch(e) {}
 }
 function clearLR() {
-  lastResult = null;
+  // localStorage ni tozalaymiz, lekin lastResult/currentResult xotirada qoladi
   try { localStorage.removeItem(LR_KEY); } catch(e) {}
+  if (lastResult) lastResult.savedToDb = true;
+  console.log('[localStorage cleared after UI state updated]');
 }
 
 // ==================== FIREBASE AUTH ====================
@@ -1057,6 +1059,7 @@ function startCategory(catId) {
 
 function renderQ() {
   answered = false; clearInterval(timerInt); tLeft = 20;
+  let questionStartTime = Date.now(); // Savol boshlanish vaqti
   const q = quiz[cur];
   const total = quiz.length;
   document.getElementById('q-label').textContent = `Savol ${cur + 1}/${total}`;
@@ -1104,7 +1107,9 @@ function renderQ() {
 }
 
 function autoAnswer() {
-  if (answered) return; answered = true; times.push(20);
+  if (answered) return; answered = true;
+  const autoTimeSpent = Math.round((Date.now() - questionStartTime) / 1000);
+  times.push(Math.min(autoTimeSpent, 20)); // Max 20s
   const q = quiz[cur];
   document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
   document.getElementById('opt' + q.ans).classList.add('correct');
@@ -1113,7 +1118,9 @@ function autoAnswer() {
 }
 
 function pick(i) {
-  if (answered) return; answered = true; clearInterval(timerInt); times.push(20 - tLeft);
+  if (answered) return; answered = true; clearInterval(timerInt);
+  const timeSpent = Math.round((Date.now() - questionStartTime) / 1000);
+  times.push(Math.max(1, Math.min(timeSpent, 20))); // Min 1s, Max 20s
   const q = quiz[cur];
   document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
   document.getElementById('opt' + i).classList.add(i === q.ans ? 'correct' : 'wrong');
@@ -1149,13 +1156,16 @@ function exitQuiz() {
 function showResult() {
   clearInterval(timerInt);
   const pct = Math.round(score / quiz.length * 100);
-  const avg = times.length ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
-  saveLR({ 
+  const avgRaw = times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0;
+  const avg = Math.max(0.1, Math.round(avgRaw * 10) / 10); // 1 decimal, min 0.1
+  const resultData = { 
     pct, score, total: quiz.length, avg, 
     cat: currentCat?.name || '',
     catId: currentCat?.id || '',
     savedToDb: false
-  });
+  };
+  currentResult = resultData; // Xotirada nusxa — UI uchun
+  saveLR(resultData);         // localStorage — duplicate save uchun
 
   const emojis = pct >= 90 ? '🏆' : pct >= 70 ? '🌟' : pct >= 50 ? '💪' : '📚';
   const msgs = pct >= 90 ? 'Ajoyib! Siz haqqoniy bilimdonziz!' :
@@ -1204,6 +1214,7 @@ function showResult() {
 }
 
 function retryWrong() {
+  currentResult = null; // Yangi o'yin boshlanadi
   if (!wrongAnswers.length) return;
   const wrongQs = wrongAnswers.map(w => quiz.find(q => q.q === w.q)).filter(Boolean);
   if (!wrongQs.length) return;
@@ -1252,8 +1263,9 @@ function openAuthFromPrompt() {
 }
 
 function shareResult() {
-  if (!lastResult) return;
-  const text = `${currentCat?.emoji || '🌍'} Dunyo Quiz — ${lastResult.cat}\n\nNatijam: ${lastResult.pct}% 🏆\n✅ To'g'ri: ${lastResult.score}/${lastResult.total}\n⚡ O'rtacha: ${lastResult.avg}s\n\nSen ham sinab ko'r 👇\nhttps://dunyoquiz.uz`;
+  const r = currentResult || lastResult;
+  if (!r) return;
+  const text = `${currentCat?.emoji || '🌍'} Dunyo Quiz — ${r.cat}\n\nNatijam: ${r.pct}% 🏆\n✅ To'g'ri: ${r.score}/${r.total}\n⚡ O'rtacha: ${r.avg}s\n\nSen ham sinab ko'r 👇\nhttps://dunyoquiz.uz`;
   window.open('https://t.me/share/url?url=https://dunyoquiz.uz&text=' + encodeURIComponent(text));
 }
 
@@ -1369,9 +1381,11 @@ async function trySaveGuestResult(user, name) {
 
   try {
     await saveResultForUser(user, lr, name);
-    // Faqat muvaffaqiyatdan keyin tozalash
+    // localStorage tozalash — UI ga ta'sir qilmaydi
     clearLR();
+    console.log('[displaying saved result]');
     showToast('✅ Natijangiz saqlandi!');
+    console.log('[result UI render success]');
   } catch(e) {
     console.error('[save error]', e.code, e.message);
     showToast(`❌ Natija saqlanmadi: ${e.code || e.message}`);
@@ -1539,7 +1553,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: profile-fix-15");
+console.log("DUNYO QUIZ version: avg-fix-17");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
