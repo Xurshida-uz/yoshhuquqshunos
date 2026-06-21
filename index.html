@@ -745,6 +745,7 @@ const CATEGORIES = [
 let currentUser = null, confirmResult = null;
 let quiz = [], cur = 0, score = 0, answered = false;
 let timerInt = null, tLeft = 20, times = [], wrongAnswers = [];
+let questionStartTime = Date.now(); // Global — pick() va autoAnswer() uchun
 let currentCat = null, lastResult = null, currentResult = null;
 const LR_KEY = 'dunyoquiz_lastResult';
 
@@ -766,7 +767,6 @@ function clearLR() {
 
 // ==================== FIREBASE AUTH ====================
 let autoSaveInProgress = false;
-let questionStartTime = Date.now(); // Global - har savol boshida reset
 
 auth.onAuthStateChanged(async user => {
   // currentUser ni faqat null bo'lsa yangilaymiz
@@ -1031,6 +1031,7 @@ function startCategory(catId) {
 
   currentCat = CATEGORIES.find(c => c.id === catId);
   if (!currentCat) return;
+  questionStartTime = Date.now(); // Quiz boshida reset
   console.log('[quiz started]', catId);
 
   // Bayroqlar uchun dinamik generator
@@ -1061,7 +1062,7 @@ function startCategory(catId) {
 
 function renderQ() {
   answered = false; clearInterval(timerInt); tLeft = 20;
-  questionStartTime = Date.now(); // Global o'zgaruvchini reset
+  questionStartTime = Date.now(); // Reset — har yangi savolda
   console.log('[next question reset]', cur + 1);
   const q = quiz[cur];
   const total = quiz.length;
@@ -1111,8 +1112,10 @@ function renderQ() {
 
 function autoAnswer() {
   if (answered) return; answered = true;
-  const autoTimeSpent = Math.round((Date.now() - questionStartTime) / 1000);
-  times.push(Math.min(autoTimeSpent, 20)); // Max 20s
+  if (!questionStartTime) questionStartTime = Date.now();
+  const autoElapsed = Date.now() - questionStartTime;
+  const autoSpent = Math.max(1, Math.min(20, Math.round((autoElapsed / 1000) * 10) / 10));
+  times.push(autoSpent);
   const q = quiz[cur];
   document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
   document.getElementById('opt' + q.ans).classList.add('correct');
@@ -1123,17 +1126,33 @@ function autoAnswer() {
 function pick(i) {
   console.log('[answer button clicked]', i);
   if (answered) { console.log('[answer ignored because]', 'already answered'); return; }
-  answered = true; clearInterval(timerInt);
-  console.log('[answer accepted]', i);
-  const timeSpent = Math.round((Date.now() - questionStartTime) / 1000);
-  times.push(Math.max(1, Math.min(timeSpent, 20))); // Min 1s, Max 20s
-  const q = quiz[cur];
-  document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
-  document.getElementById('opt' + i).classList.add(i === q.ans ? 'correct' : 'wrong');
-  if (i !== q.ans) document.getElementById('opt' + q.ans).classList.add('correct');
-  if (i === q.ans) score++;
-  else wrongAnswers.push({ q: q.q, userAns: q.opts[i], correctAns: q.opts[q.ans], law: q.law });
-  showExplain(q, false);
+
+  try {
+    // 1. Vaqtni hisoblash — answered = true dan OLDIN
+    if (!questionStartTime) questionStartTime = Date.now();
+    const elapsedMs = Date.now() - questionStartTime;
+    const spent = Math.max(1, Math.min(20, Math.round((elapsedMs / 1000) * 10) / 10));
+
+    // 2. Endi answered = true — hisoblash muvaffaqiyatli bo'ldi
+    answered = true;
+    clearInterval(timerInt);
+    console.log('[answer accepted]', i, 'time:', spent + 's');
+
+    times.push(spent);
+
+    const q = quiz[cur];
+    document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+    document.getElementById('opt' + i).classList.add(i === q.ans ? 'correct' : 'wrong');
+    if (i !== q.ans) document.getElementById('opt' + q.ans).classList.add('correct');
+    if (i === q.ans) score++;
+    else wrongAnswers.push({ q: q.q, userAns: q.opts[i], correctAns: q.opts[q.ans], law: q.law });
+    showExplain(q, false);
+
+  } catch(e) {
+    // Xato bo'lsa answered ni true qoldirib ketmaymiz
+    answered = false;
+    console.error('[pick error]', e.message);
+  }
 }
 
 function showExplain(q, timeout) {
@@ -1543,7 +1562,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: stable-v3");
+console.log("DUNYO QUIZ version: pick-fix-v4");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
