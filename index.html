@@ -7,7 +7,7 @@
   <meta name="description" content="Dunyo Quiz — O'zbek tilida onlayn testlar. Bayroqlar, Geografiya, Tarix, Hayvonlar, Mantiq, Ingliz tili. Bepul o'ynang!"/>
   <meta name="theme-color" content="#6C63FF"/>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="apple-touch-icon" href="icon-192.png"/>
+  <link rel="apple-touch-icon" href="icon.svg"/>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -762,7 +762,6 @@ function clearLR() {
   // localStorage ni tozalaymiz, lekin lastResult/currentResult xotirada qoladi
   try { localStorage.removeItem(LR_KEY); } catch(e) {}
   if (lastResult) lastResult.savedToDb = true;
-  console.log('[localStorage cleared after UI state updated]');
 }
 
 // ==================== FIREBASE AUTH ====================
@@ -862,7 +861,6 @@ function verifyOTP() {
       // 1. user ni to'g'ridan olish
       const user = result.user;
       currentUser = user;
-      console.log('[OTP success]', user.uid);
 
       // 2. Ism bormi tekshirish
       // Guest natijani HALI saqlamaymiz — avval ism kerak
@@ -922,7 +920,6 @@ async function saveName(explicitUser) {
     console.error('[saveName] user missing');
     return;
   }
-  console.log('[saving name for]', user.uid);
 
   try {
     // 1. Ism saqlash (private)
@@ -931,7 +928,6 @@ async function saveName(explicitUser) {
       phone: user.phoneNumber || '',
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-    console.log('[name saved]', user.uid);
 
     // 2. Leaderboard ga FAQAT ism — bestPct/bestAvg yo'q (natija keyinroq yoziladi)
     await db.collection('leaderboard').doc(user.uid).set({
@@ -1272,15 +1268,11 @@ function shareResult() {
 // ==================== FIRESTORE ====================
 // User ni to'g'ridan qabul qiluvchi helper
 async function saveResultForUser(user, lr, name) {
-  console.log('[saving pending result after name]', user.uid);
-  console.log('[pending result object]', JSON.stringify(lr));
 
   // result.pct va result.avg mavjudligini tekshirish
   const newPct = (lr && lr.pct !== undefined && lr.pct !== null) ? Number(lr.pct) : null;
   const newAvg = (lr && lr.avg !== undefined && lr.avg !== null) ? Number(lr.avg) : null;
 
-  console.log('[result pct]', newPct);
-  console.log('[result avg]', newAvg);
 
   if (newPct === null || newAvg === null || isNaN(newPct) || isNaN(newAvg)) {
     console.error('[saveResultForUser] result.pct or result.avg missing!', lr);
@@ -1298,13 +1290,11 @@ async function saveResultForUser(user, lr, name) {
     correct: Number(lr.score) || 0,
     date: firebase.firestore.FieldValue.serverTimestamp()
   });
-  console.log('[result saved]', user.uid, newPct, newAvg);
 
   // 2. Leaderboard ni oldingi qiymat bilan taqqoslab yangilash
   const lbRef = db.collection('leaderboard').doc(user.uid);
   const lbDoc = await lbRef.get();
   const existingData = lbDoc.exists ? lbDoc.data() : null;
-  console.log('[existing leaderboard]', JSON.stringify(existingData));
 
   // bestPct va bestAvg faqat haqiqiy raqam bo'lsa olinadi
   const prevPct = (existingData && typeof existingData.bestPct === 'number') ? existingData.bestPct : null;
@@ -1336,16 +1326,13 @@ async function saveResultForUser(user, lr, name) {
   }
 
   if (shouldUpdate) {
-    console.log('[new leaderboard data]', JSON.stringify(newLbData));
     try {
       await lbRef.set(newLbData, { merge: true });
-      console.log('[leaderboard saved with score]', user.uid, newLbData.bestPct, newLbData.bestAvg);
     } catch(e) {
       console.error('[leaderboard save error]', e.code, e.message);
       showToast(`❌ Reyting saqlanmadi: ${e.code || e.message}`);
     }
   } else {
-    console.log('[leaderboard not updated] existing score is higher:', prevPct, '>=', newPct);
   }
 
   // 3. users da bestPct yangilash
@@ -1368,24 +1355,15 @@ async function saveResultForUser(user, lr, name) {
 
 // Guest natijani saqlashga harakat
 async function trySaveGuestResult(user, name) {
-  // localStorage dan lastResult ni olish
   let lr = lastResult;
   if (!lr) {
     try { const r = localStorage.getItem(LR_KEY); lr = r ? JSON.parse(r) : null; } catch(e) {}
   }
-
-  console.log('[trySaveGuestResult] lr:', JSON.stringify(lr));
-
-  if (!lr) { console.log('[trySaveGuestResult] no pending result'); return; }
-  if (lr.savedToDb) { console.log('[trySaveGuestResult] already saved'); return; }
-
+  if (!lr || lr.savedToDb) return;
   try {
     await saveResultForUser(user, lr, name);
-    // localStorage tozalash — UI ga ta'sir qilmaydi
     clearLR();
-    console.log('[displaying saved result]');
     showToast('✅ Natijangiz saqlandi!');
-    console.log('[result UI render success]');
   } catch(e) {
     console.error('[save error]', e.code, e.message);
     showToast(`❌ Natija saqlanmadi: ${e.code || e.message}`);
@@ -1433,7 +1411,6 @@ async function saveResult(pct, avg, fromLastResult = false) {
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
     }
-  } catch (e) { console.log('Save error:', e); }
 }
 
 async function loadLeaderboard(type) {
@@ -1442,13 +1419,15 @@ async function loadLeaderboard(type) {
   try {
     const field = type === 'score' ? 'bestPct' : 'bestAvg';
     const order = type === 'score' ? 'desc' : 'asc';
-    const snap = await db.collection('users').orderBy(field, order).limit(20).get();
+    const snap = await db.collection('leaderboard').orderBy(field, order).limit(20).get();
     if (snap.empty) { list.innerHTML = '<div class="loading">Hali natijalar yo\'q</div>'; return; }
     list.innerHTML = snap.docs.map((doc, i) => {
       const d = doc.data();
       const rClass = i===0?'r1':i===1?'r2':i===2?'r3':'r-other';
-      const val = type==='score' ? (d.bestPct||0)+'%' : (d.bestAvg||0)+'s';
-      const name = d.name || (d.phone ? d.phone.slice(-4) : '???');
+      const val = type==='score'
+        ? (typeof d.bestPct === 'number' ? d.bestPct : 0)+'%'
+        : (typeof d.bestAvg === 'number' ? d.bestAvg : 0)+'s';
+      const name = d.name || '???';
       const isMe = currentUser && doc.id === currentUser.uid;
       return `<div class="lb-item ${isMe?'me':''}">
         <span class="rank-num ${rClass}">${i+1}</span>
@@ -1553,7 +1532,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: avg-fix-17");
+console.log("DUNYO QUIZ version: production-v1");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {

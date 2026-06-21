@@ -1,23 +1,17 @@
 {
-  "name": "Yosh Huquqshunos",
-  "short_name": "Yosh Huquqshunos",
-  "description": "Yosh Huquqshunos — O'zbek huquqi bo'yicha test ilovasi",
+  "name": "Dunyo Quiz",
+  "short_name": "Dunyo Quiz",
+  "description": "O'zbek tilida onlayn testlar. Bayroqlar, Geografiya, Tarix, Hayvonlar, Mantiq, Ingliz tili.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#8B6914",
+  "background_color": "#F8F9FF",
+  "theme_color": "#6C63FF",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ]
