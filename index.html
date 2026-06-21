@@ -766,6 +766,7 @@ function clearLR() {
 
 // ==================== FIREBASE AUTH ====================
 let autoSaveInProgress = false;
+let questionStartTime = Date.now(); // Global - har savol boshida reset
 
 auth.onAuthStateChanged(async user => {
   // currentUser ni faqat null bo'lsa yangilaymiz
@@ -1060,7 +1061,7 @@ function startCategory(catId) {
 
 function renderQ() {
   answered = false; clearInterval(timerInt); tLeft = 20;
-  let questionStartTime = Date.now();
+  questionStartTime = Date.now(); // Global o'zgaruvchini reset
   console.log('[next question reset]', cur + 1);
   const q = quiz[cur];
   const total = quiz.length;
@@ -1542,7 +1543,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: answer-fix-v2");
+console.log("DUNYO QUIZ version: stable-v3");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
