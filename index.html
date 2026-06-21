@@ -857,35 +857,24 @@ function verifyOTP() {
   btn.disabled = true; btn.textContent = 'Tekshirilmoqda...';
   confirmResult.confirm(code)
     .then(async result => {
-      // 1. user ni to'g'ridan olish - onAuthStateChanged ga tayanmaymiz
+      // 1. user ni to'g'ridan olish
       const user = result.user;
       currentUser = user;
       console.log('[OTP success]', user.uid);
 
-      // 2. Guest natijani saqlash (agar bor bo'lsa)
-      if (lastResult && !lastResult.savedToDb && !autoSaveInProgress) {
-        autoSaveInProgress = true;
-        try {
-          console.log('[saving guest result for]', user.uid);
-          await saveResultForUser(user, lastResult);
-          clearLR();
-          showToast('✅ Natijangiz saqlandi!');
-        } catch(e) {
-          console.error('[guest save error]', e.code, e.message);
-        } finally {
-          autoSaveInProgress = false;
-        }
-      }
-
-      // 3. Foydalanuvchi nomi bormi tekshirish
+      // 2. Ism bormi tekshirish
+      // Guest natijani HALI saqlamaymiz — avval ism kerak
       try {
         const doc = await db.collection('users').doc(user.uid).get();
         if (doc.exists && doc.data().name) {
+          // Ism bor — guest natijani saqlashga harakat
+          await trySaveGuestResult(user, doc.data().name);
           showApp();
         } else {
+          // Ism yo'q — name ekranini ko'rsat
+          // Guest natija saveName dan keyin saqlanadi
           document.getElementById('auth-otp-view').style.display = 'none';
           document.getElementById('auth-name-view').style.display = 'block';
-          // user ni button ga bog'lash — race condition yo'q
           document.getElementById('save-name-btn').onclick = () => saveName(user);
           setTimeout(initEmojiGrid, 100);
         }
@@ -925,30 +914,38 @@ async function saveName(explicitUser) {
   if (name.length < 3) { showErr('name-error', 'Kamida 3 belgi'); return; }
   if (name.length > 20) { showErr('name-error', "Ko'pi 20 belgi"); return; }
 
-  // user faqat parametrdan — race condition yo'q
   const user = explicitUser;
   if (!user || !user.uid) {
     showErr('name-error', 'Kirish xatosi. Sahifani yangilab qayta urining.');
-    console.error('[saveName] user missing:', user);
+    console.error('[saveName] user missing');
     return;
   }
   console.log('[saving name for]', user.uid);
 
   try {
+    // 1. Ism saqlash (private)
     await db.collection('users').doc(user.uid).set({
       name,
       phone: user.phoneNumber || '',
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
+    console.log('[name saved]', user.uid);
+
+    // 2. Leaderboard ga ism qo'shish (public, phone yo'q)
     await db.collection('leaderboard').doc(user.uid).set({
       name,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
+
     currentUser = user;
+
+    // 3. Ism saqlangandan KEYIN guest natijani saqlash
+    await trySaveGuestResult(user, name);
+
     showApp();
   } catch (e) {
     console.error('[saveName error]', e.code, e.message);
-    showErr('name-error', `Xatolik: ${e.code || e.message || 'Qayta urining'}`);
+    showErr('name-error', `Xatolik (${e.code || 'nomalum'}): ${e.message || 'Qayta urining'}`);
   }
 }
 function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.style.display = 'block'; }
@@ -1261,8 +1258,10 @@ function shareResult() {
 
 // ==================== FIRESTORE ====================
 // User ni to'g'ridan qabul qiluvchi helper
-async function saveResultForUser(user, lr) {
-  console.log('[saving guest result for]', user.uid);
+async function saveResultForUser(user, lr, name) {
+  console.log('[saving pending result after name]', user.uid);
+
+  // 1. Natija saqlash
   await db.collection('results').add({
     uid: user.uid,
     pct: lr.pct,
@@ -1272,6 +1271,9 @@ async function saveResultForUser(user, lr) {
     correct: lr.score,
     date: firebase.firestore.FieldValue.serverTimestamp()
   });
+  console.log('[result saved]', user.uid);
+
+  // 2. users da bestPct yangilash
   const userRef = db.collection('users').doc(user.uid);
   const userDoc = await userRef.get();
   if (!userDoc.exists || (userDoc.data().bestPct || 0) < lr.pct) {
@@ -1280,15 +1282,37 @@ async function saveResultForUser(user, lr) {
       bestAvg: lr.avg,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-    const name = userDoc.exists && userDoc.data().name ? userDoc.data().name : '???';
+
+    // 3. Leaderboard yangilash — name majburiy
+    const lbName = name || (userDoc.exists && userDoc.data().name) || '???';
     await db.collection('leaderboard').doc(user.uid).set({
-      name,
+      name: lbName,
       bestPct: lr.pct,
       bestAvg: lr.avg,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
+    console.log('[leaderboard saved]', user.uid, lbName, lr.pct);
   }
+
   if (lr) lr.savedToDb = true;
+}
+
+// Guest natijani saqlashga harakat
+async function trySaveGuestResult(user, name) {
+  const lr = lastResult || (() => {
+    try { const r = localStorage.getItem(LR_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; }
+  })();
+
+  if (!lr || lr.savedToDb) return;
+
+  try {
+    await saveResultForUser(user, lr, name);
+    clearLR();
+    showToast('✅ Natijangiz saqlandi!');
+  } catch(e) {
+    console.error('[save error]', e.code, e.message);
+    showToast(`❌ Natija saqlanmadi: ${e.code || e.message}`);
+  }
 }
 
 async function saveResult(pct, avg, fromLastResult = false) {
@@ -1436,7 +1460,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: savename-param-10");
+console.log("DUNYO QUIZ version: order-fix-11");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
