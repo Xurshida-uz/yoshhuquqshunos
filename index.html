@@ -931,11 +931,12 @@ async function saveName(explicitUser) {
     }, { merge: true });
     console.log('[name saved]', user.uid);
 
-    // 2. Leaderboard ga ism qo'shish (public, phone yo'q)
+    // 2. Leaderboard ga FAQAT ism — bestPct/bestAvg yo'q (natija keyinroq yoziladi)
     await db.collection('leaderboard').doc(user.uid).set({
       name,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
+    // MUHIM: bestPct: 0 yoki bestAvg: 0 YOZMAYMIZ
 
     currentUser = user;
 
@@ -1260,18 +1261,29 @@ function shareResult() {
 // User ni to'g'ridan qabul qiluvchi helper
 async function saveResultForUser(user, lr, name) {
   console.log('[saving pending result after name]', user.uid);
+  console.log('[pending result object]', JSON.stringify(lr));
 
-  const newPct = Number(lr.pct);
-  const newAvg = Number(lr.avg);
+  // result.pct va result.avg mavjudligini tekshirish
+  const newPct = (lr && lr.pct !== undefined && lr.pct !== null) ? Number(lr.pct) : null;
+  const newAvg = (lr && lr.avg !== undefined && lr.avg !== null) ? Number(lr.avg) : null;
 
-  // 1. Natija saqlash
+  console.log('[result pct]', newPct);
+  console.log('[result avg]', newAvg);
+
+  if (newPct === null || newAvg === null || isNaN(newPct) || isNaN(newAvg)) {
+    console.error('[saveResultForUser] result.pct or result.avg missing!', lr);
+    showToast('❌ Natija malumotlari toliq emas. Qayta sinab koring.');
+    return;
+  }
+
+  // 1. results kolleksiyasiga yozish
   await db.collection('results').add({
     uid: user.uid,
     pct: newPct,
     avg: newAvg,
     cat: lr.catId || '',
-    total: lr.total,
-    correct: lr.score,
+    total: Number(lr.total) || 0,
+    correct: Number(lr.score) || 0,
     date: firebase.firestore.FieldValue.serverTimestamp()
   });
   console.log('[result saved]', user.uid, newPct, newAvg);
@@ -1279,43 +1291,58 @@ async function saveResultForUser(user, lr, name) {
   // 2. Leaderboard ni oldingi qiymat bilan taqqoslab yangilash
   const lbRef = db.collection('leaderboard').doc(user.uid);
   const lbDoc = await lbRef.get();
+  const existingData = lbDoc.exists ? lbDoc.data() : null;
+  console.log('[existing leaderboard]', JSON.stringify(existingData));
 
-  const prevPct = lbDoc.exists ? Number(lbDoc.data().bestPct || 0) : 0;
-  const prevAvg = lbDoc.exists ? Number(lbDoc.data().bestAvg || 99) : 99;
-  const lbName = name || (lbDoc.exists && lbDoc.data().name) || '???';
+  // bestPct va bestAvg faqat haqiqiy raqam bo'lsa olinadi
+  const prevPct = (existingData && typeof existingData.bestPct === 'number') ? existingData.bestPct : null;
+  const prevAvg = (existingData && typeof existingData.bestAvg === 'number') ? existingData.bestAvg : null;
+  const lbName = name || (existingData && existingData.name) || '???';
 
-  console.log('[leaderboard before update] prevPct:', prevPct, 'prevAvg:', prevAvg);
-  console.log('[new result pct/avg]', newPct, newAvg);
+  // Yangilash mantiqi:
+  // 1. Avvalgi ball yo'q → yangilash
+  // 2. Yangi ball yuqori → yangilash
+  // 3. Ball teng, vaqt tezroq → faqat bestAvg yangilash
+  let shouldUpdate = false;
+  let newLbData = { name: lbName, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
 
-  // Yangilash shartlari:
-  // - Yangi ball yuqoriroq bo'lsa → yangilash
-  // - Ball teng, lekin vaqt tezroq bo'lsa → yangilash
-  const shouldUpdate = newPct > prevPct || (newPct === prevPct && newAvg < prevAvg);
+  if (prevPct === null) {
+    // Birinchi marta
+    shouldUpdate = true;
+    newLbData.bestPct = newPct;
+    newLbData.bestAvg = newAvg;
+  } else if (newPct > prevPct) {
+    // Yangi rekord
+    shouldUpdate = true;
+    newLbData.bestPct = newPct;
+    newLbData.bestAvg = newAvg;
+  } else if (newPct === prevPct && prevAvg !== null && newAvg < prevAvg) {
+    // Ball teng, tezroq
+    shouldUpdate = true;
+    newLbData.bestPct = newPct;
+    newLbData.bestAvg = newAvg;
+  }
 
   if (shouldUpdate) {
-    const lbData = {
-      name: lbName,
-      bestPct: newPct,
-      bestAvg: newAvg,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    console.log('[saving leaderboard data]', lbData);
+    console.log('[new leaderboard data]', JSON.stringify(newLbData));
     try {
-      await lbRef.set(lbData, { merge: true });
-      console.log('[leaderboard saved]', user.uid, lbName, newPct);
+      await lbRef.set(newLbData, { merge: true });
+      console.log('[leaderboard saved with score]', user.uid, newLbData.bestPct, newLbData.bestAvg);
     } catch(e) {
       console.error('[leaderboard save error]', e.code, e.message);
       showToast(`❌ Reyting saqlanmadi: ${e.code || e.message}`);
     }
   } else {
-    console.log('[leaderboard not updated] existing score is higher or equal');
+    console.log('[leaderboard not updated] existing score is higher:', prevPct, '>=', newPct);
   }
 
-  // 3. users da ham yangilash
+  // 3. users da bestPct yangilash
   const userRef = db.collection('users').doc(user.uid);
   const userDoc = await userRef.get();
-  const prevUserPct = userDoc.exists ? Number(userDoc.data().bestPct || 0) : 0;
-  if (newPct > prevUserPct) {
+  const prevUserPct = (userDoc.exists && typeof userDoc.data().bestPct === 'number')
+    ? userDoc.data().bestPct : null;
+
+  if (prevUserPct === null || newPct > prevUserPct) {
     await userRef.set({
       bestPct: newPct,
       bestAvg: newAvg,
@@ -1323,19 +1350,26 @@ async function saveResultForUser(user, lr, name) {
     }, { merge: true });
   }
 
+  // 4. Faqat muvaffaqiyatdan keyin localStorage tozalash
   if (lr) lr.savedToDb = true;
 }
 
 // Guest natijani saqlashga harakat
 async function trySaveGuestResult(user, name) {
-  const lr = lastResult || (() => {
-    try { const r = localStorage.getItem(LR_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; }
-  })();
+  // localStorage dan lastResult ni olish
+  let lr = lastResult;
+  if (!lr) {
+    try { const r = localStorage.getItem(LR_KEY); lr = r ? JSON.parse(r) : null; } catch(e) {}
+  }
 
-  if (!lr || lr.savedToDb) return;
+  console.log('[trySaveGuestResult] lr:', JSON.stringify(lr));
+
+  if (!lr) { console.log('[trySaveGuestResult] no pending result'); return; }
+  if (lr.savedToDb) { console.log('[trySaveGuestResult] already saved'); return; }
 
   try {
     await saveResultForUser(user, lr, name);
+    // Faqat muvaffaqiyatdan keyin tozalash
     clearLR();
     showToast('✅ Natijangiz saqlandi!');
   } catch(e) {
@@ -1489,7 +1523,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: leaderboard-fix-12");
+console.log("DUNYO QUIZ version: lb-score-fix-13");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
