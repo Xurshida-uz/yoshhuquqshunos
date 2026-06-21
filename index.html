@@ -1479,9 +1479,22 @@ async function renderProfile() {
     <button class="logout-btn" onclick="logout()">Chiqish</button>`;
 
   try {
-    const snap = await db.collection('results').where('uid','==',currentUser.uid).orderBy('date','desc').limit(20).get();
-    if (snap.empty) { document.getElementById('history-list').innerHTML = '<div class="loading">Hali natija yo\'q</div>'; return; }
-    const results = snap.docs.map(d => d.data());
+    // orderBy('date') olib tashlandi — composite index kerak emas
+    const snap = await db.collection('results').where('uid','==',currentUser.uid).limit(20).get();
+    if (snap.empty) {
+      document.getElementById('history-list').innerHTML = '<div class="loading">Hali natija yo\'q</div>';
+      document.getElementById('ps-tests').textContent = '0';
+      document.getElementById('ps-best').textContent = '0%';
+      document.getElementById('ps-avg').textContent = '0%';
+      return;
+    }
+    // Sana bo'yicha JS da tartiblash
+    const results = snap.docs.map(d => d.data())
+      .sort((a, b) => {
+        const ta = a.date?.seconds || 0;
+        const tb = b.date?.seconds || 0;
+        return tb - ta;
+      });
     const avgPct = Math.round(results.reduce((s,r) => s+(r.pct||0),0)/results.length);
     const best = Math.max(...results.map(r => r.pct||0));
     document.getElementById('ps-tests').textContent = results.length;
@@ -1499,7 +1512,10 @@ async function renderProfile() {
         <div class="history-score">${r.pct||0}%</div>
       </div>`;
     }).join('');
-  } catch (e) { document.getElementById('history-list').innerHTML = '<div class="loading">Xatolik</div>'; }
+  } catch (e) {
+    console.error('[renderProfile error]', e.code, e.message);
+    document.getElementById('history-list').innerHTML = `<div class="loading">Xatolik: ${e.code || e.message}</div>`;
+  }
 }
 
 function logout() {
@@ -1523,7 +1539,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: lb-score-fix-14");
+console.log("DUNYO QUIZ version: profile-fix-15");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
