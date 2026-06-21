@@ -1261,37 +1261,66 @@ function shareResult() {
 async function saveResultForUser(user, lr, name) {
   console.log('[saving pending result after name]', user.uid);
 
+  const newPct = Number(lr.pct);
+  const newAvg = Number(lr.avg);
+
   // 1. Natija saqlash
   await db.collection('results').add({
     uid: user.uid,
-    pct: lr.pct,
-    avg: lr.avg,
+    pct: newPct,
+    avg: newAvg,
     cat: lr.catId || '',
     total: lr.total,
     correct: lr.score,
     date: firebase.firestore.FieldValue.serverTimestamp()
   });
-  console.log('[result saved]', user.uid);
+  console.log('[result saved]', user.uid, newPct, newAvg);
 
-  // 2. users da bestPct yangilash
+  // 2. Leaderboard ni oldingi qiymat bilan taqqoslab yangilash
+  const lbRef = db.collection('leaderboard').doc(user.uid);
+  const lbDoc = await lbRef.get();
+
+  const prevPct = lbDoc.exists ? Number(lbDoc.data().bestPct || 0) : 0;
+  const prevAvg = lbDoc.exists ? Number(lbDoc.data().bestAvg || 99) : 99;
+  const lbName = name || (lbDoc.exists && lbDoc.data().name) || '???';
+
+  console.log('[leaderboard before update] prevPct:', prevPct, 'prevAvg:', prevAvg);
+  console.log('[new result pct/avg]', newPct, newAvg);
+
+  // Yangilash shartlari:
+  // - Yangi ball yuqoriroq bo'lsa → yangilash
+  // - Ball teng, lekin vaqt tezroq bo'lsa → yangilash
+  const shouldUpdate = newPct > prevPct || (newPct === prevPct && newAvg < prevAvg);
+
+  if (shouldUpdate) {
+    const lbData = {
+      name: lbName,
+      bestPct: newPct,
+      bestAvg: newAvg,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    console.log('[saving leaderboard data]', lbData);
+    try {
+      await lbRef.set(lbData, { merge: true });
+      console.log('[leaderboard saved]', user.uid, lbName, newPct);
+    } catch(e) {
+      console.error('[leaderboard save error]', e.code, e.message);
+      showToast(`❌ Reyting saqlanmadi: ${e.code || e.message}`);
+    }
+  } else {
+    console.log('[leaderboard not updated] existing score is higher or equal');
+  }
+
+  // 3. users da ham yangilash
   const userRef = db.collection('users').doc(user.uid);
   const userDoc = await userRef.get();
-  if (!userDoc.exists || (userDoc.data().bestPct || 0) < lr.pct) {
+  const prevUserPct = userDoc.exists ? Number(userDoc.data().bestPct || 0) : 0;
+  if (newPct > prevUserPct) {
     await userRef.set({
-      bestPct: lr.pct,
-      bestAvg: lr.avg,
+      bestPct: newPct,
+      bestAvg: newAvg,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-
-    // 3. Leaderboard yangilash — name majburiy
-    const lbName = name || (userDoc.exists && userDoc.data().name) || '???';
-    await db.collection('leaderboard').doc(user.uid).set({
-      name: lbName,
-      bestPct: lr.pct,
-      bestAvg: lr.avg,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    console.log('[leaderboard saved]', user.uid, lbName, lr.pct);
   }
 
   if (lr) lr.savedToDb = true;
@@ -1460,7 +1489,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: order-fix-11");
+console.log("DUNYO QUIZ version: leaderboard-fix-12");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
