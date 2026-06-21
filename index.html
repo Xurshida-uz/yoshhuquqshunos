@@ -301,7 +301,7 @@
         </div>
         <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Masalan: ⚡QuizChampion yoki 🌍Geografchi</p>
         <div class="err-msg" id="name-error"></div>
-        <button class="btn-main" onclick="saveName()">Boshlash →</button>
+        <button class="btn-main" id="save-name-btn" onclick="saveName(currentUser)">Boshlash →</button>
       </div>
     </div>
   </div>
@@ -885,12 +885,15 @@ function verifyOTP() {
         } else {
           document.getElementById('auth-otp-view').style.display = 'none';
           document.getElementById('auth-name-view').style.display = 'block';
+          // user ni button ga bog'lash — race condition yo'q
+          document.getElementById('save-name-btn').onclick = () => saveName(user);
           setTimeout(initEmojiGrid, 100);
         }
       } catch(e) {
         console.error('[verifyOTP DB error]', e.code, e.message);
         document.getElementById('auth-otp-view').style.display = 'none';
         document.getElementById('auth-name-view').style.display = 'block';
+        document.getElementById('save-name-btn').onclick = () => saveName(user);
         setTimeout(initEmojiGrid, 100);
       }
     })
@@ -917,15 +920,16 @@ function pickEmoji(e, btn) {
   const inp = document.getElementById('name-input');
   inp.value = e + inp.value.replace(/^\p{Emoji}+/u, '').trim();
 }
-async function saveName() {
+async function saveName(explicitUser) {
   const name = document.getElementById('name-input').value.trim();
   if (name.length < 3) { showErr('name-error', 'Kamida 3 belgi'); return; }
   if (name.length > 20) { showErr('name-error', "Ko'pi 20 belgi"); return; }
 
-  // user ni ketma-ket tekshirish
-  const user = currentUser || auth.currentUser;
-  if (!user) {
+  // user faqat parametrdan — race condition yo'q
+  const user = explicitUser;
+  if (!user || !user.uid) {
     showErr('name-error', 'Kirish xatosi. Sahifani yangilab qayta urining.');
+    console.error('[saveName] user missing:', user);
     return;
   }
   console.log('[saving name for]', user.uid);
@@ -1432,7 +1436,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: savename-final-9");
+console.log("DUNYO QUIZ version: savename-param-10");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
