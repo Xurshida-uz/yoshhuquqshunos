@@ -1024,8 +1024,13 @@ function scrollToCats() {
 
 // ==================== QUIZ ====================
 function startCategory(catId) {
+  // Quiz boshlanishida bannerni o'chirish
+  const banner = document.getElementById('login-prompt-banner');
+  if (banner) banner.remove();
+
   currentCat = CATEGORIES.find(c => c.id === catId);
   if (!currentCat) return;
+  console.log('[quiz started]', catId);
 
   // Bayroqlar uchun dinamik generator
   if (catId === 'bayroqlar') {
@@ -1055,7 +1060,8 @@ function startCategory(catId) {
 
 function renderQ() {
   answered = false; clearInterval(timerInt); tLeft = 20;
-  let questionStartTime = Date.now(); // Savol boshlanish vaqti
+  let questionStartTime = Date.now();
+  console.log('[next question reset]', cur + 1);
   const q = quiz[cur];
   const total = quiz.length;
   document.getElementById('q-label').textContent = `Savol ${cur + 1}/${total}`;
@@ -1114,7 +1120,10 @@ function autoAnswer() {
 }
 
 function pick(i) {
-  if (answered) return; answered = true; clearInterval(timerInt);
+  console.log('[answer button clicked]', i);
+  if (answered) { console.log('[answer ignored because]', 'already answered'); return; }
+  answered = true; clearInterval(timerInt);
+  console.log('[answer accepted]', i);
   const timeSpent = Math.round((Date.now() - questionStartTime) / 1000);
   times.push(Math.max(1, Math.min(timeSpent, 20))); // Min 1s, Max 20s
   const q = quiz[cur];
@@ -1237,7 +1246,7 @@ function showLoginPrompt(pct) {
     background:linear-gradient(135deg,var(--purple),var(--pink));
     color:white;border-radius:16px;padding:16px 20px;
     box-shadow:0 8px 32px rgba(108,99,255,0.3);
-    z-index:200;animation:slideUp .3s ease
+    z-index:150;animation:slideUp .3s ease
   `;
   banner.innerHTML = `
     <div style="font-size:15px;font-weight:700;margin-bottom:4px">🏆 ${pct}% natija!</div>
@@ -1532,7 +1541,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: production-v1");
+console.log("DUNYO QUIZ version: answer-fix-v2");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
