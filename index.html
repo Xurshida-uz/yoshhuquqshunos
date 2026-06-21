@@ -301,7 +301,7 @@
         </div>
         <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Masalan: ⚡QuizChampion yoki 🌍Geografchi</p>
         <div class="err-msg" id="name-error"></div>
-        <button class="btn-main" onclick="saveName(currentUser || auth.currentUser)">Boshlash →</button>
+        <button class="btn-main" onclick="saveName()">Boshlash →</button>
       </div>
     </div>
   </div>
@@ -920,16 +920,23 @@ function pickEmoji(e, btn) {
 async function saveName() {
   const name = document.getElementById('name-input').value.trim();
   if (name.length < 3) { showErr('name-error', 'Kamida 3 belgi'); return; }
-  if (name.length > 20) { showErr('name-error', 'Ko\'pi 20 belgi'); return; }
+  if (name.length > 20) { showErr('name-error', "Ko'pi 20 belgi"); return; }
+
+  // user ni ketma-ket tekshirish
+  const user = currentUser || auth.currentUser;
+  if (!user) {
+    showErr('name-error', 'Kirish xatosi. Sahifani yangilab qayta urining.');
+    return;
+  }
+  console.log('[saving name for]', user.uid);
+
   try {
-    // Private: users koleksiyasiga (phone bilan)
-    await db.collection('users').doc(currentUser.uid).set({
+    await db.collection('users').doc(user.uid).set({
       name,
-      phone: currentUser.phoneNumber || '',
+      phone: user.phoneNumber || '',
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-    // Public: leaderboard koleksiyasiga (phone siz)
-    await db.collection('leaderboard').doc(currentUser.uid).set({
+    await db.collection('leaderboard').doc(user.uid).set({
       name,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
@@ -1425,7 +1432,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: otp-flow-fix-8");
+console.log("DUNYO QUIZ version: savename-final-9");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
