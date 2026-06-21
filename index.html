@@ -1420,6 +1420,7 @@ async function saveResult(pct, avg, fromLastResult = false) {
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
     }
+  } catch(e) { console.error('[saveResult error]', e.code, e.message); }
 }
 
 async function loadLeaderboard(type) {
