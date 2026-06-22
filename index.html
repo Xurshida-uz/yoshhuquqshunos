@@ -779,7 +779,7 @@ const SLUG_EMOJI_DEFAULTS = {
 function safeEmoji(emoji, slug) {
   if (!emoji) return SLUG_EMOJI_DEFAULTS[slug] || '📚';
   // Faqat ASCII harflar/raqamlar/belgilar bo'lsa — noto'g'ri
-  if (/^[a-zA-Z0-9\s\)\(\.\,\!\?\-\_]+$/.test(emoji.trim())) {
+  if (/^[a-zA-Z0-9 ().,!?_-]+$/.test(emoji.trim())) {
     return SLUG_EMOJI_DEFAULTS[slug] || '📚';
   }
   return emoji;
@@ -1142,17 +1142,31 @@ function scrollToCats() {
 }
 
 async function openCategory(catId, catSlug) {
-  // Mavjud kategoriyani topish
+  // home tab faol bo'lishi kerak
+  const homeTab = document.getElementById('tab-home');
+  if (!homeTab || homeTab.style.display === 'none') {
+    goTab('home');
+    await new Promise(r => setTimeout(r, 50));
+  }
+
   currentCat = CATEGORIES.find(c => c.id === catId || c.id === catSlug) || {id:catId, name:catId, emoji:'📚'};
 
-  // Firestore dan mavzularni yuklash
   const topicsGrid = document.getElementById('topics-grid');
   const topicsHeader = document.getElementById('topics-header');
-  topicsGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
+  const sectionsView = document.getElementById('home-sections-view');
+  const quizView = document.getElementById('home-quiz-view');
+  const topicsView = document.getElementById('home-topics-view');
 
-  document.getElementById('home-sections-view').style.display = 'none';
-  document.getElementById('home-quiz-view').style.display = 'none';
-  document.getElementById('home-topics-view').style.display = 'block';
+  if (!topicsGrid || !topicsView) {
+    // Elements topilmadi — to'g'ridan quiz boshlash
+    startCategory(catId);
+    return;
+  }
+
+  topicsGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
+  if (sectionsView) sectionsView.style.display = 'none';
+  if (quizView) quizView.style.display = 'none';
+  topicsView.style.display = 'block';
 
   try {
     const snap = await db.collection('topics')

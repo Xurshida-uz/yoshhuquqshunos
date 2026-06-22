@@ -138,18 +138,18 @@
 <script>
 const ADMIN_UID = 'HUToMkDnMFRcuJWhXL6MRfm00bl2';
 
-const PRESET_EMOJIS = ['🌍','🗺️','📜','🐯','🧠','🇬🇧','⚖️','📚','🏛️','🏆','🎨','🔬','💻','🧮','🕌','🌱','🎓','🏥','✈️','🍎','🎵','⚽','🌊','🦁','🔥','💡','🚀','🌙','⭐','🎯'];
+const PRESET_EMOJIS = ["🌍","🗺️","📜","🐯","🧠","🇬🇧","⚖️","📚","🏛️","🏆","🎨","🔬","💻","🧮","🕌","🌱","🎓","🏥","✈️","🍎","🎵","⚽","🌊","🦁","🔥","💡","🚀","🌙","⭐","🎯"];
 
 const SLUG_EMOJI_DEFAULTS = {
-  bayroqlar:'🌍', geografiya:'🗺️', tarix:'📜', hayvonlar:'🐯',
-  mantiq:'🧠', ingliz:'🇬🇧', huquq:'⚖️', sport:'🏆', san_at:'🎨',
-  fan:'🔬', texnologiya:'💻', matematika:'🧮', madaniyat:'🕌', tabiat:'🌱'
+  "bayroqlar":"🌍", "geografiya":"🗺️", "tarix":"📜", "hayvonlar":"🐯",
+  "mantiq":"🧠", "ingliz":"🇬🇧", "huquq":"⚖️", "sport":"🏆", "san_at":"🎨",
+  "fan":"🔬", "texnologiya":"💻", "matematika":"🧮", "madaniyat":"🕌", "tabiat":"🌱"
 };
 
 function isValidEmoji(str) {
   if (!str || !str.trim()) return false;
   // Faqat harflar, raqamlar, nuqtalar, qavs kabi oddiy belgilarni rad etish
-  const invalidPattern = /^[a-zA-Z0-9\s\)\(\.\,\!\?\-\_]+$/;
+  const invalidPattern = /^[a-zA-Z0-9 ().,!?_-]+$/;
   if (invalidPattern.test(str.trim())) return false;
   return true;
 }
@@ -165,17 +165,16 @@ function initCategoryForm() {
   const picker = document.getElementById('c-emoji-picker');
   if (picker) {
     picker.innerHTML = PRESET_EMOJIS.map(e =>
-      `<button type="button" class="ep-btn" onclick="selectEmoji('${e}')">${e}</button>`
+      '<button type="button" class="ep-btn" data-emoji="' + e + '" onclick="selectEmoji(this.dataset.emoji)">' + e + '</button>'
     ).join('');
   }
   // Color picker
   const colorPicker = document.getElementById('c-color-picker');
   if (colorPicker) {
-    colorPicker.innerHTML = Object.entries(COLOR_MAP).map(([k,v]) =>
-      `<button type="button" class="color-pick-btn ${k==='purple'?'active':''}"
-        style="background:${v}" title="${k}"
-        onclick="selectColor('${k}',this)"></button>`
-    ).join('');
+    colorPicker.innerHTML = Object.entries(COLOR_MAP).map(([k,v]) => {
+      const isActive = k === 'purple' ? 'active' : '';
+      return '<button type="button" class="color-pick-btn ' + isActive + '" style="background:' + v + '" title="' + k + '" onclick="selectColor(\'' + k + '\',this)"></button>';
+    }).join('');
   }
   // Auto order
   autoFillOrder();
@@ -202,7 +201,7 @@ function onCatTitleInput() {
   const title = document.getElementById('c-title').value.trim();
   const slug = slugify(title);
   const preview = document.getElementById('c-slug-preview');
-  if (preview) preview.textContent = slug || '—';
+  if (preview) preview.textContent = slug || "-";
   // Slug bo'yicha emoji taklif
   if (SLUG_EMOJI_DEFAULTS[slug]) {
     const current = document.getElementById('c-emoji').value.trim();
@@ -221,7 +220,7 @@ function selectEmoji(emoji) {
 function updateEmojiPreview() {
   const val = document.getElementById('c-emoji').value.trim();
   const preview = document.getElementById('c-emoji-preview');
-  if (preview) preview.textContent = isValidEmoji(val) ? val : '📚';
+  if (preview) preview.textContent = isValidEmoji(val) ? val : "📚";
 }
 
 function autoSlugEmojiOld() {
@@ -444,11 +443,11 @@ async function addCategory() {
   const status = document.getElementById('c-status').value;
   if (!title) { showMsg('c-msg','Kategoriya nomi majburiy',false); return; }
   const slug = slugify(title);
-  if (!slug) { showMsg('c-msg','Slug yaratib bo'lmadi — lotin harflarida yozing',false); return; }
+  if (!slug) { showMsg("c-msg","Slug yaratib bolmadi — lotin harflarida yozing",false); return; }
 
   // Duplicate slug tekshirish
   const existing = await db.collection('categories').doc(slug).get();
-  if (existing.exists) { showMsg('c-msg',`"${slug}" slug allaqachon mavjud!`,false); return; }
+  if (existing.exists) { showMsg('c-msg', '"' + slug + '" slug allaqachon mavjud!', false); return; }
 
   // Emoji validation
   const emoji = getSafeEmoji(rawEmoji, slug);
