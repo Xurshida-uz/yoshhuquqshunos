@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dunyo Quiz — Onlayn testlar | Bayroqlar, Geografiya, Tarix</title>
-  <meta name="description" content="Dunyo Quiz — O'zbek tilida onlayn testlar. Bayroqlar, Geografiya, Tarix, Hayvonlar, Mantiq, Ingliz tili. Bepul o'ynang!"/>
+  <meta name="description" content="Dunyo Quiz — bayroqlar, geografiya, tarix, hayvonlar, mantiq va ingliz tili bo'yicha o'zbekcha online quizlar. Bilimingizni sinang va reytingga chiqing."/>
   <meta name="theme-color" content="#6C63FF"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon.svg"/>
@@ -235,6 +235,23 @@
     @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
     .divider{height:1px;background:var(--border);margin:20px 0}
   </style>
+  <!-- SEO content -->
+  <meta property="og:title" content="Dunyo Quiz — Onlayn testlar"/>
+  <meta property="og:description" content="Bayroqlar, Geografiya, Tarix, Hayvonlar, Mantiq va Ingliz tili bo'yicha o'zbekcha online quizlar."/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://dunyoquiz.uz"/>
+  <noscript>
+    <h1>Dunyo Quiz — Onlayn testlar</h1>
+    <p>Bilimingizni sinang!</p>
+    <ul>
+      <li>Bayroqlar testi</li>
+      <li>Geografiya testi</li>
+      <li>Tarix testi</li>
+      <li>Hayvonlar testi</li>
+      <li>Mantiqiy savollar</li>
+      <li>Ingliz tili testi</li>
+    </ul>
+  </noscript>
 </head>
 <body>
 
@@ -321,7 +338,7 @@
       <div class="hero">
         <div class="hero-badge">🔥 YANGI SAVOLLAR QO'SHILDI</div>
         <h2>Bilimingizni sinang!</h2>
-        <p>Har kuni yangi testlar. Reyting tizimi. O'z natijangizni do'stlar bilan ulashing.</p>
+        <p>Har kuni yangi testlar. Reyting tizimi. Natijangizni do'stlar bilan ulashing!</p>
         <button class="hero-btn" onclick="scrollToCats()">Testni boshlash →</button>
       </div>
 
@@ -1123,7 +1140,7 @@ function autoAnswer() {
 }
 
 function pick(i) {
-  if (answered) { console.log('[answer ignored because]', 'already answered'); return; }
+  if (answered) return;
 
   try {
     // 1. Vaqtni hisoblash — answered = true dan OLDIN
