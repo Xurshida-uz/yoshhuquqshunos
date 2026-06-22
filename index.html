@@ -787,12 +787,23 @@ const SLUG_EMOJI_DEFAULTS = {
 };
 
 function safeEmoji(emoji, slug) {
-  if (!emoji) return SLUG_EMOJI_DEFAULTS[slug] || '📚';
-  // Faqat ASCII harflar/raqamlar/belgilar bo'lsa — noto'g'ri
-  if (/^[a-zA-Z0-9 ().,!?_-]+$/.test(emoji.trim())) {
-    return SLUG_EMOJI_DEFAULTS[slug] || '📚';
-  }
-  return emoji;
+  const s = (slug || '').toLowerCase();
+  const defaults = {
+    bayroqlar:'🌍', bayroq:'🌍', flag:'🌍',
+    huquq:'⚖️', tarix:'📜', geografiya:'🗺️',
+    hayvonlar:'🐯', ingliz:'🇬🇧', matematika:'🧮',
+    fan:'🔬', texnologiya:'💻', sport:'🏆', tabiat:'🌱'
+  };
+  const fallback = Object.entries(defaults).find(([k]) => s.includes(k));
+  const def = fallback ? fallback[1] : '📚';
+
+  if (!emoji || !emoji.trim()) return def;
+  const e = emoji.trim();
+  // Noto'g'ri belgilar: faqat ASCII bo'lsa rad etish
+  if (/^[ -~]+$/.test(e)) return def;
+  // Juda qisqa va emojimasligi mumkin bo'lgan
+  if (e.length > 10) return def;
+  return e;
 }
 
 // ⚠️ HIMOYALANGAN — O'CHIRILMASIN
@@ -1152,29 +1163,35 @@ function scrollToCats() {
 }
 
 async function openCategory(catId, catSlug) {
-  // home tab faol bo'lishi kerak
-  const homeTab = document.getElementById('tab-home');
-  if (!homeTab || homeTab.style.display === 'none') {
-    goTab('home');
-    await new Promise(r => setTimeout(r, 50));
-  }
+  currentCat = CATEGORIES.find(c => c.id === catId || c.id === catSlug) ||
+               {id:catId, name:catId, emoji:'📚'};
 
-  currentCat = CATEGORIES.find(c => c.id === catId || c.id === catSlug) || {id:catId, name:catId, emoji:'📚'};
-
+  // Elementlarni topish
   const topicsGrid = document.getElementById('topics-grid');
   const topicsHeader = document.getElementById('topics-header');
   const sectionsView = document.getElementById('home-sections-view');
   const topicsView = document.getElementById('home-topics-view');
 
+  // Agar elementlar yo'q bo'lsa — home tabga o'tamiz va qayta urinamiz
   if (!topicsGrid || !topicsView) {
-    // Elements topilmadi — to'g'ridan quiz boshlash
-    startCategory(catId);
-    return;
+    goTab('home');
+    await new Promise(r => setTimeout(r, 100));
+    const tg2 = document.getElementById('topics-grid');
+    const tv2 = document.getElementById('home-topics-view');
+    if (!tg2 || !tv2) { startCategory(catId); return; }
   }
 
-  topicsGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
-  if (sectionsView) sectionsView.style.display = 'none';
-  topicsView.style.display = 'block';
+  // Elementlarni qayta olamiz (goTab dan keyin)
+  const tGrid = document.getElementById('topics-grid');
+  const tHeader = document.getElementById('topics-header');
+  const sView = document.getElementById('home-sections-view');
+  const tView = document.getElementById('home-topics-view');
+
+  if (!tGrid || !tView) { startCategory(catId); return; }
+
+  tGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
+  if (sView) sView.style.display = 'none';
+  tView.style.display = 'block';
 
   try {
     const snap = await db.collection('topics')
@@ -1194,9 +1211,11 @@ async function openCategory(catId, catSlug) {
         .sort((a,b) => (a.order||99) - (b.order||99));
     }
 
-    // Agar mavzu yo'q bo'lsa — to'g'ridan quiz boshlash
+    // Mavzu yo'q bo'lsa xabar
     if (!topics.length) {
-      startCategory(catId);
+      if (tHeader) tHeader.innerHTML = `<div style="font-size:24px;margin-bottom:4px">${safeEmoji('', catId)}</div>
+        <div style="font-size:18px;font-weight:700;color:var(--text)">${catId}</div>`;
+      tGrid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:32px;color:var(--text2)'>Bu kategoriyada mavzular tez orada qoshiladi 🚀</div>";
       return;
     }
 
@@ -1212,11 +1231,11 @@ async function openCategory(catId, catSlug) {
     const catData = (await db.collection('categories').doc(catId).get()).data() || {};
     const color = colors[catData.color] || 'var(--purple)';
 
-    topicsHeader.innerHTML = `<div style="font-size:24px;margin-bottom:4px">${catData.emoji||'📚'}</div>
+    if (tHeader) tHeader.innerHTML = `<div style="font-size:24px;margin-bottom:4px">${safeEmoji(catData.emoji, catId)}</div>
       <div style="font-size:18px;font-weight:700;color:var(--text)">${catData.title||catId}</div>
       <div style="font-size:13px;color:var(--text2);margin-top:4px">Mavzu tanlang</div>`;
 
-    topicsGrid.innerHTML = topics.map(t => `
+    tGrid.innerHTML = topics.map(t => `
       <div class="cat-card" style="border-color:${color}20" onclick="startTopicQuiz('${t.id}','${t.title}','${catId}')">
         <span class="cat-emoji">📖</span>
         <div class="cat-name">${t.title}</div>
@@ -1230,8 +1249,10 @@ async function openCategory(catId, catSlug) {
 }
 
 function backToCategories() {
-  document.getElementById('home-topics-view').style.display = 'none';
-  document.getElementById('home-sections-view').style.display = 'block';
+  const tv = document.getElementById('home-topics-view');
+  const sv = document.getElementById('home-sections-view');
+  if (tv) tv.style.display = 'none';
+  if (sv) sv.style.display = 'block';
 }
 
 async function startTopicQuiz(topicId, topicTitle, catId) {
