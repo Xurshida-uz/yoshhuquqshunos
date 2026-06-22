@@ -764,6 +764,20 @@ const CATEGORIES = [
   { id: 'ingliz', name: "Ingliz tili", emoji: '🇬🇧', color: '#EF4444', bg: '#FEF2F2', count: 10, badge: '' },
 ];
 
+// ⚠️ HIMOYALANGAN — O'CHIRILMASIN
+// FLAGS array va generateFlagQuiz() bayroqlar uchun kerak
+// Bu kategoriya doim bosh sahifada ko'rinadi
+const LEGACY_FLAGS_CATEGORY = {
+  slug: 'bayroqlar',
+  title: "Dunyo davlatlari bayroqlari",
+  emoji: '🏳️',
+  description: "195 ta davlat bayroqlarini toping",
+  status: 'published',
+  order: 1,
+  type: 'legacy-flags',
+  color: 'pink'
+};
+
 // ==================== STATE ====================
 let currentUser = null, confirmResult = null;
 let quiz = [], cur = 0, score = 0, answered = false;
@@ -1018,46 +1032,78 @@ function goTab(tab) {
 }
 
 // ==================== CATEGORIES ====================
+const COLOR_HEX = {
+  purple:'#6C63FF', blue:'#3B82F6', green:'#16A34A', red:'#EF4444',
+  orange:'#F97316', yellow:'#EAB308', pink:'#EC4899', teal:'#14B8A6', gray:'#6B7280'
+};
+
+function catCardHTML(slug, id, emoji, title, desc, colorKey, isLegacy) {
+  const color = COLOR_HEX[colorKey] || '#6C63FF';
+  const onclick = isLegacy
+    ? `startLegacyFlags()`
+    : `openCategory('${id}','${slug}')`;
+  return `<div class="cat-card" style="border-color:${color}20" onclick="${onclick}">
+    <span class="cat-emoji">${emoji}</span>
+    <div class="cat-name">${title}</div>
+    <div class="cat-count" style="color:${color}">${desc}</div>
+  </div>`;
+}
+
 async function renderCategories() {
   const grid = document.getElementById('cat-grid');
   if (!grid) return;
   grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
+
+  // Legacy flags doim birinchi
+  console.log('[legacy flags category loaded]');
+  const legacyCard = catCardHTML(
+    LEGACY_FLAGS_CATEGORY.slug, LEGACY_FLAGS_CATEGORY.slug,
+    LEGACY_FLAGS_CATEGORY.emoji, LEGACY_FLAGS_CATEGORY.title,
+    LEGACY_FLAGS_CATEGORY.description, LEGACY_FLAGS_CATEGORY.color, true
+  );
+
   try {
     const snap = await db.collection('categories')
       .where('status','==','published')
       .orderBy('order')
       .get();
-    if (!snap.empty) {
-      grid.innerHTML = snap.docs.map(doc => {
-        const c = doc.data();
-        const color = {purple:'#6C63FF',blue:'#3B82F6',green:'#16A34A',red:'#EF4444',
-          orange:'#F97316',yellow:'#EAB308',pink:'#EC4899',teal:'#14B8A6',gray:'#6B7280'}[c.color] || '#6C63FF';
-        return `<div class="cat-card" style="border-color:${color}20" onclick="openCategory('${doc.id}','${c.slug||doc.id}')">
-          <span class="cat-emoji">${c.emoji||'📚'}</span>
-          <div class="cat-name">${c.title}</div>
-          <div class="cat-count" style="color:${color}">${c.description||''}</div>
-        </div>`;
-      }).join('');
-    } else {
-      // Fallback - eski CATEGORIES dan ko'rsatish
-      grid.innerHTML = CATEGORIES.map(c => {
-        return `<div class="cat-card" style="border-color:${c.color}20" onclick="startCategory('${c.id}')">
-          <span class="cat-emoji">${c.emoji}</span>
-          <div class="cat-name">${c.name}</div>
-          <div class="cat-count" style="color:${c.color}">${c.count} ta savol</div>
-        </div>`;
-      }).join('');
-    }
+
+    // Firestore kategoriyalaridan bayroqlar slugini chiqarib tashlash (duplicate oldini olish)
+    const firestoreCats = snap.docs.filter(doc => {
+      const s = doc.data().slug || doc.id;
+      return s !== 'bayroqlar';
+    });
+
+    const firestoreCards = firestoreCats.map(doc => {
+      const c = doc.data();
+      return catCardHTML(c.slug||doc.id, doc.id, c.emoji||'📚', c.title, c.description||'', c.color||'purple', false);
+    }).join('');
+
+    grid.innerHTML = legacyCard + firestoreCards;
+
   } catch(e) {
-    // Xato bo'lsa eski CATEGORIES
-    grid.innerHTML = CATEGORIES.map(c => {
-      return `<div class="cat-card" style="border-color:${c.color}20" onclick="startCategory('${c.id}')">
+    // Xato bo'lsa legacy + eski CATEGORIES
+    const oldCards = CATEGORIES.filter(c => c.id !== 'bayroqlar').map(c =>
+      `<div class="cat-card" style="border-color:${c.color}20" onclick="startCategory('${c.id}')">
         <span class="cat-emoji">${c.emoji}</span>
         <div class="cat-name">${c.name}</div>
         <div class="cat-count" style="color:${c.color}">${c.count} ta savol</div>
-      </div>`;
-    }).join('');
+      </div>`
+    ).join('');
+    grid.innerHTML = legacyCard + oldCards;
   }
+}
+
+// ⚠️ HIMOYALANGAN FUNKSIYA — O'CHIRILMASIN
+function startLegacyFlags() {
+  console.log('[start legacy flags quiz]', FLAGS.length);
+  const banner = document.getElementById('login-prompt-banner');
+  if (banner) banner.remove();
+  currentCat = { id: 'bayroqlar', name: LEGACY_FLAGS_CATEGORY.title, emoji: LEGACY_FLAGS_CATEGORY.emoji };
+  questionStartTime = Date.now();
+  quiz = generateFlagQuiz(10);
+  cur = 0; score = 0; answered = false; times = []; wrongAnswers = [];
+  startQuizUI();
 }
 
 function scrollToCats() {
@@ -1719,7 +1765,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: admin-v2");
+console.log("DUNYO QUIZ version: legacy-flags-v3");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
