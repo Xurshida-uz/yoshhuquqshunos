@@ -127,7 +127,7 @@
     .timer-fg{fill:none;stroke:var(--purple);stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .9s linear,stroke .3s}
     .timer-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--purple)}
 
-    .quiz-body{padding:0 16px 24px;max-width:640px;margin:0 auto}
+    .quiz-body{padding:0 16px 100px;max-width:640px;margin:0 auto}
     .q-cat-chip{display:inline-flex;align-items:center;gap:6px;background:var(--purple-light);color:var(--purple);font-size:12px;font-weight:600;padding:5px 12px;border-radius:99px;margin-bottom:16px}
     .q-text{font-size:18px;font-weight:700;line-height:1.5;margin-bottom:20px;color:var(--text);min-height:60px}
     .q-img{width:100%;border-radius:var(--radius-sm);margin-bottom:16px;max-height:200px;object-fit:cover}
@@ -150,7 +150,7 @@
     .next-btn:active{opacity:.9}
 
     /* RESULT */
-    .result-wrap{padding:24px 16px 100px;max-width:640px;margin:0 auto}
+    .result-wrap{padding:24px 16px 120px;max-width:640px;margin:0 auto}
     .result-hero{text-align:center;margin-bottom:24px}
     .result-emoji{font-size:64px;margin-bottom:12px;animation:bounce 1s ease-in-out infinite alternate}
     .result-pct{font-size:52px;font-weight:800;color:var(--purple);line-height:1}
@@ -225,9 +225,10 @@
     #recaptcha-container{position:fixed;bottom:-9999px;left:-9999px;visibility:hidden}
 
     /* INSTALL BANNER */
-    #install-banner{display:none;position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--purple);color:white;padding:12px 16px;border-radius:var(--radius-sm);font-size:14px;box-shadow:var(--shadow-lg);align-items:center;gap:12px;z-index:300;max-width:calc(100% - 32px)}
+    #install-banner{display:none;position:fixed;bottom:70px;left:16px;right:16px;background:var(--purple);color:white;padding:12px 16px;border-radius:var(--radius-sm);font-size:14px;box-shadow:var(--shadow-lg);align-items:center;gap:12px;z-index:49;max-width:calc(100% - 32px)}
     .inst-btn{background:white;color:var(--purple);border:none;padding:6px 14px;border-radius:99px;font-size:13px;font-weight:700;cursor:pointer}
     .close-inst{background:none;border:none;color:white;font-size:18px;cursor:pointer;opacity:.7}
+    .has-install-banner{padding-bottom:80px}
 
     /* UTILITIES */
     .loading{text-align:center;padding:32px;color:var(--text2);font-size:14px}
@@ -421,7 +422,7 @@
 <div id="install-banner">
   <span>📲 Ilovani o'rnating</span>
   <button class="inst-btn" onclick="doInstall()">O'rnatish</button>
-  <button class="close-inst" onclick="this.parentElement.style.display='none'">✕</button>
+  <button class="close-inst" onclick="dismissInstallBanner()">✕</button>
 </div>
 
 <script>
@@ -1032,7 +1033,6 @@ function startCategory(catId) {
   currentCat = CATEGORIES.find(c => c.id === catId);
   if (!currentCat) return;
   questionStartTime = Date.now(); // Quiz boshida reset
-  console.log('[quiz started]', catId);
 
   // Bayroqlar uchun dinamik generator
   if (catId === 'bayroqlar') {
@@ -1063,7 +1063,6 @@ function startCategory(catId) {
 function renderQ() {
   answered = false; clearInterval(timerInt); tLeft = 20;
   questionStartTime = Date.now(); // Reset — har yangi savolda
-  console.log('[next question reset]', cur + 1);
   const q = quiz[cur];
   const total = quiz.length;
   document.getElementById('q-label').textContent = `Savol ${cur + 1}/${total}`;
@@ -1124,7 +1123,6 @@ function autoAnswer() {
 }
 
 function pick(i) {
-  console.log('[answer button clicked]', i);
   if (answered) { console.log('[answer ignored because]', 'already answered'); return; }
 
   try {
@@ -1136,7 +1134,6 @@ function pick(i) {
     // 2. Endi answered = true — hisoblash muvaffaqiyatli bo'ldi
     answered = true;
     clearInterval(timerInt);
-    console.log('[answer accepted]', i, 'time:', spent + 's');
 
     times.push(spent);
 
@@ -1562,17 +1559,37 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: pick-fix-v4");
+console.log("DUNYO QUIZ version: stable-v1");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
+
+function showInstallBanner() {
+  if (localStorage.getItem('installBannerDismissed')) return;
+  const banner = document.getElementById('install-banner');
+  banner.style.display = 'flex';
+  document.body.classList.add('has-install-banner');
+}
+
+function dismissInstallBanner() {
+  const banner = document.getElementById('install-banner');
+  banner.style.display = 'none';
+  document.body.classList.remove('has-install-banner');
+  localStorage.setItem('installBannerDismissed', '1');
+}
+
 window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault(); deferredPrompt = e;
-  document.getElementById('install-banner').style.display = 'flex';
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallBanner();
 });
+
 function doInstall() {
   if (!deferredPrompt) return;
   deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(() => { deferredPrompt = null; document.getElementById('install-banner').style.display = 'none'; });
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+    dismissInstallBanner();
+  });
 }
 </script>
 </body>
