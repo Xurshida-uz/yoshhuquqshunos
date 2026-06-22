@@ -91,7 +91,9 @@
     .ep-btn{width:40px;height:40px;border-radius:8px;border:2px solid var(--border);background:var(--bg);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
     .ep-btn:hover{border-color:var(--purple);background:var(--purple-light);transform:scale(1.1)}
     .ep-btn.active{border-color:var(--purple);background:var(--purple-light)}
-    .emoji-preview{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--purple-light),#F0EDFF);border:2px solid var(--purple-light);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:8px}
+    .emoji-preview{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--purple-light),#F0EDFF);border:2px solid var(--purple-light);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+    .color-pick-btn{width:32px;height:32px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:all .15s}
+    .color-pick-btn.active{border-color:var(--text);transform:scale(1.15)}
   </style>
 </head>
 <body>
@@ -158,12 +160,54 @@ function getSafeEmoji(emoji, slug) {
   return '📚';
 }
 
-function initEmojiPicker() {
+function initCategoryForm() {
+  // Emoji picker
   const picker = document.getElementById('c-emoji-picker');
-  if (!picker) return;
-  picker.innerHTML = PRESET_EMOJIS.map(e =>
-    `<button type="button" class="ep-btn" onclick="selectEmoji('${e}')">${e}</button>`
-  ).join('');
+  if (picker) {
+    picker.innerHTML = PRESET_EMOJIS.map(e =>
+      `<button type="button" class="ep-btn" onclick="selectEmoji('${e}')">${e}</button>`
+    ).join('');
+  }
+  // Color picker
+  const colorPicker = document.getElementById('c-color-picker');
+  if (colorPicker) {
+    colorPicker.innerHTML = Object.entries(COLOR_MAP).map(([k,v]) =>
+      `<button type="button" class="color-pick-btn ${k==='purple'?'active':''}"
+        style="background:${v}" title="${k}"
+        onclick="selectColor('${k}',this)"></button>`
+    ).join('');
+  }
+  // Auto order
+  autoFillOrder();
+}
+
+async function autoFillOrder() {
+  try {
+    const snap = await db.collection('categories').get();
+    const maxOrder = snap.docs.reduce((max, d) => Math.max(max, d.data().order || 0), 0);
+    const orderInp = document.getElementById('c-order');
+    if (orderInp && !orderInp.value) orderInp.value = maxOrder + 1;
+  } catch(e) {}
+}
+
+function selectColor(colorKey, btn) {
+  document.getElementById('c-color').value = colorKey;
+  document.querySelectorAll('.color-pick-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function initEmojiPicker() { initCategoryForm(); }
+
+function onCatTitleInput() {
+  const title = document.getElementById('c-title').value.trim();
+  const slug = slugify(title);
+  const preview = document.getElementById('c-slug-preview');
+  if (preview) preview.textContent = slug || '—';
+  // Slug bo'yicha emoji taklif
+  if (SLUG_EMOJI_DEFAULTS[slug]) {
+    const current = document.getElementById('c-emoji').value.trim();
+    if (!isValidEmoji(current)) selectEmoji(SLUG_EMOJI_DEFAULTS[slug]);
+  }
 }
 
 function selectEmoji(emoji) {
@@ -180,7 +224,7 @@ function updateEmojiPreview() {
   if (preview) preview.textContent = isValidEmoji(val) ? val : '📚';
 }
 
-function autoSlugEmoji() {
+function autoSlugEmojiOld() {
   const title = document.getElementById('c-title').value.trim();
   const slug = slugify(title);
   if (SLUG_EMOJI_DEFAULTS[slug]) {
@@ -396,13 +440,27 @@ async function addCategory() {
   const title = document.getElementById('c-title').value.trim();
   const rawEmoji = document.getElementById('c-emoji').value.trim();
   const desc = document.getElementById('c-desc').value.trim();
-  const color = document.getElementById('c-color').value;
-  const order = parseInt(document.getElementById('c-order').value) || 99;
+  const color = document.getElementById('c-color').value || 'purple';
   const status = document.getElementById('c-status').value;
   if (!title) { showMsg('c-msg','Kategoriya nomi majburiy',false); return; }
   const slug = slugify(title);
-  // Emoji validation - noto'g'ri belgilar qabul qilinmaydi
+  if (!slug) { showMsg('c-msg','Slug yaratib bo'lmadi — lotin harflarida yozing',false); return; }
+
+  // Duplicate slug tekshirish
+  const existing = await db.collection('categories').doc(slug).get();
+  if (existing.exists) { showMsg('c-msg',`"${slug}" slug allaqachon mavjud!`,false); return; }
+
+  // Emoji validation
   const emoji = getSafeEmoji(rawEmoji, slug);
+
+  // Auto order
+  const orderInp = parseInt(document.getElementById('c-order').value);
+  let order = orderInp || 99;
+  if (!orderInp) {
+    const snap = await db.collection('categories').get();
+    order = snap.docs.reduce((max, d) => Math.max(max, d.data().order || 0), 0) + 1;
+  }
+
   try {
     await db.collection('categories').doc(slug).set({
       title, slug, emoji, description:desc, color, order, status,
