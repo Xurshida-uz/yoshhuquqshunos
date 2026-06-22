@@ -1265,6 +1265,7 @@ async function startTopicQuiz(topicId, topicTitle, catId) {
 
   try {
     showToast('Savollar yuklanmoqda...');
+    // topicId yoki levelSlug bo'yicha savollarni yuklash
     const snap = await db.collection('questions')
       .where('topicId','==',topicId)
       .where('status','==','published')
@@ -1848,7 +1849,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: legacy-flags-v3");
+console.log("DUNYO QUIZ version: vocab-import-v4");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
