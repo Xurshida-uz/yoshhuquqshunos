@@ -1064,16 +1064,18 @@ async function renderCategories() {
   );
 
   try {
+    // orderBy olib tashlandi — composite index kerak emas
     const snap = await db.collection('categories')
       .where('status','==','published')
-      .orderBy('order')
       .get();
 
-    // Firestore kategoriyalaridan bayroqlar slugini chiqarib tashlash (duplicate oldini olish)
-    const firestoreCats = snap.docs.filter(doc => {
-      const s = doc.data().slug || doc.id;
-      return s !== 'bayroqlar';
-    });
+    // JS da tartiblaymiz
+    const firestoreCats = snap.docs
+      .filter(doc => {
+        const s = doc.data().slug || doc.id;
+        return s !== 'bayroqlar'; // duplicate oldini olish
+      })
+      .sort((a, b) => (a.data().order || 99) - (b.data().order || 99));
 
     const firestoreCards = firestoreCats.map(doc => {
       const c = doc.data();
@@ -1128,18 +1130,18 @@ async function openCategory(catId, catSlug) {
     const snap = await db.collection('topics')
       .where('categoryId','==',catId)
       .where('status','==','published')
-      .orderBy('order')
       .get();
 
-    // categorySlug bilan ham qidiramiz
-    let topics = snap.docs.map(d=>({id:d.id,...d.data()}));
+    let topics = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b) => (a.order||99) - (b.order||99));
+
     if (!topics.length && catSlug !== catId) {
       const snap2 = await db.collection('topics')
         .where('categorySlug','==',catSlug)
         .where('status','==','published')
-        .orderBy('order')
         .get();
-      topics = snap2.docs.map(d=>({id:d.id,...d.data()}));
+      topics = snap2.docs.map(d=>({id:d.id,...d.data()}))
+        .sort((a,b) => (a.order||99) - (b.order||99));
     }
 
     // Agar mavzu yo'q bo'lsa — to'g'ridan quiz boshlash
