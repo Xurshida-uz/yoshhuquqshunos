@@ -75,7 +75,7 @@
     .cat-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 14px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
     .cat-card:active{transform:scale(.97)}
     .cat-card.locked{opacity:.6;cursor:default}
-    .cat-emoji{font-size:32px;margin-bottom:8px;display:block}
+    .cat-emoji{font-size:32px;margin-bottom:8px;display:block;line-height:1}
     .cat-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px}
     .cat-count{font-size:12px;color:var(--text2)}
     .cat-badge{position:absolute;top:10px;right:10px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px}
@@ -770,6 +770,21 @@ const COLOR_HEX = {
   orange:'#F97316', yellow:'#EAB308', pink:'#EC4899', teal:'#14B8A6', gray:'#6B7280'
 };
 
+const SLUG_EMOJI_DEFAULTS = {
+  bayroqlar:'🌍', geografiya:'🗺️', tarix:'📜', hayvonlar:'🐯',
+  mantiq:'🧠', ingliz:'🇬🇧', huquq:'⚖️', sport:'🏆',
+  fan:'🔬', texnologiya:'💻', matematika:'🧮', tabiat:'🌱'
+};
+
+function safeEmoji(emoji, slug) {
+  if (!emoji) return SLUG_EMOJI_DEFAULTS[slug] || '📚';
+  // Faqat ASCII harflar/raqamlar/belgilar bo'lsa — noto'g'ri
+  if (/^[a-zA-Z0-9\s\)\(\.\,\!\?\-\_]+$/.test(emoji.trim())) {
+    return SLUG_EMOJI_DEFAULTS[slug] || '📚';
+  }
+  return emoji;
+}
+
 // ⚠️ HIMOYALANGAN — O'CHIRILMASIN
 // FLAGS array va generateFlagQuiz() bayroqlar uchun kerak
 // Bu kategoriya doim bosh sahifada ko'rinadi
@@ -1040,13 +1055,14 @@ function goTab(tab) {
 // ==================== CATEGORIES ====================
 function catCardHTML(slug, id, emoji, title, desc, colorKey, isLegacy) {
   const color = COLOR_HEX[colorKey] || '#6C63FF';
+  const safeE = safeEmoji(emoji, slug);
   const onclick = isLegacy
     ? `startLegacyFlags()`
     : `openCategory('${id}','${slug}')`;
   return `<div class="cat-card" style="border-color:${color}20" onclick="${onclick}">
-    <span class="cat-emoji">${emoji}</span>
+    <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,${color}22,${color}11);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:10px;border:1.5px solid ${color}22">${safeE}</div>
     <div class="cat-name">${title}</div>
-    <div class="cat-count" style="color:${color}">${desc}</div>
+    <div class="cat-count" style="color:${color}">${desc || 'Testni boshlash'}</div>
   </div>`;
 }
 

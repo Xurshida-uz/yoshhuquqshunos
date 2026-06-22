@@ -87,6 +87,11 @@
     .actions-col{white-space:nowrap;display:flex;gap:4px}
     .empty{text-align:center;padding:32px;color:var(--text2)}
     .color-dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+    .emoji-picker{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+    .ep-btn{width:40px;height:40px;border-radius:8px;border:2px solid var(--border);background:var(--bg);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .ep-btn:hover{border-color:var(--purple);background:var(--purple-light);transform:scale(1.1)}
+    .ep-btn.active{border-color:var(--purple);background:var(--purple-light)}
+    .emoji-preview{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--purple-light),#F0EDFF);border:2px solid var(--purple-light);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:8px}
   </style>
 </head>
 <body>
@@ -130,6 +135,59 @@
 
 <script>
 const ADMIN_UID = 'HUToMkDnMFRcuJWhXL6MRfm00bl2';
+
+const PRESET_EMOJIS = ['🌍','🗺️','📜','🐯','🧠','🇬🇧','⚖️','📚','🏛️','🏆','🎨','🔬','💻','🧮','🕌','🌱','🎓','🏥','✈️','🍎','🎵','⚽','🌊','🦁','🔥','💡','🚀','🌙','⭐','🎯'];
+
+const SLUG_EMOJI_DEFAULTS = {
+  bayroqlar:'🌍', geografiya:'🗺️', tarix:'📜', hayvonlar:'🐯',
+  mantiq:'🧠', ingliz:'🇬🇧', huquq:'⚖️', sport:'🏆', san_at:'🎨',
+  fan:'🔬', texnologiya:'💻', matematika:'🧮', madaniyat:'🕌', tabiat:'🌱'
+};
+
+function isValidEmoji(str) {
+  if (!str || !str.trim()) return false;
+  // Faqat harflar, raqamlar, nuqtalar, qavs kabi oddiy belgilarni rad etish
+  const invalidPattern = /^[a-zA-Z0-9\s\)\(\.\,\!\?\-\_]+$/;
+  if (invalidPattern.test(str.trim())) return false;
+  return true;
+}
+
+function getSafeEmoji(emoji, slug) {
+  if (isValidEmoji(emoji)) return emoji;
+  if (slug && SLUG_EMOJI_DEFAULTS[slug]) return SLUG_EMOJI_DEFAULTS[slug];
+  return '📚';
+}
+
+function initEmojiPicker() {
+  const picker = document.getElementById('c-emoji-picker');
+  if (!picker) return;
+  picker.innerHTML = PRESET_EMOJIS.map(e =>
+    `<button type="button" class="ep-btn" onclick="selectEmoji('${e}')">${e}</button>`
+  ).join('');
+}
+
+function selectEmoji(emoji) {
+  document.getElementById('c-emoji').value = emoji;
+  document.getElementById('c-emoji-preview').textContent = emoji;
+  document.querySelectorAll('.ep-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === emoji);
+  });
+}
+
+function updateEmojiPreview() {
+  const val = document.getElementById('c-emoji').value.trim();
+  const preview = document.getElementById('c-emoji-preview');
+  if (preview) preview.textContent = isValidEmoji(val) ? val : '📚';
+}
+
+function autoSlugEmoji() {
+  const title = document.getElementById('c-title').value.trim();
+  const slug = slugify(title);
+  if (SLUG_EMOJI_DEFAULTS[slug]) {
+    const current = document.getElementById('c-emoji').value.trim();
+    if (!isValidEmoji(current)) selectEmoji(SLUG_EMOJI_DEFAULTS[slug]);
+  }
+}
 const COLOR_MAP = {
   purple:'#6C63FF', blue:'#3B82F6', green:'#16A34A',
   red:'#EF4444', orange:'#F97316', yellow:'#EAB308',
@@ -336,13 +394,15 @@ async function loadCategoryList() {
 
 async function addCategory() {
   const title = document.getElementById('c-title').value.trim();
-  const emoji = document.getElementById('c-emoji').value.trim();
+  const rawEmoji = document.getElementById('c-emoji').value.trim();
   const desc = document.getElementById('c-desc').value.trim();
   const color = document.getElementById('c-color').value;
   const order = parseInt(document.getElementById('c-order').value) || 99;
   const status = document.getElementById('c-status').value;
-  if (!title||!emoji) { showMsg('c-msg','Nomi va emoji majburiy',false); return; }
+  if (!title) { showMsg('c-msg','Kategoriya nomi majburiy',false); return; }
   const slug = slugify(title);
+  // Emoji validation - noto'g'ri belgilar qabul qilinmaydi
+  const emoji = getSafeEmoji(rawEmoji, slug);
   try {
     await db.collection('categories').doc(slug).set({
       title, slug, emoji, description:desc, color, order, status,
@@ -350,6 +410,9 @@ async function addCategory() {
     });
     showMsg('c-msg','✅ Kategoriya qo\'shildi!');
     ['c-title','c-emoji','c-desc','c-order'].forEach(id=>document.getElementById(id).value='');
+    const preview = document.getElementById('c-emoji-preview');
+    if (preview) preview.textContent = '📚';
+    document.querySelectorAll('.ep-btn').forEach(b=>b.classList.remove('active'));
     await loadCategoryList();
   } catch(e) { showMsg('c-msg','❌ '+e.message,false); }
 }
