@@ -1102,11 +1102,23 @@ function startLegacyFlags() {
   console.log('[start legacy flags quiz]', FLAGS.length);
   const banner = document.getElementById('login-prompt-banner');
   if (banner) banner.remove();
+
   currentCat = { id: 'bayroqlar', name: LEGACY_FLAGS_CATEGORY.title, emoji: LEGACY_FLAGS_CATEGORY.emoji };
   questionStartTime = Date.now();
   quiz = generateFlagQuiz(10);
   cur = 0; score = 0; answered = false; times = []; wrongAnswers = [];
-  startQuizUI();
+  console.log('[legacy flag questions generated]', quiz.length);
+
+  // Quiz UI ni ko'rsatish — to'g'ridan
+  document.querySelector('.nav-bar').style.display = 'none';
+  ['home','leaderboard','profile'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('tab-result').style.display = 'none';
+  document.getElementById('tab-quiz').style.display = 'block';
+  document.getElementById('cat-label').textContent = currentCat.emoji + ' ' + currentCat.name;
+  renderQ();
 }
 
 function scrollToCats() {
@@ -1226,7 +1238,16 @@ async function startTopicQuiz(topicId, topicTitle, catId) {
       emoji: currentCat?.emoji || '📖'
     };
 
-    startQuizUI();
+    // Quiz UI ni ko'rsatish
+    document.querySelector('.nav-bar').style.display = 'none';
+    ['home','leaderboard','profile'].forEach(t => {
+      const el = document.getElementById('tab-' + t);
+      if (el) el.style.display = 'none';
+    });
+    document.getElementById('tab-result').style.display = 'none';
+    document.getElementById('tab-quiz').style.display = 'block';
+    document.getElementById('cat-label').textContent = currentCat.emoji + ' ' + currentCat.name;
+    renderQ();
   } catch(e) {
     showToast('Savollar yuklanmadi!');
     console.error(e);
