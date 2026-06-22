@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dunyo-quiz-v28';
+const CACHE_NAME = 'dunyo-quiz-v29';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
