@@ -1,0 +1,2044 @@
+{
+  "category": {
+    "name": "English Vocabulary",
+    "slug": "english-vocabulary",
+    "emoji": "📘",
+    "color": "#3B82F6",
+    "order": 1
+  },
+  "topic": {
+    "categorySlug": "english-vocabulary",
+    "title": "First 100 Words",
+    "slug": "first-100-words",
+    "description": "Ingliz tilidagi eng ko‘p ishlatiladigan birinchi 100 ta so‘z",
+    "order": 1
+  },
+  "levels": [
+    {
+      "topicSlug": "first-100-words",
+      "title": "Words 1–25",
+      "slug": "words-1-25",
+      "order": 1
+    },
+    {
+      "topicSlug": "first-100-words",
+      "title": "Words 26–50",
+      "slug": "words-26-50",
+      "order": 2
+    },
+    {
+      "topicSlug": "first-100-words",
+      "title": "Words 51–75",
+      "slug": "words-51-75",
+      "order": 3
+    },
+    {
+      "topicSlug": "first-100-words",
+      "title": "Words 76–100",
+      "slug": "words-76-100",
+      "order": 4
+    }
+  ],
+  "questions": [
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 1,
+      "wordRank": 1,
+      "word": "the",
+      "uzbek": "aniq artikl",
+      "exampleSentence": "The book is on the table.",
+      "questionType": "translation_en_to_uz",
+      "question": "“the” so‘zining ma’nosi nima?",
+      "options": [
+        "aniq artikl",
+        "tashqariga",
+        "vaqt"
+      ],
+      "correctAnswer": "aniq artikl",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 2,
+      "wordRank": 2,
+      "word": "of",
+      "uzbek": "-ning / haqida",
+      "exampleSentence": "This is a map of Uzbekistan.",
+      "questionType": "translation_en_to_uz",
+      "question": "“of” so‘zining ma’nosi nima?",
+      "options": [
+        "ega / bor",
+        "-ning / haqida",
+        "qilmoq"
+      ],
+      "correctAnswer": "-ning / haqida",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 3,
+      "wordRank": 3,
+      "word": "and",
+      "uzbek": "va",
+      "exampleSentence": "I like tea and bread.",
+      "questionType": "translation_en_to_uz",
+      "question": "“and” so‘zining ma’nosi nima?",
+      "options": [
+        "nima",
+        "va",
+        "uni / unga, erkak"
+      ],
+      "correctAnswer": "va",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 4,
+      "wordRank": 4,
+      "word": "a",
+      "uzbek": "bir / noaniq artikl",
+      "exampleSentence": "I have a pen.",
+      "questionType": "translation_en_to_uz",
+      "question": "“a” so‘zining ma’nosi nima?",
+      "options": [
+        "kelmoq",
+        "bir / noaniq artikl",
+        "uni / uning, ayol"
+      ],
+      "correctAnswer": "bir / noaniq artikl",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 5,
+      "wordRank": 5,
+      "word": "to",
+      "uzbek": "-ga / uchun",
+      "exampleSentence": "I go to school.",
+      "questionType": "translation_en_to_uz",
+      "question": "“to” so‘zining ma’nosi nima?",
+      "options": [
+        "bir",
+        "-ga / uchun",
+        "topmoq"
+      ],
+      "correctAnswer": "-ga / uchun",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 6,
+      "wordRank": 6,
+      "word": "in",
+      "uzbek": "ichida / da",
+      "exampleSentence": "The keys are in the bag.",
+      "questionType": "translation_en_to_uz",
+      "question": "“in” so‘zining ma’nosi nima?",
+      "options": [
+        "ichida / da",
+        "men",
+        "yog‘ / neft"
+      ],
+      "correctAnswer": "ichida / da",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 7,
+      "wordRank": 7,
+      "word": "is",
+      "uzbek": "-dir / hisoblanadi",
+      "exampleSentence": "This is my book.",
+      "questionType": "translation_en_to_uz",
+      "question": "“is” so‘zining ma’nosi nima?",
+      "options": [
+        "-dir / hisoblanadi",
+        "sening / sizning",
+        "dan"
+      ],
+      "correctAnswer": "-dir / hisoblanadi",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 8,
+      "wordRank": 8,
+      "word": "you",
+      "uzbek": "sen / siz",
+      "exampleSentence": "You are my friend.",
+      "questionType": "translation_en_to_uz",
+      "question": "“you” so‘zining ma’nosi nima?",
+      "options": [
+        "ko‘rmoq",
+        "sen / siz",
+        "ko‘p"
+      ],
+      "correctAnswer": "sen / siz",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 9,
+      "wordRank": 9,
+      "word": "that",
+      "uzbek": "o‘sha / shu",
+      "exampleSentence": "That house is big.",
+      "questionType": "translation_en_to_uz",
+      "question": "“that” so‘zining ma’nosi nima?",
+      "options": [
+        "u, erkak",
+        "yasamoq / qilmoq",
+        "o‘sha / shu"
+      ],
+      "correctAnswer": "o‘sha / shu",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 10,
+      "wordRank": 10,
+      "word": "it",
+      "uzbek": "u / bu narsa",
+      "exampleSentence": "It is cold today.",
+      "questionType": "translation_en_to_uz",
+      "question": "“it” so‘zining ma’nosi nima?",
+      "options": [
+        "u / bu narsa",
+        "yo‘q",
+        "u, ayol"
+      ],
+      "correctAnswer": "u / bu narsa",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 11,
+      "wordRank": 11,
+      "word": "he",
+      "uzbek": "u, erkak",
+      "exampleSentence": "He is a student.",
+      "questionType": "translation_en_to_uz",
+      "question": "“he” so‘zining ma’nosi nima?",
+      "options": [
+        "u, ayol",
+        "u, erkak",
+        "uni / uning, ayol"
+      ],
+      "correctAnswer": "u, erkak",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 12,
+      "wordRank": 12,
+      "word": "was",
+      "uzbek": "edi",
+      "exampleSentence": "It was sunny yesterday.",
+      "questionType": "translation_en_to_uz",
+      "question": "“was” so‘zining ma’nosi nima?",
+      "options": [
+        "yuqoriga",
+        "edi",
+        "u, erkak"
+      ],
+      "correctAnswer": "edi",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 13,
+      "wordRank": 13,
+      "word": "for",
+      "uzbek": "uchun",
+      "exampleSentence": "This gift is for you.",
+      "questionType": "translation_en_to_uz",
+      "question": "“for” so‘zining ma’nosi nima?",
+      "options": [
+        "ko‘p",
+        "nima",
+        "uchun"
+      ],
+      "correctAnswer": "uchun",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 14,
+      "wordRank": 14,
+      "word": "on",
+      "uzbek": "ustida / da",
+      "exampleSentence": "The cup is on the table.",
+      "questionType": "translation_en_to_uz",
+      "question": "“on” so‘zining ma’nosi nima?",
+      "options": [
+        "edi",
+        "ustida / da",
+        "ularning"
+      ],
+      "correctAnswer": "ustida / da",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 15,
+      "wordRank": 15,
+      "word": "are",
+      "uzbek": "-dirlar / hisoblanadi",
+      "exampleSentence": "They are happy.",
+      "questionType": "translation_en_to_uz",
+      "question": "“are” so‘zining ma’nosi nima?",
+      "options": [
+        "sen / siz",
+        "-dirlar / hisoblanadi",
+        "bir / noaniq artikl"
+      ],
+      "correctAnswer": "-dirlar / hisoblanadi",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 16,
+      "wordRank": 16,
+      "word": "as",
+      "uzbek": "sifatida / kabi",
+      "exampleSentence": "She works as a teacher.",
+      "questionType": "translation_en_to_uz",
+      "question": "“as” so‘zining ma’nosi nima?",
+      "options": [
+        "qilmoq",
+        "edi / bo‘lardi",
+        "sifatida / kabi"
+      ],
+      "correctAnswer": "sifatida / kabi",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 17,
+      "wordRank": 17,
+      "word": "with",
+      "uzbek": "bilan",
+      "exampleSentence": "I write with a pencil.",
+      "questionType": "translation_en_to_uz",
+      "question": "“with” so‘zining ma’nosi nima?",
+      "options": [
+        "yasadi / qildi",
+        "bilan",
+        "biz"
+      ],
+      "correctAnswer": "bilan",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 18,
+      "wordRank": 18,
+      "word": "his",
+      "uzbek": "uning, erkak",
+      "exampleSentence": "His car is new.",
+      "questionType": "translation_en_to_uz",
+      "question": "“his” so‘zining ma’nosi nima?",
+      "options": [
+        "ega / bor",
+        "keyin / unda",
+        "uning, erkak"
+      ],
+      "correctAnswer": "uning, erkak",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 19,
+      "wordRank": 19,
+      "word": "they",
+      "uzbek": "ular",
+      "exampleSentence": "They play football.",
+      "questionType": "translation_en_to_uz",
+      "question": "“they” so‘zining ma’nosi nima?",
+      "options": [
+        "qildi",
+        "kun",
+        "ular"
+      ],
+      "correctAnswer": "ular",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 20,
+      "wordRank": 20,
+      "word": "I",
+      "uzbek": "men",
+      "exampleSentence": "I am ready.",
+      "questionType": "translation_en_to_uz",
+      "question": "“I” so‘zining ma’nosi nima?",
+      "options": [
+        "boshqa",
+        "ko‘rmoq",
+        "men"
+      ],
+      "correctAnswer": "men",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 21,
+      "wordRank": 21,
+      "word": "at",
+      "uzbek": "da / yonida",
+      "exampleSentence": "We meet at school.",
+      "questionType": "translation_en_to_uz",
+      "question": "“at” so‘zining ma’nosi nima?",
+      "options": [
+        "dan",
+        "da / yonida",
+        "ularning"
+      ],
+      "correctAnswer": "da / yonida",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 22,
+      "wordRank": 22,
+      "word": "be",
+      "uzbek": "bo‘lmoq",
+      "exampleSentence": "Try to be kind.",
+      "questionType": "translation_en_to_uz",
+      "question": "“be” so‘zining ma’nosi nima?",
+      "options": [
+        "har bir",
+        "bo‘lmoq",
+        "men"
+      ],
+      "correctAnswer": "bo‘lmoq",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 23,
+      "wordRank": 23,
+      "word": "this",
+      "uzbek": "bu",
+      "exampleSentence": "This phone is mine.",
+      "questionType": "translation_en_to_uz",
+      "question": "“this” so‘zining ma’nosi nima?",
+      "options": [
+        "yoqtirmoq / kabi",
+        "bu",
+        "bo‘lmoq"
+      ],
+      "correctAnswer": "bu",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 24,
+      "wordRank": 24,
+      "word": "have",
+      "uzbek": "ega bo‘lmoq / bor",
+      "exampleSentence": "I have two apples.",
+      "questionType": "translation_en_to_uz",
+      "question": "“have” so‘zining ma’nosi nima?",
+      "options": [
+        "ularni / ularga",
+        "ega bo‘lmoq / bor",
+        "pastga"
+      ],
+      "correctAnswer": "ega bo‘lmoq / bor",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-1-25",
+      "order": 25,
+      "wordRank": 25,
+      "word": "from",
+      "uzbek": "dan",
+      "exampleSentence": "She is from Tashkent.",
+      "questionType": "translation_en_to_uz",
+      "question": "“from” so‘zining ma’nosi nima?",
+      "options": [
+        "edi",
+        "tashqariga",
+        "dan"
+      ],
+      "correctAnswer": "dan",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 26,
+      "wordRank": 26,
+      "word": "or",
+      "uzbek": "yoki",
+      "exampleSentence": "Do you want tea or water?",
+      "questionType": "translation_en_to_uz",
+      "question": "“or” so‘zining ma’nosi nima?",
+      "options": [
+        "yoki",
+        "qism",
+        "qanday"
+      ],
+      "correctAnswer": "yoki",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 27,
+      "wordRank": 27,
+      "word": "one",
+      "uzbek": "bir",
+      "exampleSentence": "I have one brother.",
+      "questionType": "translation_en_to_uz",
+      "question": "“one” so‘zining ma’nosi nima?",
+      "options": [
+        "bo‘lgan",
+        "bir",
+        "qism"
+      ],
+      "correctAnswer": "bir",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 28,
+      "wordRank": 28,
+      "word": "had",
+      "uzbek": "ega edi / bor edi",
+      "exampleSentence": "He had a red bag.",
+      "questionType": "translation_en_to_uz",
+      "question": "“had” so‘zining ma’nosi nima?",
+      "options": [
+        "ega edi / bor edi",
+        "yoqtirmoq / kabi",
+        "uning, narsa"
+      ],
+      "correctAnswer": "ega edi / bor edi",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 29,
+      "wordRank": 29,
+      "word": "by",
+      "uzbek": "tomonidan / yonida",
+      "exampleSentence": "The book was written by a teacher.",
+      "questionType": "translation_en_to_uz",
+      "question": "“by” so‘zining ma’nosi nima?",
+      "options": [
+        "tomonidan / yonida",
+        "uning, narsa",
+        "hamma / barcha"
+      ],
+      "correctAnswer": "tomonidan / yonida",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 30,
+      "wordRank": 30,
+      "word": "word",
+      "uzbek": "so‘z",
+      "exampleSentence": "This word is easy.",
+      "questionType": "translation_en_to_uz",
+      "question": "“word” so‘zining ma’nosi nima?",
+      "options": [
+        "so‘z",
+        "ko‘proq / yana",
+        "uning, narsa"
+      ],
+      "correctAnswer": "so‘z",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 31,
+      "wordRank": 31,
+      "word": "but",
+      "uzbek": "lekin",
+      "exampleSentence": "I am tired, but happy.",
+      "questionType": "translation_en_to_uz",
+      "question": "“but” so‘zining ma’nosi nima?",
+      "options": [
+        "keyin / unda",
+        "lekin",
+        "qaysi"
+      ],
+      "correctAnswer": "lekin",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 32,
+      "wordRank": 32,
+      "word": "not",
+      "uzbek": "emas",
+      "exampleSentence": "This is not difficult.",
+      "questionType": "translation_en_to_uz",
+      "question": "“not” so‘zining ma’nosi nima?",
+      "options": [
+        "yasadi / qildi",
+        "emas",
+        "kim"
+      ],
+      "correctAnswer": "emas",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 33,
+      "wordRank": 33,
+      "word": "what",
+      "uzbek": "nima",
+      "exampleSentence": "What is your name?",
+      "questionType": "translation_en_to_uz",
+      "question": "“what” so‘zining ma’nosi nima?",
+      "options": [
+        "yo‘q",
+        "ega / bor",
+        "nima"
+      ],
+      "correctAnswer": "nima",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 34,
+      "wordRank": 34,
+      "word": "all",
+      "uzbek": "hamma / barcha",
+      "exampleSentence": "All students are here.",
+      "questionType": "translation_en_to_uz",
+      "question": "“all” so‘zining ma’nosi nima?",
+      "options": [
+        "qila olmoq",
+        "mumkin / ehtimol",
+        "hamma / barcha"
+      ],
+      "correctAnswer": "hamma / barcha",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 35,
+      "wordRank": 35,
+      "word": "were",
+      "uzbek": "edilar / edi",
+      "exampleSentence": "They were at home.",
+      "questionType": "translation_en_to_uz",
+      "question": "“were” so‘zining ma’nosi nima?",
+      "options": [
+        "edilar / edi",
+        "qilmoq",
+        "u, ayol"
+      ],
+      "correctAnswer": "edilar / edi",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 36,
+      "wordRank": 36,
+      "word": "we",
+      "uzbek": "biz",
+      "exampleSentence": "We study English.",
+      "questionType": "translation_en_to_uz",
+      "question": "“we” so‘zining ma’nosi nima?",
+      "options": [
+        "tomonidan / yonida",
+        "biz",
+        "ega edi / bor edi"
+      ],
+      "correctAnswer": "biz",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 37,
+      "wordRank": 37,
+      "word": "when",
+      "uzbek": "qachon",
+      "exampleSentence": "When is your lesson?",
+      "questionType": "translation_en_to_uz",
+      "question": "“when” so‘zining ma’nosi nima?",
+      "options": [
+        "foydalanmoq",
+        "qachon",
+        "-dir / hisoblanadi"
+      ],
+      "correctAnswer": "qachon",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 38,
+      "wordRank": 38,
+      "word": "your",
+      "uzbek": "sening / sizning",
+      "exampleSentence": "Your answer is correct.",
+      "questionType": "translation_en_to_uz",
+      "question": "“your” so‘zining ma’nosi nima?",
+      "options": [
+        "yo‘q",
+        "sening / sizning",
+        "ko‘rmoq"
+      ],
+      "correctAnswer": "sening / sizning",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 39,
+      "wordRank": 39,
+      "word": "can",
+      "uzbek": "qila olmoq",
+      "exampleSentence": "I can read English.",
+      "questionType": "translation_en_to_uz",
+      "question": "“can” so‘zining ma’nosi nima?",
+      "options": [
+        "odamlar",
+        "hozir",
+        "qila olmoq"
+      ],
+      "correctAnswer": "qila olmoq",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 40,
+      "wordRank": 40,
+      "word": "said",
+      "uzbek": "dedi / aytdi",
+      "exampleSentence": "She said hello.",
+      "questionType": "translation_en_to_uz",
+      "question": "“said” so‘zining ma’nosi nima?",
+      "options": [
+        "odamlar",
+        "dedi / aytdi",
+        "yasamoq / qilmoq"
+      ],
+      "correctAnswer": "dedi / aytdi",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 41,
+      "wordRank": 41,
+      "word": "there",
+      "uzbek": "u yerda",
+      "exampleSentence": "There is a park nearby.",
+      "questionType": "translation_en_to_uz",
+      "question": "“there” so‘zining ma’nosi nima?",
+      "options": [
+        "ko‘proq / yana",
+        "uning, erkak",
+        "u yerda"
+      ],
+      "correctAnswer": "u yerda",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 42,
+      "wordRank": 42,
+      "word": "use",
+      "uzbek": "foydalanmoq",
+      "exampleSentence": "Use this word in a sentence.",
+      "questionType": "translation_en_to_uz",
+      "question": "“use” so‘zining ma’nosi nima?",
+      "options": [
+        "-dirlar / hisoblanadi",
+        "qism",
+        "foydalanmoq"
+      ],
+      "correctAnswer": "foydalanmoq",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 43,
+      "wordRank": 43,
+      "word": "an",
+      "uzbek": "bir / noaniq artikl",
+      "exampleSentence": "She has an apple.",
+      "questionType": "translation_en_to_uz",
+      "question": "“an” so‘zining ma’nosi nima?",
+      "options": [
+        "qildi",
+        "bir / noaniq artikl",
+        "u / bu narsa"
+      ],
+      "correctAnswer": "bir / noaniq artikl",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 44,
+      "wordRank": 44,
+      "word": "each",
+      "uzbek": "har bir",
+      "exampleSentence": "Each student has a book.",
+      "questionType": "translation_en_to_uz",
+      "question": "“each” so‘zining ma’nosi nima?",
+      "options": [
+        "har bir",
+        "ega bo‘lmoq / bor",
+        "u / bu narsa"
+      ],
+      "correctAnswer": "har bir",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 45,
+      "wordRank": 45,
+      "word": "which",
+      "uzbek": "qaysi",
+      "exampleSentence": "Which color do you like?",
+      "questionType": "translation_en_to_uz",
+      "question": "“which” so‘zining ma’nosi nima?",
+      "options": [
+        "edi / bo‘lardi",
+        "-ga / uchun",
+        "qaysi"
+      ],
+      "correctAnswer": "qaysi",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 46,
+      "wordRank": 46,
+      "word": "she",
+      "uzbek": "u, ayol",
+      "exampleSentence": "She is my sister.",
+      "questionType": "translation_en_to_uz",
+      "question": "“she” so‘zining ma’nosi nima?",
+      "options": [
+        "u, ayol",
+        "-dirlar / hisoblanadi",
+        "kim"
+      ],
+      "correctAnswer": "u, ayol",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 47,
+      "wordRank": 47,
+      "word": "do",
+      "uzbek": "qilmoq",
+      "exampleSentence": "Do your homework.",
+      "questionType": "translation_en_to_uz",
+      "question": "“do” so‘zining ma’nosi nima?",
+      "options": [
+        "qilmoq",
+        "suv",
+        "dan"
+      ],
+      "correctAnswer": "qilmoq",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 48,
+      "wordRank": 48,
+      "word": "how",
+      "uzbek": "qanday",
+      "exampleSentence": "How are you today?",
+      "questionType": "translation_en_to_uz",
+      "question": "“how” so‘zining ma’nosi nima?",
+      "options": [
+        "qila olardi / mumkin edi",
+        "da / yonida",
+        "qanday"
+      ],
+      "correctAnswer": "qanday",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 49,
+      "wordRank": 49,
+      "word": "their",
+      "uzbek": "ularning",
+      "exampleSentence": "Their house is big.",
+      "questionType": "translation_en_to_uz",
+      "question": "“their” so‘zining ma’nosi nima?",
+      "options": [
+        "ularning",
+        "odamlar",
+        "bormoq"
+      ],
+      "correctAnswer": "ularning",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-26-50",
+      "order": 50,
+      "wordRank": 50,
+      "word": "if",
+      "uzbek": "agar",
+      "exampleSentence": "If you study, you will learn.",
+      "questionType": "translation_en_to_uz",
+      "question": "“if” so‘zining ma’nosi nima?",
+      "options": [
+        "bular",
+        "yoqtirmoq / kabi",
+        "agar"
+      ],
+      "correctAnswer": "agar",
+      "difficulty": "easy",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 51,
+      "wordRank": 51,
+      "word": "will",
+      "uzbek": "kelasi zamon yordamchisi",
+      "exampleSentence": "I will call you tomorrow.",
+      "questionType": "translation_en_to_uz",
+      "question": "“will” so‘zining ma’nosi nima?",
+      "options": [
+        "kelasi zamon yordamchisi",
+        "qism",
+        "uning, erkak"
+      ],
+      "correctAnswer": "kelasi zamon yordamchisi",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 52,
+      "wordRank": 52,
+      "word": "up",
+      "uzbek": "yuqoriga",
+      "exampleSentence": "Look up at the sky.",
+      "questionType": "translation_en_to_uz",
+      "question": "“up” so‘zining ma’nosi nima?",
+      "options": [
+        "mumkin / ehtimol",
+        "yog‘ / neft",
+        "yuqoriga"
+      ],
+      "correctAnswer": "yuqoriga",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 53,
+      "wordRank": 53,
+      "word": "other",
+      "uzbek": "boshqa",
+      "exampleSentence": "I have other questions.",
+      "questionType": "translation_en_to_uz",
+      "question": "“other” so‘zining ma’nosi nima?",
+      "options": [
+        "chaqirmoq / qo‘ng‘iroq qilmoq",
+        "boshqa",
+        "keyin / unda"
+      ],
+      "correctAnswer": "boshqa",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 54,
+      "wordRank": 54,
+      "word": "about",
+      "uzbek": "haqida",
+      "exampleSentence": "This story is about a boy.",
+      "questionType": "translation_en_to_uz",
+      "question": "“about” so‘zining ma’nosi nima?",
+      "options": [
+        "birinchi",
+        "haqida",
+        "pastga"
+      ],
+      "correctAnswer": "haqida",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 55,
+      "wordRank": 55,
+      "word": "out",
+      "uzbek": "tashqariga",
+      "exampleSentence": "Please go out quietly.",
+      "questionType": "translation_en_to_uz",
+      "question": "“out” so‘zining ma’nosi nima?",
+      "options": [
+        "tashqariga",
+        "qildi",
+        "uning, narsa"
+      ],
+      "correctAnswer": "tashqariga",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 56,
+      "wordRank": 56,
+      "word": "many",
+      "uzbek": "ko‘p",
+      "exampleSentence": "There are many books.",
+      "questionType": "translation_en_to_uz",
+      "question": "“many” so‘zining ma’nosi nima?",
+      "options": [
+        "yog‘ / neft",
+        "-dirlar / hisoblanadi",
+        "ko‘p"
+      ],
+      "correctAnswer": "ko‘p",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 57,
+      "wordRank": 57,
+      "word": "then",
+      "uzbek": "keyin / unda",
+      "exampleSentence": "First read, then answer.",
+      "questionType": "translation_en_to_uz",
+      "question": "“then” so‘zining ma’nosi nima?",
+      "options": [
+        "ularning",
+        "keyin / unda",
+        "chaqirmoq / qo‘ng‘iroq qilmoq"
+      ],
+      "correctAnswer": "keyin / unda",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 58,
+      "wordRank": 58,
+      "word": "them",
+      "uzbek": "ularni / ularga",
+      "exampleSentence": "I can see them.",
+      "questionType": "translation_en_to_uz",
+      "question": "“them” so‘zining ma’nosi nima?",
+      "options": [
+        "u, erkak",
+        "ularni / ularga",
+        "sifatida / kabi"
+      ],
+      "correctAnswer": "ularni / ularga",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 59,
+      "wordRank": 59,
+      "word": "these",
+      "uzbek": "bular",
+      "exampleSentence": "These apples are fresh.",
+      "questionType": "translation_en_to_uz",
+      "question": "“these” so‘zining ma’nosi nima?",
+      "options": [
+        "yozmoq",
+        "bular",
+        "yoqtirmoq / kabi"
+      ],
+      "correctAnswer": "bular",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 60,
+      "wordRank": 60,
+      "word": "so",
+      "uzbek": "shuning uchun / juda",
+      "exampleSentence": "It was cold, so we stayed home.",
+      "questionType": "translation_en_to_uz",
+      "question": "“so” so‘zining ma’nosi nima?",
+      "options": [
+        "shuning uchun / juda",
+        "bir / noaniq artikl",
+        "-dirlar / hisoblanadi"
+      ],
+      "correctAnswer": "shuning uchun / juda",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 61,
+      "wordRank": 61,
+      "word": "some",
+      "uzbek": "ba’zi / bir oz",
+      "exampleSentence": "I need some water.",
+      "questionType": "translation_en_to_uz",
+      "question": "“some” so‘zining ma’nosi nima?",
+      "options": [
+        "ba’zi / bir oz",
+        "u, erkak",
+        "keyin / unda"
+      ],
+      "correctAnswer": "ba’zi / bir oz",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 62,
+      "wordRank": 62,
+      "word": "her",
+      "uzbek": "uni / uning, ayol",
+      "exampleSentence": "I know her name.",
+      "questionType": "translation_en_to_uz",
+      "question": "“her” so‘zining ma’nosi nima?",
+      "options": [
+        "sifatida / kabi",
+        "ega / bor",
+        "uni / uning, ayol"
+      ],
+      "correctAnswer": "uni / uning, ayol",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 63,
+      "wordRank": 63,
+      "word": "would",
+      "uzbek": "edi / bo‘lardi",
+      "exampleSentence": "I would like some tea.",
+      "questionType": "translation_en_to_uz",
+      "question": "“would” so‘zining ma’nosi nima?",
+      "options": [
+        "yoqtirmoq / kabi",
+        "edi / bo‘lardi",
+        "-dirlar / hisoblanadi"
+      ],
+      "correctAnswer": "edi / bo‘lardi",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 64,
+      "wordRank": 64,
+      "word": "make",
+      "uzbek": "yasamoq / qilmoq",
+      "exampleSentence": "We make a plan.",
+      "questionType": "translation_en_to_uz",
+      "question": "“make” so‘zining ma’nosi nima?",
+      "options": [
+        "yasamoq / qilmoq",
+        "qaramoq",
+        "chaqirmoq / qo‘ng‘iroq qilmoq"
+      ],
+      "correctAnswer": "yasamoq / qilmoq",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 65,
+      "wordRank": 65,
+      "word": "like",
+      "uzbek": "yoqtirmoq / kabi",
+      "exampleSentence": "I like music.",
+      "questionType": "translation_en_to_uz",
+      "question": "“like” so‘zining ma’nosi nima?",
+      "options": [
+        "va",
+        "mumkin / ehtimol",
+        "yoqtirmoq / kabi"
+      ],
+      "correctAnswer": "yoqtirmoq / kabi",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 66,
+      "wordRank": 66,
+      "word": "him",
+      "uzbek": "uni / unga, erkak",
+      "exampleSentence": "I saw him yesterday.",
+      "questionType": "translation_en_to_uz",
+      "question": "“him” so‘zining ma’nosi nima?",
+      "options": [
+        "qila olardi / mumkin edi",
+        "shuning uchun / juda",
+        "uni / unga, erkak"
+      ],
+      "correctAnswer": "uni / unga, erkak",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 67,
+      "wordRank": 67,
+      "word": "into",
+      "uzbek": "ichiga",
+      "exampleSentence": "Put the paper into the box.",
+      "questionType": "translation_en_to_uz",
+      "question": "“into” so‘zining ma’nosi nima?",
+      "options": [
+        "-dirlar / hisoblanadi",
+        "uni / uning, ayol",
+        "ichiga"
+      ],
+      "correctAnswer": "ichiga",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 68,
+      "wordRank": 68,
+      "word": "time",
+      "uzbek": "vaqt",
+      "exampleSentence": "Time is important.",
+      "questionType": "translation_en_to_uz",
+      "question": "“time” so‘zining ma’nosi nima?",
+      "options": [
+        "vaqt",
+        "ustida / da",
+        "qila olardi / mumkin edi"
+      ],
+      "correctAnswer": "vaqt",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 69,
+      "wordRank": 69,
+      "word": "has",
+      "uzbek": "ega / bor",
+      "exampleSentence": "She has a notebook.",
+      "questionType": "translation_en_to_uz",
+      "question": "“has” so‘zining ma’nosi nima?",
+      "options": [
+        "ega / bor",
+        "haqida",
+        "bu"
+      ],
+      "correctAnswer": "ega / bor",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 70,
+      "wordRank": 70,
+      "word": "look",
+      "uzbek": "qaramoq",
+      "exampleSentence": "Look at the board.",
+      "questionType": "translation_en_to_uz",
+      "question": "“look” so‘zining ma’nosi nima?",
+      "options": [
+        "ularni / ularga",
+        "qaramoq",
+        "uni / unga, erkak"
+      ],
+      "correctAnswer": "qaramoq",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 71,
+      "wordRank": 71,
+      "word": "two",
+      "uzbek": "ikki",
+      "exampleSentence": "I have two pencils.",
+      "questionType": "translation_en_to_uz",
+      "question": "“two” so‘zining ma’nosi nima?",
+      "options": [
+        "pastga",
+        "-dan ko‘ra",
+        "ikki"
+      ],
+      "correctAnswer": "ikki",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 72,
+      "wordRank": 72,
+      "word": "more",
+      "uzbek": "ko‘proq / yana",
+      "exampleSentence": "I need more practice.",
+      "questionType": "translation_en_to_uz",
+      "question": "“more” so‘zining ma’nosi nima?",
+      "options": [
+        "ko‘proq / yana",
+        "ustida / da",
+        "uning, erkak"
+      ],
+      "correctAnswer": "ko‘proq / yana",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 73,
+      "wordRank": 73,
+      "word": "write",
+      "uzbek": "yozmoq",
+      "exampleSentence": "Write your name here.",
+      "questionType": "translation_en_to_uz",
+      "question": "“write” so‘zining ma’nosi nima?",
+      "options": [
+        "yasamoq / qilmoq",
+        "qila olardi / mumkin edi",
+        "yozmoq"
+      ],
+      "correctAnswer": "yozmoq",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 74,
+      "wordRank": 74,
+      "word": "go",
+      "uzbek": "bormoq",
+      "exampleSentence": "We go to school.",
+      "questionType": "translation_en_to_uz",
+      "question": "“go” so‘zining ma’nosi nima?",
+      "options": [
+        "bormoq",
+        "qanday",
+        "uning, erkak"
+      ],
+      "correctAnswer": "bormoq",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-51-75",
+      "order": 75,
+      "wordRank": 75,
+      "word": "see",
+      "uzbek": "ko‘rmoq",
+      "exampleSentence": "I see a bird.",
+      "questionType": "translation_en_to_uz",
+      "question": "“see” so‘zining ma’nosi nima?",
+      "options": [
+        "ko‘rmoq",
+        "bo‘lgan",
+        "olmoq / yetib bormoq"
+      ],
+      "correctAnswer": "ko‘rmoq",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 76,
+      "wordRank": 76,
+      "word": "number",
+      "uzbek": "raqam / son",
+      "exampleSentence": "Write the number ten.",
+      "questionType": "translation_en_to_uz",
+      "question": "“number” so‘zining ma’nosi nima?",
+      "options": [
+        "boshqa",
+        "raqam / son",
+        "qildi"
+      ],
+      "correctAnswer": "raqam / son",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 77,
+      "wordRank": 77,
+      "word": "no",
+      "uzbek": "yo‘q",
+      "exampleSentence": "No, I do not know.",
+      "questionType": "translation_en_to_uz",
+      "question": "“no” so‘zining ma’nosi nima?",
+      "options": [
+        "yo‘q",
+        "yasamoq / qilmoq",
+        "edi / bo‘lardi"
+      ],
+      "correctAnswer": "yo‘q",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 78,
+      "wordRank": 78,
+      "word": "way",
+      "uzbek": "yo‘l / usul",
+      "exampleSentence": "This is the best way.",
+      "questionType": "translation_en_to_uz",
+      "question": "“way” so‘zining ma’nosi nima?",
+      "options": [
+        "edi / bo‘lardi",
+        "ustida / da",
+        "yo‘l / usul"
+      ],
+      "correctAnswer": "yo‘l / usul",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 79,
+      "wordRank": 79,
+      "word": "could",
+      "uzbek": "qila olardi / mumkin edi",
+      "exampleSentence": "He could read fast.",
+      "questionType": "translation_en_to_uz",
+      "question": "“could” so‘zining ma’nosi nima?",
+      "options": [
+        "bir / noaniq artikl",
+        "qaysi",
+        "qila olardi / mumkin edi"
+      ],
+      "correctAnswer": "qila olardi / mumkin edi",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 80,
+      "wordRank": 80,
+      "word": "people",
+      "uzbek": "odamlar",
+      "exampleSentence": "Many people live in the city.",
+      "questionType": "translation_en_to_uz",
+      "question": "“people” so‘zining ma’nosi nima?",
+      "options": [
+        "ega edi / bor edi",
+        "odamlar",
+        "birinchi"
+      ],
+      "correctAnswer": "odamlar",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 81,
+      "wordRank": 81,
+      "word": "my",
+      "uzbek": "mening",
+      "exampleSentence": "My bag is black.",
+      "questionType": "translation_en_to_uz",
+      "question": "“my” so‘zining ma’nosi nima?",
+      "options": [
+        "pastga",
+        "ular",
+        "mening"
+      ],
+      "correctAnswer": "mening",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 82,
+      "wordRank": 82,
+      "word": "than",
+      "uzbek": "-dan ko‘ra",
+      "exampleSentence": "She is taller than me.",
+      "questionType": "translation_en_to_uz",
+      "question": "“than” so‘zining ma’nosi nima?",
+      "options": [
+        "-dan ko‘ra",
+        "bu",
+        "kelasi zamon yordamchisi"
+      ],
+      "correctAnswer": "-dan ko‘ra",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 83,
+      "wordRank": 83,
+      "word": "first",
+      "uzbek": "birinchi",
+      "exampleSentence": "This is my first lesson.",
+      "questionType": "translation_en_to_uz",
+      "question": "“first” so‘zining ma’nosi nima?",
+      "options": [
+        "mumkin / ehtimol",
+        "birinchi",
+        "ustida / da"
+      ],
+      "correctAnswer": "birinchi",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 84,
+      "wordRank": 84,
+      "word": "water",
+      "uzbek": "suv",
+      "exampleSentence": "Drink water every day.",
+      "questionType": "translation_en_to_uz",
+      "question": "“water” so‘zining ma’nosi nima?",
+      "options": [
+        "ichiga",
+        "suv",
+        "uni / unga, erkak"
+      ],
+      "correctAnswer": "suv",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 85,
+      "wordRank": 85,
+      "word": "been",
+      "uzbek": "bo‘lgan",
+      "exampleSentence": "I have been there.",
+      "questionType": "translation_en_to_uz",
+      "question": "“been” so‘zining ma’nosi nima?",
+      "options": [
+        "emas",
+        "bo‘lgan",
+        "bu"
+      ],
+      "correctAnswer": "bo‘lgan",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 86,
+      "wordRank": 86,
+      "word": "call",
+      "uzbek": "chaqirmoq / qo‘ng‘iroq qilmoq",
+      "exampleSentence": "Call me after school.",
+      "questionType": "translation_en_to_uz",
+      "question": "“call” so‘zining ma’nosi nima?",
+      "options": [
+        "hamma / barcha",
+        "chaqirmoq / qo‘ng‘iroq qilmoq",
+        "topmoq"
+      ],
+      "correctAnswer": "chaqirmoq / qo‘ng‘iroq qilmoq",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 87,
+      "wordRank": 87,
+      "word": "who",
+      "uzbek": "kim",
+      "exampleSentence": "Who is your teacher?",
+      "questionType": "translation_en_to_uz",
+      "question": "“who” so‘zining ma’nosi nima?",
+      "options": [
+        "kim",
+        "-dir / hisoblanadi",
+        "sening / sizning"
+      ],
+      "correctAnswer": "kim",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 88,
+      "wordRank": 88,
+      "word": "oil",
+      "uzbek": "yog‘ / neft",
+      "exampleSentence": "Oil is used in many machines.",
+      "questionType": "translation_en_to_uz",
+      "question": "“oil” so‘zining ma’nosi nima?",
+      "options": [
+        "yog‘ / neft",
+        "aniq artikl",
+        "u / bu narsa"
+      ],
+      "correctAnswer": "yog‘ / neft",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 89,
+      "wordRank": 89,
+      "word": "its",
+      "uzbek": "uning, narsa",
+      "exampleSentence": "The dog moved its tail.",
+      "questionType": "translation_en_to_uz",
+      "question": "“its” so‘zining ma’nosi nima?",
+      "options": [
+        "pastga",
+        "uning, narsa",
+        "qaramoq"
+      ],
+      "correctAnswer": "uning, narsa",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 90,
+      "wordRank": 90,
+      "word": "now",
+      "uzbek": "hozir",
+      "exampleSentence": "I am ready now.",
+      "questionType": "translation_en_to_uz",
+      "question": "“now” so‘zining ma’nosi nima?",
+      "options": [
+        "hozir",
+        "shuning uchun / juda",
+        "-ga / uchun"
+      ],
+      "correctAnswer": "hozir",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 91,
+      "wordRank": 91,
+      "word": "find",
+      "uzbek": "topmoq",
+      "exampleSentence": "Find the correct answer.",
+      "questionType": "translation_en_to_uz",
+      "question": "“find” so‘zining ma’nosi nima?",
+      "options": [
+        "qanday",
+        "topmoq",
+        "-dirlar / hisoblanadi"
+      ],
+      "correctAnswer": "topmoq",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 92,
+      "wordRank": 92,
+      "word": "long",
+      "uzbek": "uzun / uzoq",
+      "exampleSentence": "This road is long.",
+      "questionType": "translation_en_to_uz",
+      "question": "“long” so‘zining ma’nosi nima?",
+      "options": [
+        "uchun",
+        "yo‘q",
+        "uzun / uzoq"
+      ],
+      "correctAnswer": "uzun / uzoq",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 93,
+      "wordRank": 93,
+      "word": "down",
+      "uzbek": "pastga",
+      "exampleSentence": "Sit down, please.",
+      "questionType": "translation_en_to_uz",
+      "question": "“down” so‘zining ma’nosi nima?",
+      "options": [
+        "pastga",
+        "bo‘lgan",
+        "u, ayol"
+      ],
+      "correctAnswer": "pastga",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 94,
+      "wordRank": 94,
+      "word": "day",
+      "uzbek": "kun",
+      "exampleSentence": "Today is a good day.",
+      "questionType": "translation_en_to_uz",
+      "question": "“day” so‘zining ma’nosi nima?",
+      "options": [
+        "kun",
+        "ba’zi / bir oz",
+        "tashqariga"
+      ],
+      "correctAnswer": "kun",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 95,
+      "wordRank": 95,
+      "word": "did",
+      "uzbek": "qildi",
+      "exampleSentence": "Did you finish the task?",
+      "questionType": "translation_en_to_uz",
+      "question": "“did” so‘zining ma’nosi nima?",
+      "options": [
+        "qildi",
+        "u, ayol",
+        "birinchi"
+      ],
+      "correctAnswer": "qildi",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 96,
+      "wordRank": 96,
+      "word": "get",
+      "uzbek": "olmoq / yetib bormoq",
+      "exampleSentence": "Get your book, please.",
+      "questionType": "translation_en_to_uz",
+      "question": "“get” so‘zining ma’nosi nima?",
+      "options": [
+        "yoki",
+        "odamlar",
+        "olmoq / yetib bormoq"
+      ],
+      "correctAnswer": "olmoq / yetib bormoq",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 97,
+      "wordRank": 97,
+      "word": "come",
+      "uzbek": "kelmoq",
+      "exampleSentence": "Come here, please.",
+      "questionType": "translation_en_to_uz",
+      "question": "“come” so‘zining ma’nosi nima?",
+      "options": [
+        "ko‘p",
+        "kelmoq",
+        "odamlar"
+      ],
+      "correctAnswer": "kelmoq",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 98,
+      "wordRank": 98,
+      "word": "made",
+      "uzbek": "yasadi / qildi",
+      "exampleSentence": "She made a cake.",
+      "questionType": "translation_en_to_uz",
+      "question": "“made” so‘zining ma’nosi nima?",
+      "options": [
+        "ko‘proq / yana",
+        "yasadi / qildi",
+        "kelmoq"
+      ],
+      "correctAnswer": "yasadi / qildi",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 99,
+      "wordRank": 99,
+      "word": "may",
+      "uzbek": "mumkin / ehtimol",
+      "exampleSentence": "You may start now.",
+      "questionType": "translation_en_to_uz",
+      "question": "“may” so‘zining ma’nosi nima?",
+      "options": [
+        "va",
+        "mumkin / ehtimol",
+        "bo‘lmoq"
+      ],
+      "correctAnswer": "mumkin / ehtimol",
+      "difficulty": "medium",
+      "points": 10
+    },
+    {
+      "categorySlug": "english-vocabulary",
+      "topicSlug": "first-100-words",
+      "levelSlug": "words-76-100",
+      "order": 100,
+      "wordRank": 100,
+      "word": "part",
+      "uzbek": "qism",
+      "exampleSentence": "This is the first part.",
+      "questionType": "translation_en_to_uz",
+      "question": "“part” so‘zining ma’nosi nima?",
+      "options": [
+        "qism",
+        "men",
+        "ko‘p"
+      ],
+      "correctAnswer": "qism",
+      "difficulty": "medium",
+      "points": 10
+    }
+  ]
+}

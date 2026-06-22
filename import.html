@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Import — Dunyo Quiz</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,sans-serif;background:#F8F9FF;color:#111827;padding:24px}
+    h1{font-size:20px;font-weight:700;margin-bottom:20px;color:#6C63FF}
+    .card{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:20px;margin-bottom:16px}
+    .btn{padding:10px 24px;background:#6C63FF;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-right:8px}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn-red{background:#DC2626}
+    .log{background:#F3F4F6;border-radius:8px;padding:12px;font-size:12px;font-family:monospace;max-height:400px;overflow-y:auto;margin-top:12px;white-space:pre-wrap}
+    .ok{color:#16A34A}.err{color:#DC2626}.info{color:#6B7280}
+    progress{width:100%;height:8px;border-radius:4px;margin-top:8px}
+    .stat{font-size:13px;color:#6B7280;margin-top:8px}
+  </style>
+</head>
+<body>
+<h1>🌍 Dunyo Quiz — Ma'lumot Import</h1>
+
+<div class="card">
+  <h3 style="margin-bottom:12px">1. Admin login</h3>
+  <input id="email" type="email" placeholder="Email" style="padding:8px 12px;border:1px solid #E5E7EB;border-radius:6px;margin-right:8px;font-size:13px"/>
+  <input id="pass" type="password" placeholder="Parol" style="padding:8px 12px;border:1px solid #E5E7EB;border-radius:6px;margin-right:8px;font-size:13px"/>
+  <button class="btn" onclick="doLogin()">Kirish</button>
+  <div id="auth-status" class="stat"></div>
+</div>
+
+<div class="card">
+  <h3 style="margin-bottom:12px">2. Import</h3>
+  <p style="font-size:13px;color:#6B7280;margin-bottom:12px">Bu import qiladi: 1 category, 1 topic, 4 level, 100 savol</p>
+  <button class="btn" id="import-btn" onclick="startImport()" disabled>▶ Importni boshlash</button>
+  <button class="btn btn-red" onclick="clearImport()" style="display:none" id="clear-btn">🗑 O'chirish</button>
+  <progress id="prog" value="0" max="100" style="display:none"></progress>
+  <div class="stat" id="prog-stat"></div>
+  <div class="log" id="log" style="display:none"></div>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyC_ZP_n5H97f9yaPPmjqwrmDaPux8GvBX4",
+  authDomain:"yoshhuquqshunos.firebaseapp.com",
+  projectId:"yoshhuquqshunos",
+  storageBucket:"yoshhuquqshunos.firebasestorage.app",
+  messagingSenderId:"145645920762",
+  appId:"1:145645920762:web:498ebdef77cd229013c443"
+});
+const auth = firebase.auth();
+const db = firebase.firestore();
+const TS = () => firebase.firestore.FieldValue.serverTimestamp();
+const ADMIN_UID = 'HUToMkDnMFRcuJWhXL6MRfm00bl2';
+
+function log(msg, type='info') {
+  const el = document.getElementById('log');
+  el.style.display = 'block';
+  el.innerHTML += `<span class="${type}">${msg}</span>\n`;
+  el.scrollTop = el.scrollHeight;
+}
+
+auth.onAuthStateChanged(u => {
+  if (u && u.uid === ADMIN_UID) {
+    document.getElementById('auth-status').innerHTML = '<span style="color:#16A34A">✅ Kirdi: ' + u.email + '</span>';
+    document.getElementById('import-btn').disabled = false;
+    document.getElementById('clear-btn').style.display = 'inline-block';
+  } else if (u) {
+    document.getElementById('auth-status').innerHTML = '<span style="color:#DC2626">❌ Admin emas</span>';
+    auth.signOut();
+  } else {
+    document.getElementById('auth-status').textContent = 'Kirmagan';
+    document.getElementById('import-btn').disabled = true;
+  }
+});
+
+function doLogin() {
+  const e = document.getElementById('email').value;
+  const p = document.getElementById('pass').value;
+  auth.signInWithEmailAndPassword(e, p).catch(err => {
+    document.getElementById('auth-status').innerHTML = '<span style="color:#DC2626">Xatolik: ' + err.message + '</span>';
+  });
+}
+
+// Import data
+const IMPORT_DATA = {
+  category: {
+    id: "english-vocabulary",
+    title: "English Vocabulary",
+    slug: "english-vocabulary",
+    emoji: "📘",
+    description: "Ingliz tili lug'ati — eng ko'p ishlatiladigan so'zlar",
+    color: "blue",
+    order: 10,
+    status: "published"
+  },
+  topic: {
+    id: "first-100-words",
+    title: "First 100 Words",
+    slug: "first-100-words",
+    categoryId: "english-vocabulary",
+    categorySlug: "english-vocabulary",
+    description: "Ingliz tilidagi eng ko'p ishlatiladigan birinchi 100 ta so'z",
+    order: 1,
+    status: "published"
+  },
+  levels: [
+    {slug:"words-1-25", title:"Words 1–25", order:1},
+    {slug:"words-26-50", title:"Words 26–50", order:2},
+    {slug:"words-51-75", title:"Words 51–75", order:3},
+    {slug:"words-76-100", title:"Words 76–100", order:4}
+  ]
+};
+
+async function startImport() {
+  const btn = document.getElementById('import-btn');
+  btn.disabled = true;
+  const prog = document.getElementById('prog');
+  prog.style.display = 'block';
+  log('Import boshlanmoqda...', 'info');
+
+  try {
+    // 1. Category
+    log('📂 Category qo\'shilmoqda...', 'info');
+    await db.collection('categories').doc('english-vocabulary').set({
+      ...IMPORT_DATA.category, createdAt: TS(), updatedAt: TS()
+    });
+    log('✅ Category: English Vocabulary', 'ok');
+
+    // 2. Topic
+    log('📚 Topic qo\'shilmoqda...', 'info');
+    await db.collection('topics').doc('first-100-words').set({
+      ...IMPORT_DATA.topic, createdAt: TS(), updatedAt: TS()
+    });
+    log('✅ Topic: First 100 Words', 'ok');
+
+    // 3. Levels (topics sifatida, har bir level = sub-topic)
+    log('📊 Levellar qo\'shilmoqda...', 'info');
+    for (const level of IMPORT_DATA.levels) {
+      await db.collection('topics').doc(level.slug).set({
+        ...level,
+        categoryId: 'english-vocabulary',
+        categorySlug: 'english-vocabulary',
+        parentTopicId: 'first-100-words',
+        parentTopicSlug: 'first-100-words',
+        status: 'published',
+        createdAt: TS(), updatedAt: TS()
+      });
+      log(`✅ Level: ${level.title}`, 'ok');
+    }
+
+    // 4. Questions - JSON fayldan yuklab import qilish
+    log('📝 Savollar import qilinmoqda...', 'info');
+    await importQuestions(prog);
+
+    log('\n🎉 Import muvaffaqiyatli tugadi!', 'ok');
+    log('Endi dunyoquiz.uz da English Vocabulary ko\'rinadi.', 'ok');
+
+  } catch(e) {
+    log('❌ Xatolik: ' + e.message, 'err');
+    btn.disabled = false;
+  }
+}
+
+async function importQuestions(prog) {
+  // Questions hardcoded (JSON fayldan olingan)
+  const response = await fetch('/first_100_words_app_data.json').catch(() => null);
+  let questions = [];
+
+  if (response && response.ok) {
+    const data = await response.json();
+    questions = data.questions;
+    log(`📥 JSON fayldan ${questions.length} ta savol yuklandi`, 'ok');
+  } else {
+    log('⚠️ JSON fayl topilmadi — embedded data ishlatilmoqda', 'info');
+    questions = EMBEDDED_QUESTIONS;
+  }
+
+  let done = 0;
+  const batch_size = 10;
+
+  for (let i = 0; i < questions.length; i += batch_size) {
+    const batch = db.batch();
+    const chunk = questions.slice(i, i + batch_size);
+
+    for (const q of chunk) {
+      const ref = db.collection('questions').doc();
+      let correctIdx = 0;
+      if (q.correctAnswer && q.options) {
+        const idx = q.options.indexOf(q.correctAnswer);
+        correctIdx = idx >= 0 ? idx : 0;
+      } else if (typeof q.correctIndex === 'number') {
+        correctIdx = q.correctIndex;
+      }
+
+      batch.set(ref, {
+        categoryId: q.categorySlug || 'english-vocabulary',
+        categorySlug: q.categorySlug || 'english-vocabulary',
+        topicId: q.levelSlug || q.topicSlug,
+        topicSlug: q.levelSlug || q.topicSlug,
+        parentTopicId: q.topicSlug || 'first-100-words',
+        question: q.question,
+        options: q.options,
+        correctIndex: correctIdx,
+        explanation: q.explanation || `${q.word || ''} = ${q.uzbek || ''}. ${q.exampleSentence || ''}`,
+        difficulty: q.difficulty || 'easy',
+        status: 'published',
+        word: q.word || '',
+        uzbek: q.uzbek || '',
+        points: q.points || 10,
+        wordRank: q.wordRank || q.order || 0,
+        order: q.order || 0,
+        createdAt: TS(),
+        updatedAt: TS()
+      });
+    }
+
+    await batch.commit();
+    done += chunk.length;
+    prog.value = (done / questions.length) * 100;
+    document.getElementById('prog-stat').textContent = `${done}/${questions.length} savol import qilindi`;
+    log(`✅ ${done}/${questions.length} savol`, 'ok');
+  }
+}
+
+async function clearImport() {
+  if (!confirm('English Vocabulary category, topic va savollarini o\'chirish?')) return;
+
+  log('🗑 O\'chirish boshlanmoqda...', 'info');
+  try {
+    // Category
+    await db.collection('categories').doc('english-vocabulary').delete();
+    log('✅ Category o\'chirildi', 'ok');
+
+    // Topics
+    for (const slug of ['first-100-words','words-1-25','words-26-50','words-51-75','words-76-100']) {
+      await db.collection('topics').doc(slug).delete();
+      log(`✅ Topic/Level o\'chirildi: ${slug}`, 'ok');
+    }
+
+    // Questions
+    const snap = await db.collection('questions')
+      .where('categorySlug','==','english-vocabulary').get();
+    const batch = db.batch();
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    log(`✅ ${snap.size} ta savol o\'chirildi`, 'ok');
+    log('🎉 Hammasi o\'chirildi', 'ok');
+  } catch(e) {
+    log('❌ ' + e.message, 'err');
+  }
+}
+
+// Embedded questions fallback (agar JSON yuklanmasa)
+const EMBEDDED_QUESTIONS = [];
+</script>
+</body>
+</html>
