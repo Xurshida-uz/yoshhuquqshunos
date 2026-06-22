@@ -764,6 +764,12 @@ const CATEGORIES = [
   { id: 'ingliz', name: "Ingliz tili", emoji: '🇬🇧', color: '#EF4444', bg: '#FEF2F2', count: 10, badge: '' },
 ];
 
+// Rang xaritasi — global
+const COLOR_HEX = {
+  purple:'#6C63FF', blue:'#3B82F6', green:'#16A34A', red:'#EF4444',
+  orange:'#F97316', yellow:'#EAB308', pink:'#EC4899', teal:'#14B8A6', gray:'#6B7280'
+};
+
 // ⚠️ HIMOYALANGAN — O'CHIRILMASIN
 // FLAGS array va generateFlagQuiz() bayroqlar uchun kerak
 // Bu kategoriya doim bosh sahifada ko'rinadi
@@ -1032,11 +1038,6 @@ function goTab(tab) {
 }
 
 // ==================== CATEGORIES ====================
-const COLOR_HEX = {
-  purple:'#6C63FF', blue:'#3B82F6', green:'#16A34A', red:'#EF4444',
-  orange:'#F97316', yellow:'#EAB308', pink:'#EC4899', teal:'#14B8A6', gray:'#6B7280'
-};
-
 function catCardHTML(slug, id, emoji, title, desc, colorKey, isLegacy) {
   const color = COLOR_HEX[colorKey] || '#6C63FF';
   const onclick = isLegacy
