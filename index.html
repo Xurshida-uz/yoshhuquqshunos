@@ -822,9 +822,9 @@ async function showApp() {
 }
 
 async function initApp() {
-  loadLR(); // localStorage dan lastResult ni yukla
-  renderCategories();
+  loadLR();
   goTab('home');
+  renderCategories(); // async - orqada yuklanadi
 }
 
 function skipAuth() { showApp(); }
@@ -1018,32 +1018,170 @@ function goTab(tab) {
 }
 
 // ==================== CATEGORIES ====================
-function renderCategories() {
+async function renderCategories() {
   const grid = document.getElementById('cat-grid');
   if (!grid) return;
-  const seoNames = {
-    bayroqlar: 'Bayroqlar testi',
-    geografiya: 'Geografiya testi',
-    tarix: 'Tarix testi',
-    hayvonlar: 'Hayvonlar testi',
-    mantiq: 'Mantiqiy savollar',
-    ingliz: 'Ingliz tili testi'
-  };
-  grid.innerHTML = CATEGORIES.map(c => {
-    const badge = c.badge === 'new' ? '<span class="cat-badge badge-new">YANGI</span>' :
-                  c.badge === 'hot' ? '<span class="cat-badge badge-hot">🔥 HOT</span>' : '';
-    const displayName = seoNames[c.id] || c.name;
-    return `<div class="cat-card" style="border-color:${c.color}20" onclick="startCategory('${c.id}')">
-      ${badge}
-      <span class="cat-emoji">${c.emoji}</span>
-      <div class="cat-name">${displayName}</div>
-      <div class="cat-count" style="color:${c.color}">${c.count} ta savol</div>
-    </div>`;
-  }).join('');
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
+  try {
+    const snap = await db.collection('categories')
+      .where('status','==','published')
+      .orderBy('order')
+      .get();
+    if (!snap.empty) {
+      grid.innerHTML = snap.docs.map(doc => {
+        const c = doc.data();
+        const color = {purple:'#6C63FF',blue:'#3B82F6',green:'#16A34A',red:'#EF4444',
+          orange:'#F97316',yellow:'#EAB308',pink:'#EC4899',teal:'#14B8A6',gray:'#6B7280'}[c.color] || '#6C63FF';
+        return `<div class="cat-card" style="border-color:${color}20" onclick="openCategory('${doc.id}','${c.slug||doc.id}')">
+          <span class="cat-emoji">${c.emoji||'📚'}</span>
+          <div class="cat-name">${c.title}</div>
+          <div class="cat-count" style="color:${color}">${c.description||''}</div>
+        </div>`;
+      }).join('');
+    } else {
+      // Fallback - eski CATEGORIES dan ko'rsatish
+      grid.innerHTML = CATEGORIES.map(c => {
+        return `<div class="cat-card" style="border-color:${c.color}20" onclick="startCategory('${c.id}')">
+          <span class="cat-emoji">${c.emoji}</span>
+          <div class="cat-name">${c.name}</div>
+          <div class="cat-count" style="color:${c.color}">${c.count} ta savol</div>
+        </div>`;
+      }).join('');
+    }
+  } catch(e) {
+    // Xato bo'lsa eski CATEGORIES
+    grid.innerHTML = CATEGORIES.map(c => {
+      return `<div class="cat-card" style="border-color:${c.color}20" onclick="startCategory('${c.id}')">
+        <span class="cat-emoji">${c.emoji}</span>
+        <div class="cat-name">${c.name}</div>
+        <div class="cat-count" style="color:${c.color}">${c.count} ta savol</div>
+      </div>`;
+    }).join('');
+  }
 }
 
 function scrollToCats() {
   document.getElementById('cats-anchor').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function openCategory(catId, catSlug) {
+  // Mavjud kategoriyani topish
+  currentCat = CATEGORIES.find(c => c.id === catId || c.id === catSlug) || {id:catId, name:catId, emoji:'📚'};
+
+  // Firestore dan mavzularni yuklash
+  const topicsGrid = document.getElementById('topics-grid');
+  const topicsHeader = document.getElementById('topics-header');
+  topicsGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
+
+  document.getElementById('home-sections-view').style.display = 'none';
+  document.getElementById('home-quiz-view').style.display = 'none';
+  document.getElementById('home-topics-view').style.display = 'block';
+
+  try {
+    const snap = await db.collection('topics')
+      .where('categoryId','==',catId)
+      .where('status','==','published')
+      .orderBy('order')
+      .get();
+
+    // categorySlug bilan ham qidiramiz
+    let topics = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if (!topics.length && catSlug !== catId) {
+      const snap2 = await db.collection('topics')
+        .where('categorySlug','==',catSlug)
+        .where('status','==','published')
+        .orderBy('order')
+        .get();
+      topics = snap2.docs.map(d=>({id:d.id,...d.data()}));
+    }
+
+    // Agar mavzu yo'q bo'lsa — to'g'ridan quiz boshlash
+    if (!topics.length) {
+      startCategory(catId);
+      return;
+    }
+
+    // Bitta mavzu bo'lsa — to'g'ridan boshlash
+    if (topics.length === 1) {
+      startTopicQuiz(topics[0].id, topics[0].title, catId);
+      return;
+    }
+
+    // Bir nechta mavzu bo'lsa — tanlash
+    const colors = {purple:'#6C63FF',blue:'#3B82F6',green:'#16A34A',red:'#EF4444',
+      orange:'#F97316',yellow:'#EAB308',pink:'#EC4899',teal:'#14B8A6',gray:'#6B7280'};
+    const catData = (await db.collection('categories').doc(catId).get()).data() || {};
+    const color = colors[catData.color] || 'var(--purple)';
+
+    topicsHeader.innerHTML = `<div style="font-size:24px;margin-bottom:4px">${catData.emoji||'📚'}</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text)">${catData.title||catId}</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px">Mavzu tanlang</div>`;
+
+    topicsGrid.innerHTML = topics.map(t => `
+      <div class="cat-card" style="border-color:${color}20" onclick="startTopicQuiz('${t.id}','${t.title}','${catId}')">
+        <span class="cat-emoji">📖</span>
+        <div class="cat-name">${t.title}</div>
+        <div class="cat-count" style="color:${color}">${t.description||'Test topshirish'}</div>
+      </div>`).join('');
+
+  } catch(e) {
+    // Xato bo'lsa to'g'ridan quiz
+    startCategory(catId);
+  }
+}
+
+function backToCategories() {
+  document.getElementById('home-topics-view').style.display = 'none';
+  document.getElementById('home-sections-view').style.display = 'block';
+}
+
+async function startTopicQuiz(topicId, topicTitle, catId) {
+  // Banner o'chirish
+  const banner = document.getElementById('login-prompt-banner');
+  if (banner) banner.remove();
+
+  currentCat = CATEGORIES.find(c => c.id === catId) || {id:catId, name:topicTitle, emoji:'📖'};
+  questionStartTime = Date.now();
+
+  try {
+    showToast('Savollar yuklanmoqda...');
+    const snap = await db.collection('questions')
+      .where('topicId','==',topicId)
+      .where('status','==','published')
+      .get();
+
+    let pool = snap.docs.map(d => {
+      const q = d.data();
+      return {
+        q: q.question,
+        opts: q.options,
+        ans: q.correctIndex,
+        law: q.explanation,
+        cat: catId,
+        diff: q.difficulty||'medium'
+      };
+    });
+
+    if (!pool.length) {
+      showToast("Bu mavzuda savol yo'q!");
+      return;
+    }
+
+    quiz = shuffle([...pool]).slice(0, Math.min(10, pool.length));
+    cur = 0; score = 0; answered = false; times = []; wrongAnswers = [];
+
+    // currentCat ni to'g'ri qilish
+    currentCat = {
+      id: catId,
+      name: topicTitle,
+      emoji: currentCat?.emoji || '📖'
+    };
+
+    startQuizUI();
+  } catch(e) {
+    showToast('Savollar yuklanmadi!');
+    console.error(e);
+  }
 }
 
 // ==================== QUIZ ====================
@@ -1581,7 +1719,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: stable-v1-seo");
+console.log("DUNYO QUIZ version: admin-v2");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
