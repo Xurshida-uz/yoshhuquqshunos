@@ -465,7 +465,10 @@ async function startImport() {
         parentTopicId: topicId,
         parentTopicSlug: topicId,
         order: level.order || 99,
-        status: 'published'
+        status: 'published',
+        type: 'level',
+        quizMode: level.quizMode || 'ordered',
+        questionLimit: level.questionLimit || 'all'
       });
       if (lok) importStats.levels++;
       done++; setProgress(done, total);
