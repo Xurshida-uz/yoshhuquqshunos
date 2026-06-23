@@ -1269,21 +1269,25 @@ async function openCategory(catId, catSlug) {
 }
 
 function renderTopicCards(topics, catId, color, tGrid, hasChildren) {
+  // data-id orqali onclick — apostrof xatosiz
   tGrid.innerHTML = topics.map(t => {
     const desc = t.description || "Mavzularni korish";
     const isParent = t.type === 'parent-topic' || t.type === 'folder' || hasChildren;
-    const tid = t.id.replace(/'/g, "\'");
-    const ttitle = t.title.replace(/'/g, "\'");
-    const tcid = catId.replace(/'/g, "\'");
-    const tcolor = color.replace(/'/g, "\'");
-    const onclick = isParent
-      ? "showLevels('" + tid + "','" + ttitle + "','" + tcid + "','" + tcolor + "')"
-      : "startTopicQuiz('" + tid + "','" + ttitle + "','" + tcid + "')";
-    return '<div class="cat-card" style="border-color:' + color + '20" onclick="' + onclick + '">' +
+    const dtype = isParent ? 'folder' : 'topic';
+    return '<div class="cat-card topic-card" data-id="' + t.id + '" data-dtype="' + dtype + '" style="border-color:' + color + '20">' +
       '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">📚</div>' +
       '<div class="cat-name">' + t.title + '</div>' +
       '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
   }).join('');
+  // Event listeners qo'shish
+  tGrid.querySelectorAll('.topic-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var id = this.dataset.id;
+      var dtype = this.dataset.dtype;
+      if (dtype === 'folder') showLevels(id, id, catId, color);
+      else startTopicQuiz(id, id, catId);
+    });
+  });
 }
 
 async function showLevels(topicId, topicTitle, catId, color) {
@@ -1321,34 +1325,20 @@ async function showLevels(topicId, topicTitle, catId, color) {
     var isLevel  = c.type === 'level';
     var icon     = isFolder ? '📚' : isLevel ? '📖' : '📝';
     var desc     = c.description || (isLevel ? '25 ta savol' : 'Bolimlarni korish');
-    // onclick — data-id attribute orqali, apostrof xatosiz
-    var card = document.createElement('div');
-    card.className = 'cat-card';
-    card.style.borderColor = color + '20';
-    card.dataset.topicId = c.id;
-    card.dataset.topicType = c.type || '';
-    card.innerHTML =
+    var dtype    = isFolder ? 'folder' : 'level';
+    return '<div class="cat-card topic-card" data-id="' + c.id + '" data-dtype="' + dtype + '" style="border-color:' + color + '20">' +
       '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">' + icon + '</div>' +
       '<div class="cat-name">' + c.title + '</div>' +
-      '<div class="cat-count" style="color:' + color + '">' + desc + '</div>';
-    var _catId = catId, _color = color;
-    card.addEventListener('click', function() {
-      var tid = this.dataset.topicId;
-      var ttype = this.dataset.topicType;
-      var isF = ttype === 'folder' || ttype === 'parent-topic';
-      if (isF) showLevels(tid, tid, _catId, _color);
-      else startTopicQuiz(tid, tid, _catId);
-    });
-    return card.outerHTML;
+      '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
   }).join('');
-  // Event listener lar outerHTML da saqlanmaydi — shuning uchun cards ga qayta biriktiramiz
-  Array.from(tGrid.querySelectorAll('.cat-card[data-topic-id]')).forEach(function(card) {
+  // Event listeners
+  var _catId = catId, _color = color;
+  tGrid.querySelectorAll('.topic-card').forEach(function(card) {
     card.addEventListener('click', function() {
-      var tid = this.dataset.topicId;
-      var ttype = this.dataset.topicType;
-      var isF = ttype === 'folder' || ttype === 'parent-topic';
-      if (isF) showLevels(tid, tid, catId, color);
-      else startTopicQuiz(tid, tid, catId);
+      var id = this.dataset.id;
+      var dtype = this.dataset.dtype;
+      if (dtype === 'folder') showLevels(id, id, _catId, _color);
+      else startTopicQuiz(id, id, _catId);
     });
   });
 }
@@ -1356,11 +1346,17 @@ async function showLevels(topicId, topicTitle, catId, color) {
 function showTopicsList(topics, catId, tGrid, tHeader, color) {
   tGrid.innerHTML = topics.map(t => {
     const desc = t.description || "Mavzularni korish";
-    return '<div class="cat-card" style="border-color:' + color + '20" onclick="showLevels(' + JSON.stringify(t.id) + ',' + JSON.stringify(t.title) + ',' + JSON.stringify(catId) + ',' + JSON.stringify(color) + ')">' +
+    return '<div class="cat-card topic-card" data-id="' + t.id + '" data-dtype="folder" style="border-color:' + color + '20">' +
       '<div style="width:44px;height:44px;border-radius:12px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:8px">📚</div>' +
       '<div class="cat-name">' + t.title + '</div>' +
       '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
   }).join('');
+  var _c = catId, _col = color;
+  tGrid.querySelectorAll('.topic-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      showLevels(this.dataset.id, this.dataset.id, _c, _col);
+    });
+  });
 }
 
 function backToCategories() {
@@ -2045,7 +2041,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: folder-v22");
+console.log("DUNYO QUIZ version: folder-v23");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
