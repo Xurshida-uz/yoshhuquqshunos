@@ -3,46 +3,219 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Import — Dunyo Quiz</title>
+  <title>Import Tool — Dunyo Quiz Admin</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,sans-serif;background:#F8F9FF;color:#111827;padding:24px}
-    h1{font-size:20px;font-weight:700;margin-bottom:20px;color:#6C63FF}
-    .card{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:20px;margin-bottom:16px}
-    .btn{padding:10px 24px;background:#6C63FF;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-right:8px}
-    .btn:disabled{opacity:.5;cursor:not-allowed}
-    .btn-red{background:#DC2626}
-    .log{background:#F3F4F6;border-radius:8px;padding:12px;font-size:12px;font-family:monospace;max-height:400px;overflow-y:auto;margin-top:12px;white-space:pre-wrap}
-    .ok{color:#16A34A}.err{color:#DC2626}.info{color:#6B7280}
-    progress{width:100%;height:8px;border-radius:4px;margin-top:8px}
-    .stat{font-size:13px;color:#6B7280;margin-top:8px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--purple:#6C63FF;--green:#16A34A;--red:#DC2626;--yellow:#D97706;--border:#E5E7EB;--bg:#F8F9FF;--card:#fff;--text:#111827;--text2:#6B7280}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0}
+
+    /* LOGIN */
+    #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+    .login-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;width:100%;max-width:400px;text-align:center}
+    .login-box h1{font-size:22px;font-weight:700;color:var(--purple);margin-bottom:4px}
+    .login-box p{font-size:13px;color:var(--text2);margin-bottom:24px}
+    .inp{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;margin-bottom:10px}
+    .inp:focus{border-color:var(--purple)}
+    .btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+    .btn-pri{background:var(--purple);color:white;width:100%}
+    .btn-pri:disabled{opacity:.5;cursor:not-allowed}
+    .err-msg{font-size:13px;color:var(--red);margin-top:8px}
+
+    /* MAIN */
+    #main-screen{display:none}
+    .topbar{background:var(--purple);color:white;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .topbar h1{font-size:16px;font-weight:700}
+    .logout-btn{background:rgba(255,255,255,.2);color:white;border:none;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer}
+    .main-wrap{max-width:900px;margin:0 auto;padding:24px 16px}
+
+    /* STEPS */
+    .steps{display:flex;gap:0;margin-bottom:28px}
+    .step{flex:1;text-align:center;position:relative}
+    .step::after{content:'';position:absolute;top:16px;left:50%;width:100%;height:2px;background:var(--border);z-index:0}
+    .step:last-child::after{display:none}
+    .step-num{width:32px;height:32px;border-radius:50%;background:var(--border);color:var(--text2);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;position:relative;z-index:1}
+    .step.active .step-num{background:var(--purple);color:white}
+    .step.done .step-num{background:var(--green);color:white}
+    .step-label{font-size:11px;color:var(--text2)}
+    .step.active .step-label{color:var(--purple);font-weight:600}
+
+    /* CARDS */
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+    .card-title{font-size:15px;font-weight:600;margin-bottom:16px}
+
+    /* FILE UPLOAD */
+    .upload-zone{border:2px dashed var(--border);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s}
+    .upload-zone:hover,.upload-zone.drag{border-color:var(--purple);background:#F5F3FF}
+    .upload-zone input{display:none}
+    .upload-icon{font-size:40px;margin-bottom:12px}
+    .upload-zone h3{font-size:16px;font-weight:600;margin-bottom:6px}
+    .upload-zone p{font-size:13px;color:var(--text2)}
+
+    /* PREVIEW */
+    .preview-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px}
+    .stat-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+    .stat-n{font-size:24px;font-weight:700;color:var(--purple)}
+    .stat-l{font-size:12px;color:var(--text2);margin-top:3px}
+    .preview-table{width:100%;border-collapse:collapse;font-size:12px}
+    .preview-table th{text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);color:var(--text2);white-space:nowrap}
+    .preview-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+    .preview-table tr:hover td{background:#F9FAFB}
+    .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+    .ok{background:#DCFCE7;color:#15803D}
+    .warn{background:#FEF3C7;color:#92400E}
+    .error{background:#FEE2E2;color:#991B1B}
+    .table-wrap{overflow-x:auto;max-height:300px;overflow-y:auto}
+
+    /* FIELD CHECK */
+    .field-check{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:12px}
+    .field-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px}
+    .field-ok{background:#DCFCE7}
+    .field-missing{background:#FEE2E2}
+
+    /* PROGRESS */
+    .progress-bar{height:8px;background:var(--border);border-radius:99px;overflow:hidden;margin:8px 0}
+    .progress-fill{height:8px;background:var(--purple);border-radius:99px;transition:width .3s}
+    .log-box{background:#1E1E2E;border-radius:10px;padding:16px;font-size:12px;font-family:'Courier New',monospace;max-height:350px;overflow-y:auto;margin-top:12px}
+    .log-ok{color:#4ADE80}
+    .log-err{color:#F87171}
+    .log-info{color:#94A3B8}
+    .log-warn{color:#FCD34D}
+
+    /* BUTTONS */
+    .btn-row{display:flex;gap:10px;flex-wrap:wrap}
+    .btn-green{background:var(--green);color:white}
+    .btn-red{background:var(--red);color:white}
+    .btn-gray{background:#6B7280;color:white}
+    .mode-switch{display:flex;gap:8px;margin-bottom:12px}
+    .mode-btn{padding:7px 16px;border:1.5px solid var(--border);border-radius:6px;background:var(--card);font-size:13px;cursor:pointer}
+    .mode-btn.active{border-color:var(--purple);background:#EEF0FF;color:var(--purple);font-weight:600}
   </style>
 </head>
 <body>
-<h1>🌍 Dunyo Quiz — Ma'lumot Import</h1>
 
-<div class="card">
-  <h3 style="margin-bottom:12px">1. Admin login</h3>
-  <input id="email" type="email" placeholder="Email" style="padding:8px 12px;border:1px solid #E5E7EB;border-radius:6px;margin-right:8px;font-size:13px"/>
-  <input id="pass" type="password" placeholder="Parol" style="padding:8px 12px;border:1px solid #E5E7EB;border-radius:6px;margin-right:8px;font-size:13px"/>
-  <button class="btn" onclick="doLogin()">Kirish</button>
-  <div id="auth-status" class="stat"></div>
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>🌍 Dunyo Quiz</h1>
+    <p>Import Tool — Faqat Admin uchun</p>
+    <input class="inp" id="email" type="email" placeholder="Admin email"/>
+    <input class="inp" id="pass" type="password" placeholder="Parol"/>
+    <div class="err-msg" id="login-err" style="display:none"></div>
+    <button class="btn btn-pri" id="login-btn" onclick="doLogin()">Kirish</button>
+  </div>
 </div>
 
-<div class="card">
-  <h3 style="margin-bottom:12px">2. Import</h3>
-  <p style="font-size:13px;color:#6B7280;margin-bottom:12px">Bu import qiladi: 1 category, 1 topic, 4 level, 100 savol</p>
-  <button class="btn" id="import-btn" onclick="startImport()" disabled>▶ Importni boshlash</button>
-  <button class="btn btn-red" onclick="clearImport()" style="display:none" id="clear-btn">🗑 O'chirish</button>
-  <progress id="prog" value="0" max="100" style="display:none"></progress>
-  <div class="stat" id="prog-stat"></div>
-  <div class="log" id="log" style="display:none"></div>
+<!-- MAIN -->
+<div id="main-screen">
+  <div class="topbar">
+    <h1>📥 Dunyo Quiz — Import Tool</h1>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="user-label" style="font-size:13px;opacity:.8"></span>
+      <button class="logout-btn" onclick="auth.signOut()">Chiqish</button>
+    </div>
+  </div>
+
+  <div class="main-wrap">
+
+    <!-- Steps -->
+    <div class="steps">
+      <div class="step active" id="s1"><div class="step-num">1</div><div class="step-label">Fayl yuklash</div></div>
+      <div class="step" id="s2"><div class="step-num">2</div><div class="step-label">Preview</div></div>
+      <div class="step" id="s3"><div class="step-num">3</div><div class="step-label">Import</div></div>
+      <div class="step" id="s4"><div class="step-num">4</div><div class="step-label">Natija</div></div>
+    </div>
+
+    <!-- STEP 1: Upload -->
+    <div id="step1">
+      <div class="card">
+        <div class="card-title">📁 JSON fayl yuklang</div>
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-inp').click()"
+             ondragover="event.preventDefault();this.classList.add('drag')"
+             ondragleave="this.classList.remove('drag')"
+             ondrop="handleDrop(event)">
+          <input type="file" id="file-inp" accept=".json" onchange="handleFile(event)"/>
+          <div class="upload-icon">📂</div>
+          <h3>JSON faylni tanlang</h3>
+          <p>yoki bu yerga sudrab tashlang</p>
+          <p style="margin-top:8px;font-size:11px;color:#9CA3AF">Qo'llab-quvvatlanuvchi format: .json</p>
+        </div>
+        <div id="file-info" style="display:none;margin-top:12px;padding:10px 14px;background:#F0FDF4;border-radius:8px;font-size:13px;color:var(--green)"></div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Preview -->
+    <div id="step2" style="display:none">
+      <div class="card">
+        <div class="card-title">📊 Data preview</div>
+        <div class="preview-stats" id="preview-stats"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">✅ Field tekshiruvi</div>
+        <div class="field-check" id="field-check"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Savollar (dastlabki 10 ta)</div>
+        <div class="table-wrap">
+          <table class="preview-table" id="preview-table">
+            <thead><tr>
+              <th>#</th><th>Word</th><th>Savol</th><th>Options</th><th>To'g'ri</th><th>Level</th><th>Diff</th><th>Status</th>
+            </tr></thead>
+            <tbody id="preview-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚙️ Import sozlamalari</div>
+        <div class="mode-switch">
+          <button class="mode-btn active" id="mode-skip" onclick="setMode('skip')">Skip (mavjud bo'lsa o'tkazib yubor)</button>
+          <button class="mode-btn" id="mode-update" onclick="setMode('update')">Update (mavjudlarni yangilash)</button>
+          <button class="mode-btn" id="mode-overwrite" onclick="setMode('overwrite')">Overwrite (hammani qayta yozish)</button>
+        </div>
+        <p id="mode-desc" style="font-size:13px;color:var(--text2)">Mavjud documentlar o'tkazib yuboriladi — faqat yangilari qo'shiladi.</p>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-gray" onclick="goStep(1)">← Orqaga</button>
+        <button class="btn btn-green" onclick="goStep(3)">▶ Importni boshlash</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Import Progress -->
+    <div id="step3" style="display:none">
+      <div class="card">
+        <div class="card-title">⏳ Import jarayoni</div>
+        <div id="prog-label" style="font-size:13px;color:var(--text2);margin-bottom:6px">Tayyorlanmoqda...</div>
+        <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+        <div id="prog-stat" style="font-size:13px;color:var(--text2);margin-top:6px"></div>
+        <div class="log-box" id="log-box"></div>
+      </div>
+    </div>
+
+    <!-- STEP 4: Result -->
+    <div id="step4" style="display:none">
+      <div class="card" style="text-align:center">
+        <div id="result-icon" style="font-size:48px;margin-bottom:12px">🎉</div>
+        <h2 id="result-title" style="font-size:20px;font-weight:700;margin-bottom:8px">Import muvaffaqiyatli!</h2>
+        <p id="result-desc" style="font-size:14px;color:var(--text2);margin-bottom:20px"></p>
+        <div id="result-stats" class="preview-stats" style="max-width:500px;margin:0 auto 20px"></div>
+        <div class="btn-row" style="justify-content:center">
+          <button class="btn btn-pri" onclick="window.open('https://dunyoquiz.uz','_blank')">🌍 Saytni ko'rish</button>
+          <button class="btn btn-gray" onclick="goStep(1)">↺ Yangi import</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <script>
+const ADMIN_UID = 'HUToMkDnMFRcuJWhXL6MRfm00bl2';
 firebase.initializeApp({
   apiKey:"AIzaSyC_ZP_n5H97f9yaPPmjqwrmDaPux8GvBX4",
   authDomain:"yoshhuquqshunos.firebaseapp.com",
@@ -54,208 +227,342 @@ firebase.initializeApp({
 const auth = firebase.auth();
 const db = firebase.firestore();
 const TS = () => firebase.firestore.FieldValue.serverTimestamp();
-const ADMIN_UID = 'HUToMkDnMFRcuJWhXL6MRfm00bl2';
 
-function log(msg, type='info') {
-  const el = document.getElementById('log');
-  el.style.display = 'block';
-  el.innerHTML += `<span class="${type}">${msg}</span>\n`;
-  el.scrollTop = el.scrollHeight;
-}
+let importData = null;
+let importMode = 'skip';
+let currentStep = 1;
 
+// ===== AUTH =====
 auth.onAuthStateChanged(u => {
   if (u && u.uid === ADMIN_UID) {
-    document.getElementById('auth-status').innerHTML = '<span style="color:#16A34A">✅ Kirdi: ' + u.email + '</span>';
-    document.getElementById('import-btn').disabled = false;
-    document.getElementById('clear-btn').style.display = 'inline-block';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-screen').style.display = 'block';
+    document.getElementById('user-label').textContent = u.email;
   } else if (u) {
-    document.getElementById('auth-status').innerHTML = '<span style="color:#DC2626">❌ Admin emas</span>';
     auth.signOut();
+    showLoginErr("Ruxsat yo'q — faqat admin kira oladi");
   } else {
-    document.getElementById('auth-status').textContent = 'Kirmagan';
-    document.getElementById('import-btn').disabled = true;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('main-screen').style.display = 'none';
   }
 });
 
 function doLogin() {
-  const e = document.getElementById('email').value;
+  const e = document.getElementById('email').value.trim();
   const p = document.getElementById('pass').value;
+  if (!e || !p) { showLoginErr('Email va parolni kiriting'); return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Kirilmoqda...';
+  hideLoginErr();
   auth.signInWithEmailAndPassword(e, p).catch(err => {
-    document.getElementById('auth-status').innerHTML = '<span style="color:#DC2626">Xatolik: ' + err.message + '</span>';
+    showLoginErr('Xatolik: ' + (err.code.includes('wrong-password') || err.code.includes('user-not-found') ? "Noto'g'ri email yoki parol" : err.message));
+    btn.disabled = false; btn.textContent = 'Kirish';
   });
 }
+function showLoginErr(m) { const el=document.getElementById('login-err'); el.textContent=m; el.style.display='block'; }
+function hideLoginErr() { document.getElementById('login-err').style.display='none'; }
 
-// Import data
-const IMPORT_DATA = {
-  category: {
-    id: "english-vocabulary",
-    title: "English Vocabulary",
-    slug: "english-vocabulary",
-    emoji: "📘",
-    description: "Ingliz tili lug'ati — eng ko'p ishlatiladigan so'zlar",
-    color: "blue",
-    order: 10,
-    status: "published"
-  },
-  topic: {
-    id: "first-100-words",
-    title: "First 100 Words",
-    slug: "first-100-words",
-    categoryId: "english-vocabulary",
-    categorySlug: "english-vocabulary",
-    description: "Ingliz tilidagi eng ko'p ishlatiladigan birinchi 100 ta so'z",
-    order: 1,
-    status: "published"
-  },
-  levels: [
-    {slug:"words-1-25", title:"Words 1–25", order:1},
-    {slug:"words-26-50", title:"Words 26–50", order:2},
-    {slug:"words-51-75", title:"Words 51–75", order:3},
-    {slug:"words-76-100", title:"Words 76–100", order:4}
-  ]
+// ===== STEPS =====
+function goStep(n) {
+  currentStep = n;
+  [1,2,3,4].forEach(i => {
+    document.getElementById('step'+i).style.display = i===n ? 'block' : 'none';
+    const s = document.getElementById('s'+i);
+    s.className = 'step' + (i<n?' done':i===n?' active':'');
+  });
+  if (n === 3) startImport();
+}
+
+// ===== FILE UPLOAD =====
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFile(e) { processFile(e.target.files[0]); }
+
+function processFile(file) {
+  if (!file.name.endsWith('.json')) { alert("Faqat .json fayl qabul qilinadi"); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      importData = data;
+      document.getElementById('file-info').style.display = 'block';
+      document.getElementById('file-info').innerHTML = `✅ <b>${file.name}</b> yuklandi — ${(file.size/1024).toFixed(1)} KB`;
+      buildPreview(data);
+      goStep(2);
+    } catch(err) {
+      alert("JSON parse xatosi: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ===== PREVIEW =====
+const REQUIRED_FIELDS = ['categorySlug','topicSlug','levelSlug','word','uzbek','question','options','correctAnswer','exampleSentence','difficulty'];
+
+function buildPreview(data) {
+  const questions = data.questions || [];
+  const levels = data.levels || [];
+  const cats = data.category ? [data.category] : [];
+  const topics = data.topic ? [data.topic] : [];
+
+  // Stats
+  document.getElementById('preview-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-n">${cats.length}</div><div class="stat-l">Kategoriya</div></div>
+    <div class="stat-card"><div class="stat-n">${topics.length}</div><div class="stat-l">Topic</div></div>
+    <div class="stat-card"><div class="stat-n">${levels.length}</div><div class="stat-l">Level</div></div>
+    <div class="stat-card"><div class="stat-n">${questions.length}</div><div class="stat-l">Savol</div></div>`;
+
+  // Field check
+  const sampleQ = questions[0] || {};
+  const fieldHtml = REQUIRED_FIELDS.map(f => {
+    const has = sampleQ[f] !== undefined;
+    return `<div class="field-item ${has?'field-ok':'field-missing'}">
+      <span>${has?'✅':'❌'}</span>
+      <span style="font-size:12px;font-weight:500">${f}</span>
+      ${!has ? '<span style="font-size:11px;color:var(--red)">(yo\'q)</span>' : ''}
+    </div>`;
+  }).join('');
+  document.getElementById('field-check').innerHTML = fieldHtml;
+
+  // Preview table
+  const missing_fields = REQUIRED_FIELDS.filter(f => sampleQ[f] === undefined);
+  const tbody = document.getElementById('preview-body');
+  tbody.innerHTML = questions.slice(0, 10).map((q, i) => {
+    const issues = [];
+    if (!q.question) issues.push('question yo\'q');
+    if (!q.options || q.options.length !== 3) issues.push('3 ta option kerak');
+    if (!q.correctAnswer) issues.push('correctAnswer yo\'q');
+    if (q.options && !q.options.includes(q.correctAnswer)) issues.push('correctAnswer options ichida yo\'q');
+
+    const status = issues.length === 0
+      ? '<span class="badge ok">✅ OK</span>'
+      : `<span class="badge error">❌ ${issues[0]}</span>`;
+
+    return `<tr>
+      <td style="color:var(--text2)">${i+1}</td>
+      <td><b>${q.word||'—'}</b><br><span style="font-size:11px;color:var(--text2)">${q.uzbek||''}</span></td>
+      <td style="max-width:200px;font-size:12px">${(q.question||'').substring(0,60)}...</td>
+      <td style="font-size:11px">${(q.options||[]).join('<br>')}</td>
+      <td style="font-size:12px;color:var(--green)">${q.correctAnswer||'—'}</td>
+      <td style="font-size:11px">${q.levelSlug||'—'}</td>
+      <td><span class="badge ${q.difficulty==='easy'?'ok':q.difficulty==='medium'?'warn':'error'}">${q.difficulty||'—'}</span></td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== MODE =====
+const MODE_DESC = {
+  skip: "Mavjud documentlar o'tkazib yuboriladi — faqat yangilari qo'shiladi.",
+  update: "Mavjud documentlar yangilanadi, yangilari qo'shiladi.",
+  overwrite: "Barcha documentlar qayta yoziladi (oldingi ma'lumot o'chiriladi)."
 };
+function setMode(mode) {
+  importMode = mode;
+  ['skip','update','overwrite'].forEach(m => {
+    document.getElementById('mode-'+m).classList.toggle('active', m===mode);
+  });
+  document.getElementById('mode-desc').textContent = MODE_DESC[mode];
+}
+
+// ===== IMPORT =====
+let importStats = {cats:0, topics:0, levels:0, questions:0, skipped:0, errors:0};
+
+function addLog(msg, type='info') {
+  const box = document.getElementById('log-box');
+  box.innerHTML += `<div class="log-${type}">${msg}</div>`;
+  box.scrollTop = box.scrollHeight;
+}
+
+function setProgress(done, total, label) {
+  const pct = total > 0 ? Math.round(done/total*100) : 0;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-stat').textContent = `${done}/${total} (${pct}%)`;
+  if (label) document.getElementById('prog-label').textContent = label;
+}
+
+async function docExists(col, id) {
+  const doc = await db.collection(col).doc(id).get();
+  return doc.exists;
+}
+
+async function smartSet(col, id, data) {
+  const exists = await docExists(col, id);
+  if (exists) {
+    if (importMode === 'skip') {
+      addLog(`⏭ Skip: ${col}/${id} (mavjud)`, 'warn');
+      importStats.skipped++;
+      return false;
+    } else if (importMode === 'update') {
+      await db.collection(col).doc(id).update({...data, updatedAt: TS()});
+      addLog(`🔄 Updated: ${col}/${id}`, 'info');
+      return true;
+    }
+  }
+  await db.collection(col).doc(id).set({...data, createdAt: TS(), updatedAt: TS()});
+  addLog(`✅ Created: ${col}/${id}`, 'ok');
+  return true;
+}
 
 async function startImport() {
-  const btn = document.getElementById('import-btn');
-  btn.disabled = true;
-  const prog = document.getElementById('prog');
-  prog.style.display = 'block';
-  log('Import boshlanmoqda...', 'info');
+  if (!importData) return;
+  importStats = {cats:0, topics:0, levels:0, questions:0, skipped:0, errors:0};
+  document.getElementById('log-box').innerHTML = '';
+  addLog('🚀 Import boshlanmoqda...', 'info');
+  addLog(`⚙️ Mode: ${importMode}`, 'info');
+
+  const data = importData;
+  const questions = data.questions || [];
+  const total = 1 + 1 + (data.levels||[]).length + questions.length;
+  let done = 0;
 
   try {
     // 1. Category
-    log('📂 Category qo\'shilmoqda...', 'info');
-    await db.collection('categories').doc('english-vocabulary').set({
-      ...IMPORT_DATA.category, createdAt: TS(), updatedAt: TS()
+    setProgress(done, total, 'Category import qilinmoqda...');
+    const cat = data.category;
+    const catId = cat.slug || cat.id || 'unknown-category';
+    const ok = await smartSet('categories', catId, {
+      title: cat.name || cat.title,
+      slug: catId,
+      emoji: cat.emoji || '📚',
+      description: cat.description || '',
+      color: cat.color?.startsWith('#') ? 'blue' : (cat.color || 'blue'),
+      order: cat.order || 99,
+      status: 'published'
     });
-    log('✅ Category: English Vocabulary', 'ok');
+    if (ok) importStats.cats++;
+    done++; setProgress(done, total);
 
     // 2. Topic
-    log('📚 Topic qo\'shilmoqda...', 'info');
-    await db.collection('topics').doc('first-100-words').set({
-      ...IMPORT_DATA.topic, createdAt: TS(), updatedAt: TS()
+    setProgress(done, total, 'Topic import qilinmoqda...');
+    const topic = data.topic;
+    const topicId = topic.slug || topic.id;
+    const tok = await smartSet('topics', topicId, {
+      title: topic.title || topic.name,
+      slug: topicId,
+      categoryId: catId,
+      categorySlug: catId,
+      description: topic.description || '',
+      order: topic.order || 1,
+      status: 'published'
     });
-    log('✅ Topic: First 100 Words', 'ok');
+    if (tok) importStats.topics++;
+    done++; setProgress(done, total);
 
-    // 3. Levels (topics sifatida, har bir level = sub-topic)
-    log('📊 Levellar qo\'shilmoqda...', 'info');
-    for (const level of IMPORT_DATA.levels) {
-      await db.collection('topics').doc(level.slug).set({
-        ...level,
-        categoryId: 'english-vocabulary',
-        categorySlug: 'english-vocabulary',
-        parentTopicId: 'first-100-words',
-        parentTopicSlug: 'first-100-words',
-        status: 'published',
-        createdAt: TS(), updatedAt: TS()
+    // 3. Levels
+    for (const level of (data.levels || [])) {
+      setProgress(done, total, `Level: ${level.title}`);
+      const levelId = level.slug || level.id;
+      const lok = await smartSet('topics', levelId, {
+        title: level.title,
+        slug: levelId,
+        categoryId: catId,
+        categorySlug: catId,
+        parentTopicId: topicId,
+        parentTopicSlug: topicId,
+        order: level.order || 99,
+        status: 'published'
       });
-      log(`✅ Level: ${level.title}`, 'ok');
+      if (lok) importStats.levels++;
+      done++; setProgress(done, total);
     }
 
-    // 4. Questions - JSON fayldan yuklab import qilish
-    log('📝 Savollar import qilinmoqda...', 'info');
-    await importQuestions(prog);
+    // 4. Questions - batch
+    addLog(`\n📝 ${questions.length} ta savol import qilinmoqda...`, 'info');
+    const BATCH_SIZE = 20;
+    for (let i = 0; i < questions.length; i += BATCH_SIZE) {
+      const chunk = questions.slice(i, i + BATCH_SIZE);
+      const batch = db.batch();
+      let batchCount = 0;
 
-    log('\n🎉 Import muvaffaqiyatli tugadi!', 'ok');
-    log('Endi dunyoquiz.uz da English Vocabulary ko\'rinadi.', 'ok');
+      for (const q of chunk) {
+        // Validation
+        const errs = [];
+        if (!q.question) errs.push('question yo\'q');
+        if (!q.options || q.options.length < 2) errs.push('options kerak');
+        if (!q.correctAnswer && q.correctIndex === undefined) errs.push('correctAnswer yo\'q');
 
-  } catch(e) {
-    log('❌ Xatolik: ' + e.message, 'err');
-    btn.disabled = false;
-  }
-}
+        if (errs.length) {
+          addLog(`❌ Row ${i + chunk.indexOf(q) + 1} (${q.word||'?'}): ${errs.join(', ')}`, 'err');
+          importStats.errors++;
+          continue;
+        }
 
-async function importQuestions(prog) {
-  // Questions hardcoded (JSON fayldan olingan)
-  const response = await fetch('/first_100_words_app_data.json').catch(() => null);
-  let questions = [];
+        // correctIndex hisoblash
+        let correctIdx = 0;
+        if (typeof q.correctIndex === 'number') {
+          correctIdx = q.correctIndex;
+        } else if (q.correctAnswer && q.options) {
+          const idx = q.options.indexOf(q.correctAnswer);
+          correctIdx = idx >= 0 ? idx : 0;
+          if (idx < 0) addLog(`⚠️ Row ${i+chunk.indexOf(q)+1}: correctAnswer options ichida topilmadi`, 'warn');
+        }
 
-  if (response && response.ok) {
-    const data = await response.json();
-    questions = data.questions;
-    log(`📥 JSON fayldan ${questions.length} ta savol yuklandi`, 'ok');
-  } else {
-    log('⚠️ JSON fayl topilmadi — embedded data ishlatilmoqda', 'info');
-    questions = EMBEDDED_QUESTIONS;
-  }
+        // Document ID: levelSlug + order
+        const docId = `${q.levelSlug || q.topicSlug || 'q'}-${String(q.order||q.wordRank||i).padStart(3,'0')}`;
 
-  let done = 0;
-  const batch_size = 10;
+        const exists = importMode === 'skip' ? await docExists('questions', docId) : false;
+        if (exists) { importStats.skipped++; continue; }
 
-  for (let i = 0; i < questions.length; i += batch_size) {
-    const batch = db.batch();
-    const chunk = questions.slice(i, i + batch_size);
-
-    for (const q of chunk) {
-      const ref = db.collection('questions').doc();
-      let correctIdx = 0;
-      if (q.correctAnswer && q.options) {
-        const idx = q.options.indexOf(q.correctAnswer);
-        correctIdx = idx >= 0 ? idx : 0;
-      } else if (typeof q.correctIndex === 'number') {
-        correctIdx = q.correctIndex;
+        const ref = db.collection('questions').doc(docId);
+        batch.set(ref, {
+          categoryId: catId,
+          categorySlug: catId,
+          topicId: q.levelSlug || q.topicSlug || topicId,
+          topicSlug: q.levelSlug || q.topicSlug || topicId,
+          parentTopicId: topicId,
+          question: q.question,
+          options: q.options.slice(0, 3),
+          correctIndex: correctIdx,
+          explanation: q.explanation || `${q.word||''} = ${q.uzbek||''}. ${q.exampleSentence||''}`,
+          difficulty: q.difficulty || 'easy',
+          status: 'published',
+          word: q.word || '',
+          uzbek: q.uzbek || '',
+          points: q.points || 10,
+          wordRank: q.wordRank || q.order || 0,
+          order: q.order || 0
+        }, { merge: importMode === 'overwrite' });
+        batchCount++;
+        importStats.questions++;
       }
 
-      batch.set(ref, {
-        categoryId: q.categorySlug || 'english-vocabulary',
-        categorySlug: q.categorySlug || 'english-vocabulary',
-        topicId: q.levelSlug || q.topicSlug,
-        topicSlug: q.levelSlug || q.topicSlug,
-        parentTopicId: q.topicSlug || 'first-100-words',
-        question: q.question,
-        options: q.options,
-        correctIndex: correctIdx,
-        explanation: q.explanation || `${q.word || ''} = ${q.uzbek || ''}. ${q.exampleSentence || ''}`,
-        difficulty: q.difficulty || 'easy',
-        status: 'published',
-        word: q.word || '',
-        uzbek: q.uzbek || '',
-        points: q.points || 10,
-        wordRank: q.wordRank || q.order || 0,
-        order: q.order || 0,
-        createdAt: TS(),
-        updatedAt: TS()
-      });
+      if (batchCount > 0) await batch.commit();
+      done += chunk.length;
+      setProgress(done, total, `Savollar: ${done-2-(data.levels||[]).length}/${questions.length}`);
+      addLog(`✅ ${Math.min(i+BATCH_SIZE, questions.length)}/${questions.length} savol`, 'ok');
     }
 
-    await batch.commit();
-    done += chunk.length;
-    prog.value = (done / questions.length) * 100;
-    document.getElementById('prog-stat').textContent = `${done}/${questions.length} savol import qilindi`;
-    log(`✅ ${done}/${questions.length} savol`, 'ok');
-  }
-}
+    // Done
+    addLog('\n🎉 Import tugadi!', 'ok');
+    showResult(true);
 
-async function clearImport() {
-  if (!confirm('English Vocabulary category, topic va savollarini o\'chirish?')) return;
-
-  log('🗑 O\'chirish boshlanmoqda...', 'info');
-  try {
-    // Category
-    await db.collection('categories').doc('english-vocabulary').delete();
-    log('✅ Category o\'chirildi', 'ok');
-
-    // Topics
-    for (const slug of ['first-100-words','words-1-25','words-26-50','words-51-75','words-76-100']) {
-      await db.collection('topics').doc(slug).delete();
-      log(`✅ Topic/Level o\'chirildi: ${slug}`, 'ok');
-    }
-
-    // Questions
-    const snap = await db.collection('questions')
-      .where('categorySlug','==','english-vocabulary').get();
-    const batch = db.batch();
-    snap.docs.forEach(d => batch.delete(d.ref));
-    await batch.commit();
-    log(`✅ ${snap.size} ta savol o\'chirildi`, 'ok');
-    log('🎉 Hammasi o\'chirildi', 'ok');
   } catch(e) {
-    log('❌ ' + e.message, 'err');
+    addLog(`\n❌ Kritik xatolik: ${e.message}`, 'err');
+    importStats.errors++;
+    showResult(false);
   }
 }
 
-// Embedded questions fallback (agar JSON yuklanmasa)
-const EMBEDDED_QUESTIONS = [];
+function showResult(success) {
+  goStep(4);
+  document.getElementById('result-icon').textContent = success ? '🎉' : '⚠️';
+  document.getElementById('result-title').textContent = success ? 'Import muvaffaqiyatli!' : 'Import xatolar bilan tugadi';
+  document.getElementById('result-desc').textContent = success
+    ? `Barcha ma'lumotlar Firestore ga yuklandi. Endi dunyoquiz.uz da ko'rishingiz mumkin.`
+    : `Ba'zi ma'lumotlar yuklashda xatolik yuz berdi. Log ni tekshiring.`;
+  document.getElementById('result-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-n" style="color:var(--green)">${importStats.cats}</div><div class="stat-l">Kategoriya</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--green)">${importStats.topics}</div><div class="stat-l">Topic</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--green)">${importStats.levels}</div><div class="stat-l">Level</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--green)">${importStats.questions}</div><div class="stat-l">Savollar</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--yellow)">${importStats.skipped}</div><div class="stat-l">Skip</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--red)">${importStats.errors}</div><div class="stat-l">Xato</div></div>`;
+}
 </script>
 </body>
 </html>

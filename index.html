@@ -1221,7 +1221,17 @@ async function openCategory(catId, catSlug) {
 
     // Bitta mavzu bo'lsa — to'g'ridan boshlash
     if (topics.length === 1) {
-      startTopicQuiz(topics[0].id, topics[0].title, catId);
+      // Level bormi tekshirish
+      const levelSnap = await db.collection('topics')
+        .where('parentTopicId','==',topics[0].id)
+        .where('status','==','published')
+        .get();
+      if (levelSnap.empty) {
+        startTopicQuiz(topics[0].id, topics[0].title, catId);
+      } else {
+        // Bitta topic, lekin levels bor — levels ko'rsatish
+        showTopicsList([topics[0]], catId, tGrid, tHeader, COLOR_HEX['purple']);
+      }
       return;
     }
 
@@ -1246,6 +1256,50 @@ async function openCategory(catId, catSlug) {
     // Xato bo'lsa to'g'ridan quiz
     startCategory(catId);
   }
+}
+
+async function showLevels(topicId, topicTitle, catId, color) {
+  const tGrid = document.getElementById('topics-grid');
+  const tHeader = document.getElementById('topics-header');
+  if (!tGrid) return;
+
+  tGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
+
+  const snap = await db.collection('topics')
+    .where('parentTopicId','==',topicId)
+    .where('status','==','published')
+    .get();
+
+  const levels = snap.docs.map(d=>({id:d.id,...d.data()}))
+    .sort((a,b) => (a.order||99)-(b.order||99));
+
+  if (!levels.length) {
+    startTopicQuiz(topicId, topicTitle, catId);
+    return;
+  }
+
+  if (tHeader) tHeader.innerHTML = `
+    <button onclick="backToCategories()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--purple);font-size:13px;cursor:pointer;margin-bottom:8px;padding:0">← Kategoriyalar</button>
+    <div style="font-size:18px;font-weight:700;color:var(--text)">${topicTitle}</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px">Level tanlang</div>`;
+
+  tGrid.innerHTML = levels.map(l => {
+    const desc = l.description || "Test topshirish";
+    return '<div class="cat-card" style="border-color:' + color + '20" onclick="startTopicQuiz(' + JSON.stringify(l.id) + ',' + JSON.stringify(l.title) + ',' + JSON.stringify(catId) + ')">' +
+      '<div style="width:44px;height:44px;border-radius:12px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:8px">📖</div>' +
+      '<div class="cat-name">' + l.title + '</div>' +
+      '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
+  }).join('');
+}
+
+function showTopicsList(topics, catId, tGrid, tHeader, color) {
+  tGrid.innerHTML = topics.map(t => {
+    const desc = t.description || "Mavzularni korish";
+    return '<div class="cat-card" style="border-color:' + color + '20" onclick="showLevels(' + JSON.stringify(t.id) + ',' + JSON.stringify(t.title) + ',' + JSON.stringify(catId) + ',' + JSON.stringify(color) + ')">' +
+      '<div style="width:44px;height:44px;border-radius:12px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:8px">📚</div>' +
+      '<div class="cat-name">' + t.title + '</div>' +
+      '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
+  }).join('');
 }
 
 function backToCategories() {
@@ -1849,7 +1903,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: vocab-import-v4");
+console.log("DUNYO QUIZ version: levels-v5");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
