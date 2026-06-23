@@ -1204,22 +1204,17 @@ async function openCategory(catId, catSlug) {
       '<div style="font-size:18px;font-weight:700;color:var(--text)">' + (catData.title||catId) + '</div>' +
       '<div style="font-size:13px;color:var(--text2);margin-top:4px">Mavzular</div>';
 
-    // Faqat top-level topiclar: parentTopicId YO'Q va type != 'level'
-    // categoryId yoki categorySlug bo'yicha qidirish
-    const snap = await db.collection('topics')
-      .where('categorySlug','==',catSlug||catId)
-      .where('status','==','published')
-      .get();
+    // categorySlug va categoryId ikkalasi bilan qidirish
+    const [snap1, snap2] = await Promise.all([
+      db.collection('topics').where('categorySlug','==',catId).where('status','==','published').get(),
+      db.collection('topics').where('categoryId','==',catId).where('status','==','published').get()
+    ]);
 
-    let allTopics = snap.docs.map(d=>({id:d.id,...d.data()}));
-
-    // categoryId bilan ham qidiramiz (agar categorySlug bo'yicha topilmasa)
-    if (!allTopics.length) {
-      const snap2 = await db.collection('topics')
-        .where('categoryId','==',catId)
-        .where('status','==','published')
-        .get();
-      allTopics = snap2.docs.map(d=>({id:d.id,...d.data()}));
+    // Ikki natijani birlashtirish, duplicate olib tashlaymiz
+    const seen = new Set();
+    let allTopics = [];
+    for (const doc of [...snap1.docs, ...snap2.docs]) {
+      if (!seen.has(doc.id)) { seen.add(doc.id); allTopics.push({id:doc.id,...doc.data()}); }
     }
 
     // MUHIM: faqat top-level topiclarni ko'rsatish
@@ -1922,7 +1917,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: hierarchy-v9");
+console.log("DUNYO QUIZ version: hierarchy-v10");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
