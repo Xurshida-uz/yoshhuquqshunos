@@ -1212,40 +1212,54 @@ async function openCategory(catId, catSlug) {
       '<div style="font-size:18px;font-weight:700;color:var(--text)">' + (catData.title||catId) + '</div>' +
       '<div style="font-size:13px;color:var(--text2);margin-top:4px">Mavzular</div>';
 
-    // categorySlug va categoryId ikkalasi bilan qidirish
-    const [snap1, snap2] = await Promise.all([
-      db.collection('topics').where('categorySlug','==',catId).where('status','==','published').get(),
-      db.collection('topics').where('categoryId','==',catId).where('status','==','published').get()
-    ]);
+    // catId va catSlug (ikkalasi) bilan barcha variantlarni qidiramiz
+    const slugsToSearch = new Set([catId, catSlug].filter(Boolean));
+    const allSnaps = await Promise.all([...slugsToSearch].flatMap(s => [
+      db.collection('topics').where('categorySlug','==',s).where('status','==','published').get(),
+      db.collection('topics').where('categoryId','==',s).where('status','==','published').get()
+    ]));
 
-    // Birlashtirish, duplicate olib tashlaymiz
     const seen = new Set();
     let allTopics = [];
-    for (const doc of [...snap1.docs, ...snap2.docs]) {
-      if (!seen.has(doc.id)) { seen.add(doc.id); allTopics.push({id:doc.id,...doc.data()}); }
+    for (const snap of allSnaps) {
+      for (const doc of snap.docs) {
+        if (!seen.has(doc.id)) { seen.add(doc.id); allTopics.push({id:doc.id,...doc.data()}); }
+      }
     }
-    console.log('[all topics loaded]', allTopics.length, allTopics.map(t=>t.type+':'+t.id));
+    console.log('[all topics loaded]', allTopics.length, allTopics.map(t=>(t.type||'no-type')+':'+t.id));
 
-    // Faqat top-level: level emas, parentTopicId yo'q
+    // Top-level: type=level EMAS, parentTopicId YO'Q
     const topLevelTopics = allTopics
-      .filter(t => t.type !== 'level' && !t.parentTopicId && !t.parentTopicSlug)
+      .filter(t => {
+        const isLevel = t.type === 'level';
+        const hasParent = t.parentTopicId || t.parentTopicSlug;
+        return !isLevel && !hasParent;
+      })
       .sort((a,b) => (a.order||99)-(b.order||99));
-    console.log('[parent topics loaded]', topLevelTopics.length);
+    console.log('[parent topics loaded]', topLevelTopics.length, topLevelTopics.map(t=>t.id));
 
     if (!topLevelTopics.length) {
-      tg.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:32px;color:var(--text2)'>Bu kategoriyada mavzular tez orada qo'shiladi 🚀</div>";
+      tg.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:32px;color:var(--text2)'>Bu kategoriyada mavzular tez orada qo\'shiladi 🚀</div>";
       return;
     }
 
+    // parent-topic type bor yoki birdan ko'p bo'lsa — list ko'rsatish
     const hasParentTopics = topLevelTopics.some(t => t.type === 'parent-topic');
 
-    // Bitta oddiy topic (parent-topic emas) bo'lsa to'g'ridan quiz
     if (topLevelTopics.length === 1 && !hasParentTopics) {
-      startTopicQuiz(topLevelTopics[0].id, topLevelTopics[0].title, catId);
+      // Bitta oddiy topic — levels bormi tekshir
+      const lvSnap = await db.collection('topics')
+        .where('parentTopicId','==',topLevelTopics[0].id)
+        .where('status','==','published').get();
+      if (lvSnap.empty) {
+        startTopicQuiz(topLevelTopics[0].id, topLevelTopics[0].title, catId);
+      } else {
+        showLevels(topLevelTopics[0].id, topLevelTopics[0].title, catId, color);
+      }
       return;
     }
 
-    renderTopicCards(topLevelTopics, catId, color, tg, hasParentTopics);
+    renderTopicCards(topLevelTopics, catId, color, tg, true);
 
   } catch(e) {
     console.error('[openCategory error]', e.message);
@@ -1256,8 +1270,10 @@ async function openCategory(catId, catSlug) {
 
 function renderTopicCards(topics, catId, color, tGrid, hasChildren) {
   tGrid.innerHTML = topics.map(t => {
-    const desc = t.description || (hasChildren ? 'Mavzularni ko`rish' : 'Test topshirish');
-    const onclick = hasChildren
+    const desc = t.description || "Mavzularni ko'rish";
+    // parent-topic yoki hasChildren bo'lsa showLevels, aks holda quiz
+    const isParent = t.type === 'parent-topic' || hasChildren;
+    const onclick = isParent
       ? 'showLevels(' + JSON.stringify(t.id) + ',' + JSON.stringify(t.title) + ',' + JSON.stringify(catId) + ',' + JSON.stringify(color) + ')'
       : 'startTopicQuiz(' + JSON.stringify(t.id) + ',' + JSON.stringify(t.title) + ',' + JSON.stringify(catId) + ')';
     return '<div class="cat-card" style="border-color:' + color + '20" onclick="' + onclick + '">' +
@@ -1931,7 +1947,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: hierarchy-v11");
+console.log("DUNYO QUIZ version: hierarchy-v12");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
