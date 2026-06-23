@@ -823,7 +823,7 @@ const LEGACY_FLAGS_CATEGORY = {
 // ==================== STATE ====================
 let currentUser = null, confirmResult = null;
 let quiz = [], cur = 0, score = 0, answered = false;
-let timerInt = null, tLeft = 20, times = [], wrongAnswers = [];
+let timerIntervalId = null, activeTimerToken = null, tLeft = 20, times = [], wrongAnswers = [];
 let questionStartTime = Date.now(); // Global — pick() va autoAnswer() uchun
 let currentCat = null, lastResult = null, currentResult = null;
 const LR_KEY = 'dunyoquiz_lastResult';
@@ -1344,15 +1344,18 @@ function backToCategories() {
 }
 
 async function startTopicQuiz(topicId, topicTitle, catId) {
-  console.log('[level clicked]', topicId);
+  console.log('[startLevelQuiz]', topicId);
   const banner = document.getElementById('login-prompt-banner');
   if (banner) banner.remove();
 
+  // Avvalgi timerni to'xtatish
+  if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+  activeTimerToken = null;
+
   currentCat = CATEGORIES.find(c => c.id === catId) || {id:catId, name:topicTitle, emoji:'📖'};
-  questionStartTime = Date.now();
 
   try {
-    // 1. Topic meta-ma'lumotlarini olish
+    // 1. Topic meta
     const topicDoc = await db.collection('topics').doc(topicId).get();
     const topicMeta = topicDoc.exists ? topicDoc.data() : {};
     const isLevel = topicMeta.type === 'level' || !!topicMeta.parentTopicId;
@@ -1365,44 +1368,66 @@ async function startTopicQuiz(topicId, topicTitle, catId) {
       .where('status','==','published')
       .get();
 
-    let pool = snap.docs.map(d => {
-      const q = d.data();
-      return {
+    // 3. Deduplication — topicId+order primary key, fallback topicId+word+answer
+    const seen = new Set();
+    let pool = [];
+    for (const doc of snap.docs) {
+      const q = doc.data();
+      const tId = q.topicId || q.topicSlug || topicId;
+      const ord = q.order || q.wordRank || 0;
+      const primaryKey = tId + '|' + ord;
+      const fallbackKey = tId + '|' + (q.word || '') + '|' + (q.correctAnswer || String(q.correctIndex || 0));
+      const key = (ord > 0) ? primaryKey : fallbackKey;
+      if (seen.has(key)) {
+        console.warn('[dedup skipped]', key);
+        continue;
+      }
+      seen.add(key);
+      pool.push({
         q: q.question,
         opts: q.options,
         ans: q.correctIndex,
         law: q.explanation,
         cat: catId,
         diff: q.difficulty || 'medium',
-        order: q.order || q.wordRank || 0,
+        order: ord,
         word: q.word || ''
-      };
-    });
+      });
+    }
 
-    console.log('[questions loaded]', pool.length);
+    console.log('[questions loaded]', snap.docs.length);
+    console.log('[questions after dedup]', pool.length);
+
     if (!pool.length) {
       showToast("Bu mavzuda savol yo'q!");
       return;
     }
 
-    // 3. quizMode va questionLimit bo'yicha quiz tuzish
+    // 4. quizMode va questionLimit bo'yicha
+    let finalQuiz;
     if (isLevel && (quizMode === 'ordered' || questionLimit === 'all')) {
-      // Level: barcha savollar tartibda
       pool.sort((a, b) => (a.order || 0) - (b.order || 0));
-      quiz = pool; // slice QILINMAYDI
+      finalQuiz = [...pool]; // yangi array — reference muammo yo'q
     } else {
-      // Normal: random, max 10
       const limit = questionLimit === 'all'
         ? pool.length
         : Math.min(Number(questionLimit) || 10, pool.length);
-      quiz = shuffle([...pool]).slice(0, limit);
+      finalQuiz = shuffle([...pool]).slice(0, limit);
     }
 
-    console.log('[quiz final count]', quiz.length);
-    cur = 0; score = 0; answered = false; times = []; wrongAnswers = [];
+    console.log('[quiz final count]', finalQuiz.length);
+
+    // 5. State reset — bitta joyda, to'liq
+    quiz = finalQuiz;
+    cur = 0;
+    score = 0;
+    answered = false;
+    times = [];
+    wrongAnswers = [];
+    questionStartTime = Date.now();
     currentCat = { id: catId, name: topicTitle, emoji: currentCat?.emoji || '📖' };
 
-    // Quiz UI
+    // 6. UI
     document.querySelector('.nav-bar').style.display = 'none';
     ['home','leaderboard','profile'].forEach(t => {
       const el = document.getElementById('tab-' + t);
@@ -1411,10 +1436,13 @@ async function startTopicQuiz(topicId, topicTitle, catId) {
     document.getElementById('tab-result').style.display = 'none';
     document.getElementById('tab-quiz').style.display = 'block';
     document.getElementById('cat-label').textContent = currentCat.emoji + ' ' + currentCat.name;
+
+    // 7. Bitta renderQ chaqiruvi
     renderQ();
+
   } catch(e) {
     showToast('Savollar yuklanmadi!');
-    console.error(e);
+    console.error('[startTopicQuiz error]', e);
   }
 }
 
@@ -1455,9 +1483,16 @@ function startCategory(catId) {
 }
 
 function renderQ() {
-  answered = false; clearInterval(timerInt); tLeft = 20;
-  questionStartTime = Date.now(); // Reset — har yangi savolda
   const q = quiz[cur];
+  console.log('[renderQ]', cur, q ? (q.word || q.q || '').substring(0,30) : 'NO Q');
+
+  // 1. Timer tozalash
+  if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+  activeTimerToken = null;
+  answered = false;
+  tLeft = 20;
+  questionStartTime = Date.now();
+
   const total = quiz.length;
   document.getElementById('q-label').textContent = `Savol ${cur + 1}/${total}`;
   document.getElementById('q-prog-fill').style.width = `${(cur / total) * 100}%`;
@@ -1481,30 +1516,60 @@ function renderQ() {
   } else {
     document.getElementById('q-text').textContent = q.q;
   }
-  document.getElementById('q-opts').innerHTML = q.opts.map((o, i) =>
+  // DOM tozalash — avvalgi savolni to'liq o'chirish
+  const optsEl = document.getElementById('q-opts');
+  optsEl.innerHTML = '';
+  optsEl.innerHTML = q.opts.map((o, i) =>
     `<button class="opt-btn" id="opt${i}" onclick="pick(${i})">
       <span class="opt-letter">${['A','B','C'][i]}</span>${o}
     </button>`).join('');
   document.getElementById('explain-box').style.display = 'none';
   document.getElementById('next-btn').style.display = 'none';
 
-  // Timer
+  // Timer — ikki alohida: intervalId va token
   const circle = document.getElementById('timer-circle');
   const timerTxt = document.getElementById('timer-text');
   const circumference = 106.81;
   circle.style.stroke = 'var(--purple)';
   timerTxt.style.color = 'var(--purple)';
-  timerInt = setInterval(() => {
-    tLeft--;
-    timerTxt.textContent = tLeft;
-    circle.style.strokeDashoffset = circumference * (1 - tLeft / 20);
-    if (tLeft <= 5) { circle.style.stroke = 'var(--red)'; timerTxt.style.color = 'var(--red)'; }
-    if (tLeft <= 0) { clearInterval(timerInt); autoAnswer(); }
+
+  // 3. Yangi token yaratish
+  const myToken = Symbol('timer');
+  activeTimerToken = myToken;
+
+  // 4. localTimeLeft — closure ichida mustaqil
+  let localTimeLeft = 20;
+
+  // 5. Yangi interval — ID ni alohida saqlash
+  timerIntervalId = setInterval(() => {
+    // 6. Token tekshiruvi — eski interval bo'lsa to'xtaydi
+    if (activeTimerToken !== myToken) {
+      clearInterval(timerIntervalId);
+      timerIntervalId = null;
+      return;
+    }
+    localTimeLeft--;
+    timerTxt.textContent = localTimeLeft;
+    circle.style.strokeDashoffset = circumference * (1 - localTimeLeft / 20);
+    if (localTimeLeft <= 5) {
+      circle.style.stroke = 'var(--red)';
+      timerTxt.style.color = 'var(--red)';
+    }
+    if (localTimeLeft <= 0) {
+      clearInterval(timerIntervalId);
+      timerIntervalId = null;
+      activeTimerToken = null;
+      autoAnswer();
+    }
   }, 1000);
 }
 
 function autoAnswer() {
-  if (answered) return; answered = true;
+  if (answered) return;
+  answered = true;
+  // Timerni to'xtatish
+  if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+  activeTimerToken = null;
   if (!questionStartTime) questionStartTime = Date.now();
   const autoElapsed = Date.now() - questionStartTime;
   const autoSpent = Math.max(1, Math.min(20, Math.round((autoElapsed / 1000) * 10) / 10));
@@ -1517,33 +1582,29 @@ function autoAnswer() {
 }
 
 function pick(i) {
+  console.log('[pick]', cur, i);
   if (answered) return;
+  const btn = document.getElementById('opt' + i);
+  if (!btn || btn.disabled) return;
 
-  try {
-    // 1. Vaqtni hisoblash — answered = true dan OLDIN
-    if (!questionStartTime) questionStartTime = Date.now();
-    const elapsedMs = Date.now() - questionStartTime;
-    const spent = Math.max(1, Math.min(20, Math.round((elapsedMs / 1000) * 10) / 10));
+  // DARHOL disable — ikki marta bosilishni oldini olish
+  document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+  answered = true;
+  // Timerni to'xtatish
+  if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+  activeTimerToken = null;
 
-    // 2. Endi answered = true — hisoblash muvaffaqiyatli bo'ldi
-    answered = true;
-    clearInterval(timerInt);
+  if (!questionStartTime) questionStartTime = Date.now();
+  const elapsedMs = Date.now() - questionStartTime;
+  const spent = Math.max(1, Math.min(20, Math.round((elapsedMs / 1000) * 10) / 10));
+  times.push(spent);
 
-    times.push(spent);
-
-    const q = quiz[cur];
-    document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
-    document.getElementById('opt' + i).classList.add(i === q.ans ? 'correct' : 'wrong');
-    if (i !== q.ans) document.getElementById('opt' + q.ans).classList.add('correct');
-    if (i === q.ans) score++;
-    else wrongAnswers.push({ q: q.q, userAns: q.opts[i], correctAns: q.opts[q.ans], law: q.law });
-    showExplain(q, false);
-
-  } catch(e) {
-    // Xato bo'lsa answered ni true qoldirib ketmaymiz
-    answered = false;
-    console.error('[pick error]', e.message);
-  }
+  const q = quiz[cur];
+  btn.classList.add(i === q.ans ? 'correct' : 'wrong');
+  if (i !== q.ans) document.getElementById('opt' + q.ans).classList.add('correct');
+  if (i === q.ans) score++;
+  else wrongAnswers.push({ q: q.q, userAns: q.opts[i], correctAns: q.opts[q.ans], law: q.law });
+  showExplain(q, false);
 }
 
 function showExplain(q, timeout) {
@@ -1556,13 +1617,16 @@ function showExplain(q, timeout) {
 }
 
 function nextQ() {
+  console.log('[nextQ before]', cur);
   cur++;
+  console.log('[nextQ after]', cur);
   if (cur >= quiz.length) { showResult(); return; }
   renderQ();
 }
 
 function exitQuiz() {
-  clearInterval(timerInt);
+  if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+  activeTimerToken = null;
   document.getElementById('tab-quiz').style.display = 'none';
   document.querySelector('.nav-bar').style.display = 'flex';
   goTab('home');
@@ -1570,7 +1634,8 @@ function exitQuiz() {
 
 // ==================== RESULT ====================
 function showResult() {
-  clearInterval(timerInt);
+  if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+  activeTimerToken = null;
   const pct = Math.round(score / quiz.length * 100);
   const avgRaw = times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0;
   const avg = Math.max(0.1, Math.round(avgRaw * 10) / 10); // 1 decimal, min 0.1
@@ -1953,7 +2018,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: hierarchy-v13");
+console.log("DUNYO QUIZ version: dedup-v21");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
