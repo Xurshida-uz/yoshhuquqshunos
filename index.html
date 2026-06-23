@@ -1194,26 +1194,7 @@ async function openCategory(catId, catSlug) {
   tView.style.display = 'block';
 
   try {
-    // Barcha topiclarni yuklaymiz
-    let allTopics = [];
-    const snap = await db.collection('topics')
-      .where('categoryId','==',catId)
-      .where('status','==','published')
-      .get();
-    allTopics = snap.docs.map(d=>({id:d.id,...d.data()}))
-      .sort((a,b)=>(a.order||99)-(b.order||99));
-
-    // categorySlug bilan ham qidiramiz
-    if (!allTopics.length) {
-      const snap2 = await db.collection('topics')
-        .where('categorySlug','==',catSlug||catId)
-        .where('status','==','published')
-        .get();
-      allTopics = snap2.docs.map(d=>({id:d.id,...d.data()}))
-        .sort((a,b)=>(a.order||99)-(b.order||99));
-    }
-
-    // Kategoriya rangini olish
+    // Kategoriya ma'lumotlari
     const catDoc = await db.collection('categories').doc(catId).get();
     const catData = catDoc.exists ? catDoc.data() : {};
     const color = COLOR_HEX[catData.color] || COLOR_HEX['purple'];
@@ -1221,32 +1202,47 @@ async function openCategory(catId, catSlug) {
     if (tHeader) tHeader.innerHTML =
       '<div style="font-size:28px;margin-bottom:6px">' + safeEmoji(catData.emoji, catId) + '</div>' +
       '<div style="font-size:18px;font-weight:700;color:var(--text)">' + (catData.title||catId) + '</div>' +
-      '<div style="font-size:13px;color:var(--text2);margin-top:4px">Mavzu tanlang</div>';
+      '<div style="font-size:13px;color:var(--text2);margin-top:4px">Mavzular</div>';
 
+    // Faqat top-level topiclar: parentTopicId YO'Q va type != 'level'
+    // categoryId yoki categorySlug bo'yicha qidirish
+    const snap = await db.collection('topics')
+      .where('categorySlug','==',catSlug||catId)
+      .where('status','==','published')
+      .get();
+
+    let allTopics = snap.docs.map(d=>({id:d.id,...d.data()}));
+
+    // categoryId bilan ham qidiramiz (agar categorySlug bo'yicha topilmasa)
     if (!allTopics.length) {
-      tGrid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:32px;color:var(--text2)'>Bu kategoriyada mavzular tez orada qo`shiladi 🚀</div>";
+      const snap2 = await db.collection('topics')
+        .where('categoryId','==',catId)
+        .where('status','==','published')
+        .get();
+      allTopics = snap2.docs.map(d=>({id:d.id,...d.data()}));
+    }
+
+    // MUHIM: faqat top-level topiclarni ko'rsatish
+    // level emas + parentTopicId yo'q
+    const topLevelTopics = allTopics
+      .filter(t => t.type !== 'level' && !t.parentTopicId && !t.parentTopicSlug)
+      .sort((a,b) => (a.order||99)-(b.order||99));
+
+    if (!topLevelTopics.length) {
+      tGrid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:32px;color:var(--text2)'>Bu kategoriyada mavzular tez orada qoshiladi 🚀</div>";
       return;
     }
 
-    // Faqat parent-topic larni ko'rsatish
-    // (type === 'parent-topic' yoki parentTopicId yo'q bo'lgan topiclar)
-    const parentTopics = allTopics.filter(t =>
-      t.type === 'parent-topic' ||
-      (!t.parentTopicId && t.type !== 'level')
-    );
+    // Parent-topic larni ajratish
+    const hasParentTopics = topLevelTopics.some(t => t.type === 'parent-topic');
 
-    if (parentTopics.length > 0) {
-      // Parent topiclar bor — ularni ko'rsatamiz
-      renderTopicCards(parentTopics, catId, color, tGrid, true);
-    } else {
-      // Parent topic yo'q — oddiy topiclar (level bo'lmagan)
-      const normalTopics = allTopics.filter(t => t.type !== 'level');
-      if (normalTopics.length === 1) {
-        startTopicQuiz(normalTopics[0].id, normalTopics[0].title, catId);
-        return;
-      }
-      renderTopicCards(normalTopics.length ? normalTopics : allTopics, catId, color, tGrid, false);
+    if (topLevelTopics.length === 1 && !hasParentTopics) {
+      // Bitta oddiy topic — to'g'ridan quiz
+      startTopicQuiz(topLevelTopics[0].id, topLevelTopics[0].title, catId);
+      return;
     }
+
+    renderTopicCards(topLevelTopics, catId, color, tGrid, hasParentTopics);
 
   } catch(e) {
     console.error('openCategory error:', e);
@@ -1926,7 +1922,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: vocab-v8");
+console.log("DUNYO QUIZ version: hierarchy-v9");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
