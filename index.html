@@ -1080,10 +1080,12 @@ function catCardHTML(slug, id, emoji, title, desc, colorKey, isLegacy) {
   const onclick = isLegacy
     ? `startLegacyFlags()`
     : `openCategory('${id}','${slug}')`;
+  // Legacy emas va desc yo'q bo'lsa — "Mavzularni ko'rish"
+  const displayDesc = desc || (isLegacy ? 'Testni boshlash' : "Mavzularni ko'rish");
   return `<div class="cat-card" style="border-color:${color}20" onclick="${onclick}">
     <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,${color}22,${color}11);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:10px;border:1.5px solid ${color}22">${safeE}</div>
     <div class="cat-name">${title}</div>
-    <div class="cat-count" style="color:${color}">${desc || 'Testni boshlash'}</div>
+    <div class="cat-count" style="color:${color}">${displayDesc}</div>
   </div>`;
 }
 
@@ -1163,35 +1165,38 @@ function scrollToCats() {
 }
 
 async function openCategory(catId, catSlug) {
+  console.log('[category clicked]', catId, catSlug);
   currentCat = CATEGORIES.find(c => c.id === catId || c.id === catSlug) ||
                {id:catId, name:catId, emoji:'📚'};
 
-  // Elementlarni topish
-  const topicsGrid = document.getElementById('topics-grid');
-  const topicsHeader = document.getElementById('topics-header');
-  const sectionsView = document.getElementById('home-sections-view');
-  const topicsView = document.getElementById('home-topics-view');
-
-  // Agar elementlar yo'q bo'lsa — home tabga o'tamiz va qayta urinamiz
-  if (!topicsGrid || !topicsView) {
+  // home tab faol bo'lishi kerak
+  if (document.getElementById('tab-home').style.display === 'none') {
     goTab('home');
-    await new Promise(r => setTimeout(r, 100));
-    const tg2 = document.getElementById('topics-grid');
-    const tv2 = document.getElementById('home-topics-view');
-    if (!tg2 || !tv2) { startCategory(catId); return; }
+    await new Promise(r => setTimeout(r, 80));
   }
 
-  // Elementlarni qayta olamiz (goTab dan keyin)
   const tGrid = document.getElementById('topics-grid');
   const tHeader = document.getElementById('topics-header');
   const sView = document.getElementById('home-sections-view');
   const tView = document.getElementById('home-topics-view');
 
-  if (!tGrid || !tView) { startCategory(catId); return; }
+  if (!tGrid || !tView) {
+    console.log('[openCategory] elements not found, retrying...');
+    await new Promise(r => setTimeout(r, 150));
+    const tg2 = document.getElementById('topics-grid');
+    const tv2 = document.getElementById('home-topics-view');
+    if (!tg2 || !tv2) { showToast("Sahifa yuklanmadi, qayta urining"); return; }
+  }
 
-  tGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
-  if (sView) sView.style.display = 'none';
-  tView.style.display = 'block';
+  const g = document.getElementById('topics-grid');
+  const h = document.getElementById('topics-header');
+  const sv = document.getElementById('home-sections-view');
+  const tv = document.getElementById('home-topics-view');
+
+  g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
+  if (sv) sv.style.display = 'none';
+  tv.style.display = 'block';
+  console.log('[opening category topics]', catId);
 
   try {
     // Kategoriya ma'lumotlari
@@ -1199,7 +1204,10 @@ async function openCategory(catId, catSlug) {
     const catData = catDoc.exists ? catDoc.data() : {};
     const color = COLOR_HEX[catData.color] || COLOR_HEX['purple'];
 
-    if (tHeader) tHeader.innerHTML =
+    const tg = document.getElementById('topics-grid');
+    const th = document.getElementById('topics-header');
+
+    if (th) th.innerHTML =
       '<div style="font-size:28px;margin-bottom:6px">' + safeEmoji(catData.emoji, catId) + '</div>' +
       '<div style="font-size:18px;font-weight:700;color:var(--text)">' + (catData.title||catId) + '</div>' +
       '<div style="font-size:13px;color:var(--text2);margin-top:4px">Mavzular</div>';
@@ -1210,38 +1218,39 @@ async function openCategory(catId, catSlug) {
       db.collection('topics').where('categoryId','==',catId).where('status','==','published').get()
     ]);
 
-    // Ikki natijani birlashtirish, duplicate olib tashlaymiz
+    // Birlashtirish, duplicate olib tashlaymiz
     const seen = new Set();
     let allTopics = [];
     for (const doc of [...snap1.docs, ...snap2.docs]) {
       if (!seen.has(doc.id)) { seen.add(doc.id); allTopics.push({id:doc.id,...doc.data()}); }
     }
+    console.log('[all topics loaded]', allTopics.length, allTopics.map(t=>t.type+':'+t.id));
 
-    // MUHIM: faqat top-level topiclarni ko'rsatish
-    // level emas + parentTopicId yo'q
+    // Faqat top-level: level emas, parentTopicId yo'q
     const topLevelTopics = allTopics
       .filter(t => t.type !== 'level' && !t.parentTopicId && !t.parentTopicSlug)
       .sort((a,b) => (a.order||99)-(b.order||99));
+    console.log('[parent topics loaded]', topLevelTopics.length);
 
     if (!topLevelTopics.length) {
-      tGrid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:32px;color:var(--text2)'>Bu kategoriyada mavzular tez orada qoshiladi 🚀</div>";
+      tg.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:32px;color:var(--text2)'>Bu kategoriyada mavzular tez orada qo'shiladi 🚀</div>";
       return;
     }
 
-    // Parent-topic larni ajratish
     const hasParentTopics = topLevelTopics.some(t => t.type === 'parent-topic');
 
+    // Bitta oddiy topic (parent-topic emas) bo'lsa to'g'ridan quiz
     if (topLevelTopics.length === 1 && !hasParentTopics) {
-      // Bitta oddiy topic — to'g'ridan quiz
       startTopicQuiz(topLevelTopics[0].id, topLevelTopics[0].title, catId);
       return;
     }
 
-    renderTopicCards(topLevelTopics, catId, color, tGrid, hasParentTopics);
+    renderTopicCards(topLevelTopics, catId, color, tg, hasParentTopics);
 
   } catch(e) {
-    console.error('openCategory error:', e);
-    startCategory(catId);
+    console.error('[openCategory error]', e.message);
+    const tg = document.getElementById('topics-grid');
+    if (tg) tg.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:32px;color:var(--red)'>Xatolik yuz berdi: " + e.message + "</div>";
   }
 }
 
@@ -1259,6 +1268,7 @@ function renderTopicCards(topics, catId, color, tGrid, hasChildren) {
 }
 
 async function showLevels(topicId, topicTitle, catId, color) {
+  console.log('[parent topic clicked]', topicId);
   const tGrid = document.getElementById('topics-grid');
   const tHeader = document.getElementById('topics-header');
   if (!tGrid) return;
@@ -1272,6 +1282,7 @@ async function showLevels(topicId, topicTitle, catId, color) {
 
   const levels = snap.docs.map(d=>({id:d.id,...d.data()}))
     .sort((a,b) => (a.order||99)-(b.order||99));
+  console.log('[levels loaded]', levels.length);
 
   // Level yo'q bo'lsa — to'g'ridan quiz
   if (!levels.length) {
@@ -1311,6 +1322,7 @@ function backToCategories() {
 }
 
 async function startTopicQuiz(topicId, topicTitle, catId) {
+  console.log('[level clicked]', topicId);
   const banner = document.getElementById('login-prompt-banner');
   if (banner) banner.remove();
 
@@ -1345,6 +1357,7 @@ async function startTopicQuiz(topicId, topicTitle, catId) {
       };
     });
 
+    console.log('[questions loaded]', pool.length);
     if (!pool.length) {
       showToast("Bu mavzuda savol yo'q!");
       return;
@@ -1363,6 +1376,7 @@ async function startTopicQuiz(topicId, topicTitle, catId) {
       quiz = shuffle([...pool]).slice(0, limit);
     }
 
+    console.log('[quiz final count]', quiz.length);
     cur = 0; score = 0; answered = false; times = []; wrongAnswers = [];
     currentCat = { id: catId, name: topicTitle, emoji: currentCat?.emoji || '📖' };
 
@@ -1917,7 +1931,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: hierarchy-v10");
+console.log("DUNYO QUIZ version: hierarchy-v11");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
