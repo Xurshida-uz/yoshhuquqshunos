@@ -1270,12 +1270,15 @@ async function openCategory(catId, catSlug) {
 
 function renderTopicCards(topics, catId, color, tGrid, hasChildren) {
   tGrid.innerHTML = topics.map(t => {
-    const desc = t.description || "Mavzularni ko'rish";
-    // parent-topic yoki hasChildren bo'lsa showLevels, aks holda quiz
+    const desc = t.description || "Mavzularni korish";
     const isParent = t.type === 'parent-topic' || hasChildren;
+    const tid = t.id.replace(/'/g, "\'");
+    const ttitle = t.title.replace(/'/g, "\'");
+    const tcid = catId.replace(/'/g, "\'");
+    const tcolor = color.replace(/'/g, "\'");
     const onclick = isParent
-      ? 'showLevels(' + JSON.stringify(t.id) + ',' + JSON.stringify(t.title) + ',' + JSON.stringify(catId) + ',' + JSON.stringify(color) + ')'
-      : 'startTopicQuiz(' + JSON.stringify(t.id) + ',' + JSON.stringify(t.title) + ',' + JSON.stringify(catId) + ')';
+      ? "showLevels('" + tid + "','" + ttitle + "','" + tcid + "','" + tcolor + "')"
+      : "startTopicQuiz('" + tid + "','" + ttitle + "','" + tcid + "')";
     return '<div class="cat-card" style="border-color:' + color + '20" onclick="' + onclick + '">' +
       '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">📚</div>' +
       '<div class="cat-name">' + t.title + '</div>' +
@@ -1313,7 +1316,10 @@ async function showLevels(topicId, topicTitle, catId, color) {
 
   tGrid.innerHTML = levels.map(l => {
     const desc = l.description || (l.questionLimit === 'all' ? '25 ta savol' : 'Test topshirish');
-    return '<div class="cat-card" style="border-color:' + color + '20" onclick="startTopicQuiz(' + JSON.stringify(l.id) + ',' + JSON.stringify(l.title) + ',' + JSON.stringify(catId) + ')">' +
+    const lid = l.id.replace(/'/g, "\'");
+    const ltitle = l.title.replace(/'/g, "\'");
+    const lcid = catId.replace(/'/g, "\'");
+    return '<div class="cat-card" style="border-color:' + color + '20" onclick="startTopicQuiz(\'' + lid + '\',\'' + ltitle + '\',\'' + lcid + '\')">' +
       '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">📖</div>' +
       '<div class="cat-name">' + l.title + '</div>' +
       '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
@@ -1947,7 +1953,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: hierarchy-v12");
+console.log("DUNYO QUIZ version: hierarchy-v13");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
