@@ -1243,8 +1243,8 @@ async function openCategory(catId, catSlug) {
       return;
     }
 
-    // parent-topic type bor yoki birdan ko'p bo'lsa — list ko'rsatish
-    const hasParentTopics = topLevelTopics.some(t => t.type === 'parent-topic');
+    // folder yoki parent-topic type bo'lsa — list ko'rsatish
+    const hasParentTopics = topLevelTopics.some(t => t.type === 'parent-topic' || t.type === 'folder');
 
     if (topLevelTopics.length === 1 && !hasParentTopics) {
       // Bitta oddiy topic — levels bormi tekshir
@@ -1271,7 +1271,7 @@ async function openCategory(catId, catSlug) {
 function renderTopicCards(topics, catId, color, tGrid, hasChildren) {
   tGrid.innerHTML = topics.map(t => {
     const desc = t.description || "Mavzularni korish";
-    const isParent = t.type === 'parent-topic' || hasChildren;
+    const isParent = t.type === 'parent-topic' || t.type === 'folder' || hasChildren;
     const tid = t.id.replace(/'/g, "\'");
     const ttitle = t.title.replace(/'/g, "\'");
     const tcid = catId.replace(/'/g, "\'");
@@ -1287,7 +1287,7 @@ function renderTopicCards(topics, catId, color, tGrid, hasChildren) {
 }
 
 async function showLevels(topicId, topicTitle, catId, color) {
-  console.log('[parent topic clicked]', topicId);
+  console.log('[topic clicked]', topicId);
   const tGrid = document.getElementById('topics-grid');
   const tHeader = document.getElementById('topics-header');
   if (!tGrid) return;
@@ -1299,29 +1299,38 @@ async function showLevels(topicId, topicTitle, catId, color) {
     .where('status','==','published')
     .get();
 
-  const levels = snap.docs.map(d=>({id:d.id,...d.data()}))
+  const children = snap.docs.map(d=>({id:d.id,...d.data()}))
     .sort((a,b) => (a.order||99)-(b.order||99));
-  console.log('[levels loaded]', levels.length);
+  console.log('[children loaded]', children.length);
 
-  // Level yo'q bo'lsa — to'g'ridan quiz
-  if (!levels.length) {
+  // Child yo'q — to'g'ridan quiz
+  if (!children.length) {
     startTopicQuiz(topicId, topicTitle, catId);
     return;
   }
 
-  if (tHeader) tHeader.innerHTML =
-    '<button onclick="backToCategories()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--purple);font-size:13px;cursor:pointer;margin-bottom:10px;padding:0;font-weight:600">← Kategoriyalar</button>' +
-    '<div style="font-size:18px;font-weight:700;color:var(--text)">' + topicTitle + '</div>' +
-    '<div style="font-size:13px;color:var(--text2);margin-top:4px">Level tanlang</div>';
+  if (tHeader) {
+    const backBtn = '<button onclick="backToCategories()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--purple);font-size:13px;cursor:pointer;margin-bottom:10px;padding:0;font-weight:600">Kategoriyalar</button>';
+    const titleDiv = '<div style="font-size:18px;font-weight:700;color:var(--text)">' + topicTitle + '</div>';
+    const subDiv = '<div style="font-size:13px;color:var(--text2);margin-top:4px">Bolim tanlang</div>';
+    tHeader.innerHTML = backBtn + titleDiv + subDiv;
+  }
 
-  tGrid.innerHTML = levels.map(l => {
-    const desc = l.description || (l.questionLimit === 'all' ? '25 ta savol' : 'Test topshirish');
-    const lid = l.id.replace(/'/g, "\'");
-    const ltitle = l.title.replace(/'/g, "\'");
-    const lcid = catId.replace(/'/g, "\'");
-    return '<div class="cat-card" style="border-color:' + color + '20" onclick="startTopicQuiz(\'' + lid + '\',\'' + ltitle + '\',\'' + lcid + '\')">' +
-      '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">📖</div>' +
-      '<div class="cat-name">' + l.title + '</div>' +
+  tGrid.innerHTML = children.map(function(c) {
+    var isFolder = c.type === 'folder' || c.type === 'parent-topic';
+    var isLevel  = c.type === 'level';
+    var cid      = c.id.replace(/'/g, "");
+    var ctitle   = c.title.replace(/'/g, "");
+    var ccid     = catId.replace(/'/g, "");
+    var ccolor   = color.replace(/'/g, "");
+    var icon     = isFolder ? '📚' : isLevel ? '📖' : '📝';
+    var desc     = c.description || (isLevel ? '25 ta savol' : 'Bolimlarni korish');
+    var onclick  = isFolder
+      ? 'showLevels(' + JSON.stringify(c.id) + ',' + JSON.stringify(c.title) + ',' + JSON.stringify(catId) + ',' + JSON.stringify(color) + ')'
+      : 'startTopicQuiz(' + JSON.stringify(c.id) + ',' + JSON.stringify(c.title) + ',' + JSON.stringify(catId) + ')';
+    return '<div class="cat-card" style="border-color:' + color + '20" onclick="' + onclick.replace(/"/g, "'") + '">' +
+      '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">' + icon + '</div>' +
+      '<div class="cat-name">' + c.title + '</div>' +
       '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
   }).join('');
 }
@@ -2018,7 +2027,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: dedup-v21");
+console.log("DUNYO QUIZ version: folder-v22");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
