@@ -1194,68 +1194,77 @@ async function openCategory(catId, catSlug) {
   tView.style.display = 'block';
 
   try {
+    // Barcha topiclarni yuklaymiz
+    let allTopics = [];
     const snap = await db.collection('topics')
       .where('categoryId','==',catId)
       .where('status','==','published')
       .get();
+    allTopics = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(a.order||99)-(b.order||99));
 
-    let topics = snap.docs.map(d=>({id:d.id,...d.data()}))
-      .sort((a,b) => (a.order||99) - (b.order||99));
-
-    if (!topics.length && catSlug !== catId) {
+    // categorySlug bilan ham qidiramiz
+    if (!allTopics.length) {
       const snap2 = await db.collection('topics')
-        .where('categorySlug','==',catSlug)
+        .where('categorySlug','==',catSlug||catId)
         .where('status','==','published')
         .get();
-      topics = snap2.docs.map(d=>({id:d.id,...d.data()}))
-        .sort((a,b) => (a.order||99) - (b.order||99));
+      allTopics = snap2.docs.map(d=>({id:d.id,...d.data()}))
+        .sort((a,b)=>(a.order||99)-(b.order||99));
     }
 
-    // Mavzu yo'q bo'lsa xabar
-    if (!topics.length) {
-      if (tHeader) tHeader.innerHTML = `<div style="font-size:24px;margin-bottom:4px">${safeEmoji('', catId)}</div>
-        <div style="font-size:18px;font-weight:700;color:var(--text)">${catId}</div>`;
-      tGrid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:32px;color:var(--text2)'>Bu kategoriyada mavzular tez orada qoshiladi 🚀</div>";
+    // Kategoriya rangini olish
+    const catDoc = await db.collection('categories').doc(catId).get();
+    const catData = catDoc.exists ? catDoc.data() : {};
+    const color = COLOR_HEX[catData.color] || COLOR_HEX['purple'];
+
+    if (tHeader) tHeader.innerHTML =
+      '<div style="font-size:28px;margin-bottom:6px">' + safeEmoji(catData.emoji, catId) + '</div>' +
+      '<div style="font-size:18px;font-weight:700;color:var(--text)">' + (catData.title||catId) + '</div>' +
+      '<div style="font-size:13px;color:var(--text2);margin-top:4px">Mavzu tanlang</div>';
+
+    if (!allTopics.length) {
+      tGrid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:32px;color:var(--text2)'>Bu kategoriyada mavzular tez orada qo`shiladi 🚀</div>";
       return;
     }
 
-    // Bitta mavzu bo'lsa — to'g'ridan boshlash
-    if (topics.length === 1) {
-      // Level bormi tekshirish
-      const levelSnap = await db.collection('topics')
-        .where('parentTopicId','==',topics[0].id)
-        .where('status','==','published')
-        .get();
-      if (levelSnap.empty) {
-        startTopicQuiz(topics[0].id, topics[0].title, catId);
-      } else {
-        // Bitta topic, lekin levels bor — levels ko'rsatish
-        showTopicsList([topics[0]], catId, tGrid, tHeader, COLOR_HEX['purple']);
+    // Faqat parent-topic larni ko'rsatish
+    // (type === 'parent-topic' yoki parentTopicId yo'q bo'lgan topiclar)
+    const parentTopics = allTopics.filter(t =>
+      t.type === 'parent-topic' ||
+      (!t.parentTopicId && t.type !== 'level')
+    );
+
+    if (parentTopics.length > 0) {
+      // Parent topiclar bor — ularni ko'rsatamiz
+      renderTopicCards(parentTopics, catId, color, tGrid, true);
+    } else {
+      // Parent topic yo'q — oddiy topiclar (level bo'lmagan)
+      const normalTopics = allTopics.filter(t => t.type !== 'level');
+      if (normalTopics.length === 1) {
+        startTopicQuiz(normalTopics[0].id, normalTopics[0].title, catId);
+        return;
       }
-      return;
+      renderTopicCards(normalTopics.length ? normalTopics : allTopics, catId, color, tGrid, false);
     }
-
-    // Bir nechta mavzu bo'lsa — tanlash
-    const colors = {purple:'#6C63FF',blue:'#3B82F6',green:'#16A34A',red:'#EF4444',
-      orange:'#F97316',yellow:'#EAB308',pink:'#EC4899',teal:'#14B8A6',gray:'#6B7280'};
-    const catData = (await db.collection('categories').doc(catId).get()).data() || {};
-    const color = colors[catData.color] || 'var(--purple)';
-
-    if (tHeader) tHeader.innerHTML = `<div style="font-size:24px;margin-bottom:4px">${safeEmoji(catData.emoji, catId)}</div>
-      <div style="font-size:18px;font-weight:700;color:var(--text)">${catData.title||catId}</div>
-      <div style="font-size:13px;color:var(--text2);margin-top:4px">Mavzu tanlang</div>`;
-
-    tGrid.innerHTML = topics.map(t => `
-      <div class="cat-card" style="border-color:${color}20" onclick="startTopicQuiz('${t.id}','${t.title}','${catId}')">
-        <span class="cat-emoji">📖</span>
-        <div class="cat-name">${t.title}</div>
-        <div class="cat-count" style="color:${color}">${t.description||'Test topshirish'}</div>
-      </div>`).join('');
 
   } catch(e) {
-    // Xato bo'lsa to'g'ridan quiz
+    console.error('openCategory error:', e);
     startCategory(catId);
   }
+}
+
+function renderTopicCards(topics, catId, color, tGrid, hasChildren) {
+  tGrid.innerHTML = topics.map(t => {
+    const desc = t.description || (hasChildren ? 'Mavzularni ko`rish' : 'Test topshirish');
+    const onclick = hasChildren
+      ? 'showLevels(' + JSON.stringify(t.id) + ',' + JSON.stringify(t.title) + ',' + JSON.stringify(catId) + ',' + JSON.stringify(color) + ')'
+      : 'startTopicQuiz(' + JSON.stringify(t.id) + ',' + JSON.stringify(t.title) + ',' + JSON.stringify(catId) + ')';
+    return '<div class="cat-card" style="border-color:' + color + '20" onclick="' + onclick + '">' +
+      '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">📚</div>' +
+      '<div class="cat-name">' + t.title + '</div>' +
+      '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
+  }).join('');
 }
 
 async function showLevels(topicId, topicTitle, catId, color) {
@@ -1273,20 +1282,21 @@ async function showLevels(topicId, topicTitle, catId, color) {
   const levels = snap.docs.map(d=>({id:d.id,...d.data()}))
     .sort((a,b) => (a.order||99)-(b.order||99));
 
+  // Level yo'q bo'lsa — to'g'ridan quiz
   if (!levels.length) {
     startTopicQuiz(topicId, topicTitle, catId);
     return;
   }
 
-  if (tHeader) tHeader.innerHTML = `
-    <button onclick="backToCategories()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--purple);font-size:13px;cursor:pointer;margin-bottom:8px;padding:0">← Kategoriyalar</button>
-    <div style="font-size:18px;font-weight:700;color:var(--text)">${topicTitle}</div>
-    <div style="font-size:13px;color:var(--text2);margin-top:4px">Level tanlang</div>`;
+  if (tHeader) tHeader.innerHTML =
+    '<button onclick="backToCategories()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--purple);font-size:13px;cursor:pointer;margin-bottom:10px;padding:0;font-weight:600">← Kategoriyalar</button>' +
+    '<div style="font-size:18px;font-weight:700;color:var(--text)">' + topicTitle + '</div>' +
+    '<div style="font-size:13px;color:var(--text2);margin-top:4px">Level tanlang</div>';
 
   tGrid.innerHTML = levels.map(l => {
-    const desc = l.description || "Test topshirish";
+    const desc = l.description || (l.questionLimit === 'all' ? '25 ta savol' : 'Test topshirish');
     return '<div class="cat-card" style="border-color:' + color + '20" onclick="startTopicQuiz(' + JSON.stringify(l.id) + ',' + JSON.stringify(l.title) + ',' + JSON.stringify(catId) + ')">' +
-      '<div style="width:44px;height:44px;border-radius:12px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:8px">📖</div>' +
+      '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">📖</div>' +
       '<div class="cat-name">' + l.title + '</div>' +
       '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
   }).join('');
@@ -1310,7 +1320,6 @@ function backToCategories() {
 }
 
 async function startTopicQuiz(topicId, topicTitle, catId) {
-  // Banner o'chirish
   const banner = document.getElementById('login-prompt-banner');
   if (banner) banner.remove();
 
@@ -1318,8 +1327,14 @@ async function startTopicQuiz(topicId, topicTitle, catId) {
   questionStartTime = Date.now();
 
   try {
-    showToast('Savollar yuklanmoqda...');
-    // topicId yoki levelSlug bo'yicha savollarni yuklash
+    // 1. Topic meta-ma'lumotlarini olish
+    const topicDoc = await db.collection('topics').doc(topicId).get();
+    const topicMeta = topicDoc.exists ? topicDoc.data() : {};
+    const isLevel = topicMeta.type === 'level' || !!topicMeta.parentTopicId;
+    const quizMode = topicMeta.quizMode || (isLevel ? 'ordered' : 'random');
+    const questionLimit = topicMeta.questionLimit || (isLevel ? 'all' : 10);
+
+    // 2. Savollarni yuklash
     const snap = await db.collection('questions')
       .where('topicId','==',topicId)
       .where('status','==','published')
@@ -1333,7 +1348,9 @@ async function startTopicQuiz(topicId, topicTitle, catId) {
         ans: q.correctIndex,
         law: q.explanation,
         cat: catId,
-        diff: q.difficulty||'medium'
+        diff: q.difficulty || 'medium',
+        order: q.order || q.wordRank || 0,
+        word: q.word || ''
       };
     });
 
@@ -1342,17 +1359,23 @@ async function startTopicQuiz(topicId, topicTitle, catId) {
       return;
     }
 
-    quiz = shuffle([...pool]).slice(0, Math.min(10, pool.length));
+    // 3. quizMode va questionLimit bo'yicha quiz tuzish
+    if (isLevel && (quizMode === 'ordered' || questionLimit === 'all')) {
+      // Level: barcha savollar tartibda
+      pool.sort((a, b) => (a.order || 0) - (b.order || 0));
+      quiz = pool; // slice QILINMAYDI
+    } else {
+      // Normal: random, max 10
+      const limit = questionLimit === 'all'
+        ? pool.length
+        : Math.min(Number(questionLimit) || 10, pool.length);
+      quiz = shuffle([...pool]).slice(0, limit);
+    }
+
     cur = 0; score = 0; answered = false; times = []; wrongAnswers = [];
+    currentCat = { id: catId, name: topicTitle, emoji: currentCat?.emoji || '📖' };
 
-    // currentCat ni to'g'ri qilish
-    currentCat = {
-      id: catId,
-      name: topicTitle,
-      emoji: currentCat?.emoji || '📖'
-    };
-
-    // Quiz UI ni ko'rsatish
+    // Quiz UI
     document.querySelector('.nav-bar').style.display = 'none';
     ['home','leaderboard','profile'].forEach(t => {
       const el = document.getElementById('tab-' + t);
@@ -1903,7 +1926,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: quizmode-v6");
+console.log("DUNYO QUIZ version: vocab-v8");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
