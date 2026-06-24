@@ -608,183 +608,6 @@ async function doDelete() {
   } catch(e) { alert('Xato: ' + e.message); }
 }
 
-// ===== CLEANUP EXTRA FOLDERS =====
-async function cleanupExtraFolders() {
-  const btn = document.getElementById('cleanup-btn');
-  const logEl = document.getElementById('gen-log');
-  btn.disabled = true;
-  logEl.style.display = 'block';
-  document.getElementById('gen-bar').style.display = 'block';
-
-  function glog(msg, t='info') {
-    logEl.innerHTML += '<div class="l-'+t+'">' + msg + '</div>';
-    logEl.scrollTop = logEl.scrollHeight;
-  }
-
-  // 1. O'chirish kerak bo'lgan ortiqcha topiclar
-  const EXTRA = [
-    'second-100-words','third-100-words','fourth-100-words','fifth-100-words',
-    'sixth-100-words','seventh-100-words','eighth-100-words','ninth-100-words','tenth-100-words',
-    'words-101-200','words-201-300','words-301-400','words-401-500',
-    'words-501-600','words-601-700','words-701-800','words-801-900','words-901-1000'
-  ];
-
-  glog('🗑 Ortiqcha folderlar o'chirilmoqda...', 'warn');
-  for (const slug of EXTRA) {
-    try {
-      const doc = await db.collection('topics').doc(slug).get();
-      if (doc.exists) {
-        await db.collection('topics').doc(slug).delete();
-        glog('🗑 O'chirildi: ' + slug, 'warn');
-      } else {
-        glog('ℹ️ Yo'q: ' + slug, 'info');
-      }
-    } catch(e) {
-      glog('❌ Xato: ' + slug + ' — ' + e.message, 'err');
-    }
-  }
-
-  // 2. Level topiclarning parentTopicId ni to'g'rilash
-  const LEVEL_PARENT_FIX = {
-    'words-101-125':'words-101-200','words-126-150':'words-101-200','words-151-175':'words-101-200','words-176-200':'words-101-200',
-    'words-201-225':'words-201-300','words-226-250':'words-201-300','words-251-275':'words-201-300','words-276-300':'words-201-300',
-    'words-301-325':'words-301-400','words-326-350':'words-301-400','words-351-375':'words-301-400','words-376-400':'words-301-400',
-    'words-401-425':'words-401-500','words-426-450':'words-401-500','words-451-475':'words-401-500','words-476-500':'words-401-500',
-    'words-501-525':'words-501-600','words-526-550':'words-501-600','words-551-575':'words-501-600','words-576-600':'words-501-600',
-    'words-601-625':'words-601-700','words-626-650':'words-601-700','words-651-675':'words-601-700','words-676-700':'words-601-700',
-    'words-701-725':'words-701-800','words-726-750':'words-701-800','words-751-775':'words-701-800','words-776-800':'words-701-800',
-    'words-801-825':'words-801-900','words-826-850':'words-801-900','words-851-875':'words-801-900','words-876-900':'words-801-900',
-    'words-901-925':'words-901-1000','words-926-950':'words-901-1000','words-951-975':'words-901-1000','words-976-1000':'words-901-1000',
-  };
-
-  glog('\n🔧 Level parentTopicId lar to'g'rilanmoqda...', 'info');
-  for (const [slug, parentId] of Object.entries(LEVEL_PARENT_FIX)) {
-    try {
-      await db.collection('topics').doc(slug).update({
-        parentTopicId: parentId,
-        parentTopicSlug: parentId,
-        updatedAt: TS()
-      });
-      glog('✅ ' + slug + ' → ' + parentId, 'ok');
-    } catch(e) {
-      glog('⚠️ ' + slug + ': ' + e.message, 'warn');
-    }
-  }
-
-  // 3. words-XXX-YYY folderlarning parentTopicId ni english-vocabulary-1000 ga o'rnatish
-  const MAIN_FOLDERS = [
-    'words-101-200','words-201-300','words-301-400','words-401-500',
-    'words-501-600','words-601-700','words-701-800','words-801-900','words-901-1000'
-  ];
-  glog('\n📂 Asosiy folderlar parentTopicId o'rnatilmoqda...', 'info');
-  for (const slug of MAIN_FOLDERS) {
-    try {
-      const [from, to] = slug.replace('words-','').split('-');
-      await db.collection('topics').doc(slug).set({
-        title: 'Words ' + from + '–' + to,
-        slug: slug,
-        categorySlug: 'english-vocabulary',
-        categoryId: 'english-vocabulary',
-        parentTopicId: 'english-vocabulary-1000',
-        parentTopicSlug: 'english-vocabulary-1000',
-        type: 'folder',
-        status: 'published',
-        order: MAIN_FOLDERS.indexOf(slug) + 2,
-        createdAt: TS(),
-        updatedAt: TS()
-      }, { merge: true });
-      glog('✅ Folder: ' + slug, 'ok');
-    } catch(e) {
-      glog('❌ ' + slug + ': ' + e.message, 'err');
-    }
-  }
-
-  glog('\n🎉 Cleanup tugadi!', 'ok');
-  btn.disabled = false;
-}
-
-// ===== CREATE MISSING FOLDERS (XAVFSIZ) =====
-async function createMissingFolders() {
-  const btn = document.getElementById('folders-btn');
-  const logEl = document.getElementById('gen-log');
-  btn.disabled = true;
-  logEl.style.display = 'block';
-  document.getElementById('gen-bar').style.display = 'block';
-
-  function glog(msg, t='info') {
-    logEl.innerHTML += '<div class="l-'+t+'">' + msg + '</div>';
-    logEl.scrollTop = logEl.scrollHeight;
-  }
-
-  // Yaratilishi kerak bo'lgan folderlar
-  const FOLDERS = [
-    {id:'english-vocabulary-1000', title:'Ingliz tili asosiy 1000 ta so'z', parent:'', catSlug:'english-vocabulary', order:1},
-    {id:'first-100-words', title:'First 100 Words', parent:'english-vocabulary-1000', catSlug:'english-vocabulary', order:1},
-    {id:'words-101-200', title:'Words 101–200', parent:'english-vocabulary-1000', catSlug:'english-vocabulary', order:2},
-    {id:'words-201-300', title:'Words 201–300', parent:'english-vocabulary-1000', catSlug:'english-vocabulary', order:3},
-    {id:'words-301-400', title:'Words 301–400', parent:'english-vocabulary-1000', catSlug:'english-vocabulary', order:4},
-    {id:'words-401-500', title:'Words 401–500', parent:'english-vocabulary-1000', catSlug:'english-vocabulary', order:5},
-    {id:'words-501-600', title:'Words 501–600', parent:'english-vocabulary-1000', catSlug:'english-vocabulary', order:6},
-    {id:'words-601-700', title:'Words 601–700', parent:'english-vocabulary-1000', catSlug:'english-vocabulary', order:7},
-    {id:'words-701-800', title:'Words 701–800', parent:'english-vocabulary-1000', catSlug:'english-vocabulary', order:8},
-    {id:'words-801-900', title:'Words 801–900', parent:'english-vocabulary-1000', catSlug:'english-vocabulary', order:9},
-    {id:'words-901-1000', title:'Words 901–1000', parent:'english-vocabulary-1000', catSlug:'english-vocabulary', order:10},
-  ];
-
-  glog('[create missing folders start]', 'info');
-  const fill = document.getElementById('gen-fill');
-  let done = 0;
-
-  for (const f of FOLDERS) {
-    const doc = await db.collection('topics').doc(f.id).get();
-    if (doc.exists) {
-      glog('ℹ️ Mavjud (skip): ' + f.id, 'info');
-    } else {
-      const data = {
-        title: f.title,
-        slug: f.id,
-        categorySlug: f.catSlug,
-        categoryId: f.catSlug,
-        type: 'folder',
-        status: 'published',
-        order: f.order,
-        createdAt: TS(),
-        updatedAt: TS()
-      };
-      if (f.parent) {
-        data.parentTopicId = f.parent;
-        data.parentTopicSlug = f.parent;
-      }
-      await db.collection('topics').doc(f.id).set(data);
-      glog('✅ Yaratildi: ' + f.id, 'ok');
-    }
-    done++;
-    fill.style.width = Math.round(done/FOLDERS.length*100) + '%';
-  }
-
-  // Category ham tekshirish
-  const catDoc = await db.collection('categories').doc('english-vocabulary').get();
-  if (!catDoc.exists) {
-    await db.collection('categories').doc('english-vocabulary').set({
-      title: 'Ingliz tili testlari',
-      slug: 'english-vocabulary',
-      emoji: '📘',
-      description: "Ingliz tili bo'yicha lugat va testlar",
-      color: 'blue',
-      order: 10,
-      status: 'published',
-      createdAt: TS(),
-      updatedAt: TS()
-    });
-    glog('✅ Category yaratildi: english-vocabulary', 'ok');
-  } else {
-    glog('ℹ️ Category mavjud: english-vocabulary', 'info');
-  }
-
-  glog('[create missing folders done]', 'ok');
-  btn.disabled = false;
-}
-
 // ===== GENERATE LEVELS =====
 async function generateLevels() {
   const btn = document.getElementById('gen-btn');
@@ -814,7 +637,7 @@ async function generateLevels() {
 
   const total = STRUCT.reduce((s,g)=>s+g.ranges.length, 0);
   let done = 0;
-  glog('[generate levels start]', 'info');
+  glog("[generate levels start]", "info");
 
   for (const g of STRUCT) {
     for (let i = 0; i < g.ranges.length; i++) {
@@ -838,11 +661,11 @@ async function generateLevels() {
         updatedAt: TS()
       }, { merge: true });
       done++;
-      glog('[created/updated level] ' + slug, 'ok');
+      glog("[created/updated level] " + slug, "ok");
       fill.style.width = Math.round(done/total*100) + '%';
     }
   }
-  glog('[generate levels done] ' + done, 'ok');
+  glog("[generate levels done] " + done, "ok");
   btn.disabled = false;
 }
 </script>
