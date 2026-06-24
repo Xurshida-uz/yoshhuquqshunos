@@ -1,0 +1,2078 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dunyo Quiz — Onlayn testlar | Bayroqlar, Geografiya, Tarix</title>
+  <meta name="description" content="Dunyo Quiz — bayroqlar, geografiya, tarix, hayvonlar, mantiq va ingliz tili bo’yicha o‘zbekcha online quizlar. Bilimingizni sinang va reytingga chiqing."/>
+  <meta name="theme-color" content="#6C63FF"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icon.svg"/>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --purple:#6C63FF;--purple-dark:#5046E4;--purple-light:#EEF0FF;
+      --pink:#FF6B9D;--orange:#FF9E43;--green:#22C55E;--green-light:#DCFCE7;
+      --red:#EF4444;--red-light:#FEE2E2;--blue:#3B82F6;--blue-light:#EFF6FF;
+      --yellow:#F59E0B;--yellow-light:#FEF3C7;
+      --bg:#F8F9FF;--card:#FFFFFF;--border:#E8E9F5;
+      --text:#1A1B2E;--text2:#6B7280;--text3:#9CA3AF;
+      --radius:16px;--radius-sm:10px;--radius-xs:8px;
+      --shadow:0 2px 12px rgba(108,99,255,0.08);
+      --shadow-lg:0 8px 32px rgba(108,99,255,0.15);
+    }
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+    /* SPLASH */
+    #splash{position:fixed;inset:0;background:linear-gradient(135deg,#6C63FF 0%,#FF6B9D 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .5s}
+    #splash.hide{opacity:0;pointer-events:none}
+    .splash-emoji{font-size:72px;margin-bottom:16px;animation:bounce 1s ease-in-out infinite alternate}
+    .splash-title{font-size:32px;font-weight:800;color:white;letter-spacing:-0.5px;margin-bottom:8px}
+    .splash-sub{font-size:15px;color:rgba(255,255,255,0.8);margin-bottom:48px}
+    .splash-dots{display:flex;gap:8px}
+    .splash-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.4)}
+    .splash-dot.active{background:white;animation:dotPulse 1s ease-in-out infinite}
+    .splash-dot:nth-child(2){animation-delay:.2s}
+    .splash-dot:nth-child(3){animation-delay:.4s}
+    @keyframes bounce{0%{transform:translateY(0)}100%{transform:translateY(-12px)}}
+    @keyframes dotPulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+    /* SCREEN SYSTEM */
+    .screen{display:none}.screen.active{display:block}
+
+    /* NAV */
+    .nav-bar{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
+    .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;cursor:pointer;color:var(--text3);transition:color .2s;font-size:11px;gap:3px;border:none;background:none}
+    .nav-item.active{color:var(--purple)}
+    .nav-item .nav-icon{font-size:22px;line-height:1}
+
+    /* TOP HEADER */
+    .top-header{padding:16px 16px 8px;max-width:640px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+    .top-logo{font-size:20px;font-weight:800;color:var(--purple);letter-spacing:-0.5px}
+    .top-logo span{color:var(--pink)}
+    .avatar-btn{width:36px;height:36px;border-radius:50%;background:var(--purple-light);border:2px solid var(--purple);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--purple);cursor:pointer}
+
+    /* MAIN CONTENT */
+    main{max-width:640px;margin:0 auto;padding:0 16px 80px}
+
+    /* HERO */
+    .hero{background:linear-gradient(135deg,#6C63FF,#FF6B9D);border-radius:var(--radius);padding:24px 20px;margin-bottom:24px;color:white;position:relative;overflow:hidden}
+    .hero::after{content:"🌍";position:absolute;right:-10px;bottom:-15px;font-size:80px;opacity:.15}
+    .hero-badge{font-size:11px;font-weight:600;background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:99px;display:inline-block;margin-bottom:10px;letter-spacing:.5px}
+    .hero h2{font-size:22px;font-weight:800;margin-bottom:6px;line-height:1.3}
+    .hero p{font-size:13px;opacity:.85;margin-bottom:16px}
+    .hero-btn{background:white;color:var(--purple);border:none;padding:10px 24px;border-radius:99px;font-size:14px;font-weight:700;cursor:pointer;transition:transform .1s}
+    .hero-btn:active{transform:scale(.97)}
+
+    /* SECTION TITLE */
+    .section-title{font-size:17px;font-weight:700;margin-bottom:14px;color:var(--text)}
+
+    /* CATEGORY GRID */
+    .cat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px}
+    .cat-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 14px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+    .cat-card:active{transform:scale(.97)}
+    .cat-card.locked{opacity:.6;cursor:default}
+    .cat-emoji{font-size:32px;margin-bottom:8px;display:block;line-height:1}
+    .cat-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px}
+    .cat-count{font-size:12px;color:var(--text2)}
+    .cat-badge{position:absolute;top:10px;right:10px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px}
+    .badge-new{background:var(--green-light);color:var(--green)}
+    .badge-soon{background:var(--yellow-light);color:var(--yellow)}
+    .badge-hot{background:#FFE4E1;color:#EF4444}
+
+    /* STREAK */
+    .streak-card{background:linear-gradient(135deg,#FF9E43,#FF6B9D);border-radius:var(--radius);padding:16px 20px;margin-bottom:24px;color:white;display:flex;align-items:center;gap:16px}
+    .streak-fire{font-size:40px}
+    .streak-info h3{font-size:16px;font-weight:700;margin-bottom:2px}
+    .streak-info p{font-size:13px;opacity:.85}
+
+    /* AUTH */
+    .auth-wrap{padding:24px 0}
+    .auth-card{background:var(--card);border-radius:var(--radius);padding:28px 20px;margin-bottom:16px;text-align:center;box-shadow:var(--shadow)}
+    .auth-emoji{font-size:48px;margin-bottom:16px}
+    .auth-card h2{font-size:20px;font-weight:700;margin-bottom:8px}
+    .auth-card p{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6}
+    .input-group{display:flex;gap:8px;margin-bottom:12px}
+    .prefix-box{padding:12px 14px;background:var(--purple-light);color:var(--purple);font-size:15px;font-weight:600;border-radius:var(--radius-xs);white-space:nowrap;display:flex;align-items:center}
+    .inp{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:var(--radius-xs);font-size:15px;outline:none;background:var(--card);color:var(--text);transition:border .2s}
+    .inp:focus{border-color:var(--purple)}
+    .otp-inp{font-size:24px;letter-spacing:12px;text-align:center}
+    .btn-main{width:100%;padding:14px;background:linear-gradient(135deg,var(--purple),var(--pink));color:white;border:none;border-radius:var(--radius-xs);font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s}
+    .btn-main:active{opacity:.9}
+    .btn-main:disabled{opacity:.5;cursor:not-allowed}
+    .btn-skip{width:100%;padding:11px;background:var(--bg);border:1.5px solid var(--purple);border-radius:var(--radius-xs);font-size:14px;color:var(--purple);cursor:pointer;font-weight:600}
+    .err-msg{font-size:13px;color:var(--red);margin-bottom:10px;display:none}
+
+    /* EMOJI PICKER */
+    .emoji-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;justify-content:center}
+    .em-btn{width:40px;height:40px;border-radius:50%;border:2px solid var(--border);background:var(--bg);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .em-btn.active{border-color:var(--purple);background:var(--purple-light);transform:scale(1.1)}
+    .nick-wrap{position:relative;margin-bottom:12px}
+    .nick-emoji{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none}
+    .nick-inp{padding-left:42px}
+
+    /* QUIZ PAGE */
+    .quiz-header{padding:16px;max-width:640px;margin:0 auto;display:flex;align-items:center;gap:12px}
+    .back-btn{width:36px;height:36px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;flex-shrink:0}
+    .quiz-prog-wrap{flex:1}
+    .quiz-prog-label{font-size:12px;color:var(--text2);margin-bottom:4px;display:flex;justify-content:space-between}
+    .quiz-prog-bar{height:8px;background:var(--border);border-radius:99px;overflow:hidden}
+    .quiz-prog-fill{height:8px;background:linear-gradient(90deg,var(--purple),var(--pink));border-radius:99px;transition:width .4s}
+    .timer-ring{width:40px;height:40px;position:relative;flex-shrink:0}
+    .timer-svg{transform:rotate(-90deg)}
+    .timer-bg{fill:none;stroke:var(--border);stroke-width:3}
+    .timer-fg{fill:none;stroke:var(--purple);stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .9s linear,stroke .3s}
+    .timer-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--purple)}
+
+    .quiz-body{padding:0 16px 100px;max-width:640px;margin:0 auto}
+    .q-cat-chip{display:inline-flex;align-items:center;gap:6px;background:var(--purple-light);color:var(--purple);font-size:12px;font-weight:600;padding:5px 12px;border-radius:99px;margin-bottom:16px}
+    .q-text{font-size:18px;font-weight:700;line-height:1.5;margin-bottom:20px;color:var(--text);min-height:60px}
+    .q-img{width:100%;border-radius:var(--radius-sm);margin-bottom:16px;max-height:200px;object-fit:cover}
+
+    /* OPTIONS */
+    .options{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+    .opt-btn{background:var(--card);border:2px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;text-align:left;font-size:15px;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s;font-weight:500}
+    .opt-btn:active:not(:disabled){transform:scale(.98)}
+    .opt-btn:hover:not(:disabled){border-color:var(--purple);background:var(--purple-light)}
+    .opt-letter{width:28px;height:28px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:all .15s}
+    .opt-btn.correct{background:var(--green-light);border-color:var(--green);color:#15803D}
+    .opt-btn.correct .opt-letter{background:var(--green);border-color:var(--green);color:white}
+    .opt-btn.wrong{background:var(--red-light);border-color:var(--red);color:#B91C1C}
+    .opt-btn.wrong .opt-letter{background:var(--red);border-color:var(--red);color:white}
+
+    /* EXPLANATION */
+    .explain-box{background:var(--blue-light);border:1.5px solid #BFDBFE;border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:#1D4ED8;line-height:1.6;display:none;margin-bottom:16px}
+    .explain-box .explain-label{font-weight:700;margin-bottom:4px;display:block}
+    .next-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--purple),var(--pink));color:white;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;display:none;transition:opacity .2s}
+    .next-btn:active{opacity:.9}
+
+    /* RESULT */
+    .result-wrap{padding:24px 16px 120px;max-width:640px;margin:0 auto}
+    .result-hero{text-align:center;margin-bottom:24px}
+    .result-emoji{font-size:64px;margin-bottom:12px;animation:bounce 1s ease-in-out infinite alternate}
+    .result-pct{font-size:52px;font-weight:800;color:var(--purple);line-height:1}
+    .result-label{font-size:14px;color:var(--text2);margin-bottom:8px}
+    .result-msg{font-size:16px;font-weight:600;color:var(--text);margin-bottom:20px}
+    .result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+    .res-stat{background:var(--card);border-radius:var(--radius-sm);padding:14px 10px;text-align:center;border:1.5px solid var(--border)}
+    .res-stat-n{font-size:24px;font-weight:800}
+    .res-stat-l{font-size:11px;color:var(--text2);margin-top:3px}
+    .result-btns{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+    .btn-retry-wrong{padding:14px;background:var(--red-light);color:var(--red);border:1.5px solid #FECACA;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;display:none}
+    .btn-restart{padding:14px;background:linear-gradient(135deg,var(--purple),var(--pink));color:white;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer}
+    .btn-home{padding:14px;background:var(--card);color:var(--text);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer}
+    .btn-share{padding:14px;background:#29A8EB;color:white;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer}
+
+    /* WRONG ANALYSIS */
+    .wrong-section{margin-top:8px}
+    .wrong-section-title{font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text)}
+    .wrong-item{background:var(--card);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;border:1.5px solid var(--border)}
+    .wrong-q-text{font-size:14px;font-weight:600;margin-bottom:10px;line-height:1.5;color:var(--text)}
+    .wrong-ans-row{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+    .wrong-user{padding:8px 12px;background:var(--red-light);border-radius:var(--radius-xs);font-size:13px;color:#B91C1C}
+    .wrong-correct{padding:8px 12px;background:var(--green-light);border-radius:var(--radius-xs);font-size:13px;color:#15803D}
+    .wrong-law{padding:8px 12px;background:var(--blue-light);border-radius:var(--radius-xs);font-size:12px;color:#1D4ED8;line-height:1.5}
+    .all-correct{background:var(--green-light);border:1.5px solid #86EFAC;border-radius:var(--radius);padding:20px;text-align:center;margin-top:8px}
+    .all-correct-icon{font-size:36px;margin-bottom:8px}
+    .all-correct p{font-size:15px;font-weight:600;color:#15803D}
+
+    /* PROFILE */
+    .profile-wrap{padding:0 0 24px}
+    .profile-hero{background:linear-gradient(135deg,var(--purple),var(--pink));padding:32px 20px 24px;text-align:center;color:white;margin-bottom:20px}
+    .profile-avatar{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.2);border:3px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px}
+    .profile-name{font-size:20px;font-weight:700;margin-bottom:4px}
+    .profile-phone{font-size:13px;opacity:.8}
+    .profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 16px;margin-bottom:20px}
+    .p-stat{background:var(--card);border-radius:var(--radius-sm);padding:14px 10px;text-align:center;border:1.5px solid var(--border);box-shadow:var(--shadow)}
+    .p-stat-n{font-size:22px;font-weight:800;color:var(--purple)}
+    .p-stat-l{font-size:11px;color:var(--text2);margin-top:3px}
+    .history-list{padding:0 16px}
+    .history-item{background:var(--card);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;border:1.5px solid var(--border)}
+    .history-icon{font-size:24px;width:44px;height:44px;background:var(--purple-light);border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .history-info{flex:1}
+    .history-cat{font-size:14px;font-weight:600;color:var(--text)}
+    .history-date{font-size:12px;color:var(--text2);margin-top:2px}
+    .history-score{font-size:20px;font-weight:800;color:var(--purple)}
+    .logout-btn{margin:16px;width:calc(100% - 32px);padding:13px;border:1.5px solid #FECACA;border-radius:var(--radius-sm);background:var(--red-light);color:var(--red);font-size:14px;font-weight:600;cursor:pointer}
+    .login-prompt{padding:20px 16px;text-align:center}
+    .login-prompt .auth-emoji{font-size:48px;display:block;margin-bottom:12px}
+    .login-prompt h3{font-size:18px;font-weight:700;margin-bottom:8px}
+    .login-prompt p{font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6}
+
+    /* LEADERBOARD */
+    .lb-wrap{padding:0 16px 24px}
+    .lb-tabs{display:flex;gap:8px;margin-bottom:16px}
+    .lb-tab{flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-xs);background:var(--card);font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;text-align:center;transition:all .15s}
+    .lb-tab.active{background:var(--purple);color:white;border-color:var(--purple)}
+    .lb-item{background:var(--card);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;border:1.5px solid var(--border)}
+    .lb-item.me{border-color:var(--purple);background:var(--purple-light)}
+    .rank-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+    .r1{background:#FFD700;color:#7A5800}
+    .r2{background:#C0C0C0;color:#555}
+    .r3{background:#CD7F32;color:#5A3000}
+    .r-other{background:var(--bg);color:var(--text2);border:1.5px solid var(--border)}
+    .lb-name{flex:1;font-size:14px;font-weight:600;color:var(--text)}
+    .lb-score{font-size:16px;font-weight:800;color:var(--purple)}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--text);color:white;padding:10px 20px;border-radius:99px;font-size:14px;font-weight:500;z-index:400;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+    .toast.show{opacity:1}
+
+    /* RECAPTCHA */
+    #recaptcha-container{position:fixed;bottom:-9999px;left:-9999px;visibility:hidden}
+
+    /* INSTALL BANNER */
+    #install-banner{display:none;position:fixed;bottom:70px;left:16px;right:16px;background:var(--purple);color:white;padding:12px 16px;border-radius:var(--radius-sm);font-size:14px;box-shadow:var(--shadow-lg);align-items:center;gap:12px;z-index:49;max-width:calc(100% - 32px)}
+    .inst-btn{background:white;color:var(--purple);border:none;padding:6px 14px;border-radius:99px;font-size:13px;font-weight:700;cursor:pointer}
+    .close-inst{background:none;border:none;color:white;font-size:18px;cursor:pointer;opacity:.7}
+    .has-install-banner{padding-bottom:80px}
+
+    /* UTILITIES */
+    .loading{text-align:center;padding:32px;color:var(--text2);font-size:14px}
+    @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .divider{height:1px;background:var(--border);margin:20px 0}
+  </style>
+  <!-- SEO content -->
+  <meta property="og:title" content="Dunyo Quiz — Onlayn testlar"/>
+  <meta property="og:description" content="Bayroqlar, Geografiya, Tarix, Hayvonlar, Mantiq va Ingliz tili bo’yicha o‘zbekcha online quizlar."/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://dunyoquiz.uz"/>
+  <meta property="og:image" content="https://dunyoquiz.uz/og-image.png"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:image" content="https://dunyoquiz.uz/og-image.png"/>
+  <noscript>
+    <h1>Dunyo Quiz — Onlayn testlar</h1>
+    <p>Bilimingizni sinang!</p>
+    <ul>
+      <li>Bayroqlar testi</li>
+      <li>Geografiya testi</li>
+      <li>Tarix testi</li>
+      <li>Hayvonlar testi</li>
+      <li>Mantiqiy savollar</li>
+      <li>Ingliz tili testi</li>
+    </ul>
+  </noscript>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-emoji">🌍</div>
+  <div class="splash-title">DUNYO QUIZ</div>
+  <div class="splash-sub">Bilimingizni sinang!</div>
+  <div class="splash-dots">
+    <div class="splash-dot active"></div>
+    <div class="splash-dot active"></div>
+    <div class="splash-dot active"></div>
+  </div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div id="s-auth" class="screen">
+  <div style="max-width:640px;margin:0 auto;padding:24px 16px">
+    <div style="text-align:center;margin-bottom:24px;padding-top:20px">
+      <div style="font-size:36px;font-weight:800;color:var(--purple)">DUNYO <span style="color:var(--pink)">QUIZ</span></div>
+      <div style="font-size:14px;color:var(--text2);margin-top:4px">Bilimingizni sinang!</div>
+    </div>
+
+    <div id="auth-phone-view">
+      <div class="auth-card">
+        <div class="auth-emoji">📱</div>
+        <h2>Kirish</h2>
+        <p>Telefon raqamingizni kiriting — SMS orqali tasdiqlash kodi yuboramiz</p>
+        <div class="input-group">
+          <div class="prefix-box">🇺🇿 +998</div>
+          <input class="inp" id="phone-input" type="tel" placeholder="90 123 45 67" maxlength="9"/>
+        </div>
+        <div id="recaptcha-container"></div>
+        <div class="err-msg" id="auth-error"></div>
+        <button class="btn-main" id="send-otp-btn" onclick="sendOTP()">SMS yuborish →</button>
+        <div style="margin-top:12px">
+          <button class="btn-skip" onclick="skipAuth()">▶ Kirmasdan o'ynash</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="auth-otp-view" style="display:none">
+      <div class="auth-card">
+        <div class="auth-emoji">🔐</div>
+        <h2>Kodni kiriting</h2>
+        <p id="otp-hint">Telefoningizga SMS yuborildi</p>
+        <input class="inp otp-inp" id="otp-input" type="number" placeholder="------" maxlength="6" style="margin-bottom:12px"/>
+        <div class="err-msg" id="otp-error"></div>
+        <button class="btn-main" id="verify-btn" onclick="verifyOTP()">Tasdiqlash</button>
+        <div style="margin-top:12px">
+          <button class="btn-skip" onclick="showPhoneView()">← Orqaga</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="auth-name-view" style="display:none">
+      <div class="auth-card">
+        <div class="auth-emoji">🎭</div>
+        <h2>Nickname tanlang</h2>
+        <p>Reytingda shunday ko'rinasiz!</p>
+        <div class="emoji-grid" id="emoji-grid"></div>
+        <div class="nick-wrap">
+          <span class="nick-emoji" id="sel-emoji">⚡</span>
+          <input class="inp nick-inp" id="name-input" type="text" placeholder="Nickname (3-20 belgi)"/>
+        </div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Masalan: ⚡QuizChampion yoki 🌍Geografchi</p>
+        <div class="err-msg" id="name-error"></div>
+        <button class="btn-main" id="save-name-btn" onclick="saveName(currentUser)">Boshlash →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="s-app" class="screen active">
+
+  <!-- HOME TAB -->
+  <div id="tab-home" style="display:none">
+    <div class="top-header">
+      <div class="top-logo">DUNYO <span>QUIZ</span></div>
+      <div class="avatar-btn" id="user-avatar" onclick="goTab('profile')">?</div>
+    </div>
+    <main>
+      <div class="hero">
+        <div class="hero-badge">🔥 YANGI SAVOLLAR QO'SHILDI</div>
+        <h2>Bilimingizni sinang!</h2>
+        <p>Har kuni yangi testlar. Reyting tizimi. Natijangizni do'stlar bilan ulashing!</p>
+        <button class="hero-btn" onclick="scrollToCats()">Testni boshlash →</button>
+      </div>
+
+      <!-- Kategoriyalar ekrani -->
+      <div id="home-sections-view">
+        <div class="section-title" id="cats-anchor">Kategoriyalar</div>
+        <div class="cat-grid" id="cat-grid"></div>
+      </div>
+
+      <!-- Mavzular ekrani -->
+      <div id="home-topics-view" style="display:none">
+        <button onclick="backToCategories()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--purple);font-size:14px;cursor:pointer;margin-bottom:16px;padding:0;font-weight:600">← Kategoriyalarga</button>
+        <div id="topics-header" style="margin-bottom:16px;text-align:center"></div>
+        <div class="cat-grid" id="topics-grid"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- QUIZ TAB (hidden, shown when quiz starts) -->
+  <div id="tab-quiz" style="display:none">
+    <div class="quiz-header">
+      <button class="back-btn" onclick="exitQuiz()">←</button>
+      <div class="quiz-prog-wrap">
+        <div class="quiz-prog-label">
+          <span id="q-label">Savol 1/10</span>
+          <span id="cat-label" style="color:var(--purple);font-weight:600"></span>
+        </div>
+        <div class="quiz-prog-bar"><div class="quiz-prog-fill" id="q-prog-fill"></div></div>
+      </div>
+      <div class="timer-ring">
+        <svg class="timer-svg" width="40" height="40" viewBox="0 0 40 40">
+          <circle class="timer-bg" cx="20" cy="20" r="17"/>
+          <circle class="timer-fg" id="timer-circle" cx="20" cy="20" r="17" stroke-dasharray="106.81" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-text" id="timer-text">20</div>
+      </div>
+    </div>
+    <div class="quiz-body">
+      <div class="q-cat-chip" id="q-chip"></div>
+      <div class="q-text" id="q-text"></div>
+      <div class="options" id="q-opts"></div>
+      <div class="explain-box" id="explain-box"></div>
+      <button class="next-btn" id="next-btn" onclick="nextQ()">Keyingisi →</button>
+    </div>
+  </div>
+
+  <!-- RESULT TAB -->
+  <div id="tab-result" style="display:none">
+    <div class="result-wrap">
+      <div class="result-hero">
+        <div class="result-emoji" id="res-emoji">🏆</div>
+        <div class="result-pct" id="res-pct">0%</div>
+        <div class="result-label">umumiy natija</div>
+        <div class="result-msg" id="res-msg"></div>
+      </div>
+      <div class="result-stats">
+        <div class="res-stat"><div class="res-stat-n" style="color:var(--green)" id="res-correct">0</div><div class="res-stat-l">to'g'ri</div></div>
+        <div class="res-stat"><div class="res-stat-n" style="color:var(--red)" id="res-wrong">0</div><div class="res-stat-l">noto'g'ri</div></div>
+        <div class="res-stat"><div class="res-stat-n" style="color:var(--orange)" id="res-time">0s</div><div class="res-stat-l">o'rtacha vaqt</div></div>
+      </div>
+      <div class="result-btns">
+        <button class="btn-retry-wrong" id="btn-retry-wrong" onclick="retryWrong()">❌ Xatolar ustida ishlash</button>
+        <button class="btn-share" onclick="shareResult()">📤 Telegramda ulashish</button>
+        <button class="btn-restart" onclick="restartQuiz()">↺ Qayta boshlash</button>
+        <button class="btn-home" onclick="goTab('home')">← Bosh sahifa</button>
+      </div>
+      <div id="wrong-analysis"></div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD TAB -->
+  <div id="tab-leaderboard" style="display:none">
+    <div class="top-header">
+      <div class="top-logo">🏆 Reyting</div>
+    </div>
+    <div class="lb-wrap">
+      <div class="lb-tabs">
+        <button class="lb-tab active" onclick="showLB('score',this)">🏆 Eng yuqori ball</button>
+        <button class="lb-tab" onclick="showLB('speed',this)">⚡ Eng tez</button>
+      </div>
+      <div id="lb-list"><div class="loading">Yuklanmoqda...</div></div>
+    </div>
+  </div>
+
+  <!-- PROFILE TAB -->
+  <div id="tab-profile" style="display:none">
+    <div class="profile-wrap" id="profile-content"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="nav-bar">
+    <button class="nav-item active" id="nav-home" onclick="goTab('home')">
+      <span class="nav-icon">🏠</span>Bosh sahifa
+    </button>
+    <button class="nav-item" id="nav-leaderboard" onclick="goTab('leaderboard')">
+      <span class="nav-icon">🏆</span>Reyting
+    </button>
+    <button class="nav-item" id="nav-profile" onclick="goTab('profile')">
+      <span class="nav-icon">👤</span>Profil
+    </button>
+  </nav>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- INSTALL BANNER -->
+<div id="install-banner">
+  <span>📲 Ilovani o'rnating</span>
+  <button class="inst-btn" onclick="doInstall()">O'rnatish</button>
+  <button class="close-inst" onclick="dismissInstallBanner()">✕</button>
+</div>
+
+<script>
+// ==================== FIREBASE ====================
+const firebaseConfig = {
+  apiKey: "AIzaSyC_ZP_n5H97f9yaPPmjqwrmDaPux8GvBX4",
+  authDomain: "yoshhuquqshunos.firebaseapp.com",
+  projectId: "yoshhuquqshunos",
+  storageBucket: "yoshhuquqshunos.firebasestorage.app",
+  messagingSenderId: "145645920762",
+  appId: "1:145645920762:web:498ebdef77cd229013c443"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+
+// ==================== BAYROQLAR QUIZ DATA ====================
+const FLAGS = [
+  { flag: '🇦🇫', name: 'Afgʻoniston', wrong: ['Pokiston', 'Eron'] },
+  { flag: '🇦🇱', name: 'Albaniya', wrong: ['Serbiya', 'Xorvatiya'] },
+  { flag: '🇩🇿', name: 'Jazoir', wrong: ['Marokash', 'Tunis'] },
+  { flag: '🇦🇩', name: 'Andorra', wrong: ['Monako', 'San-Marino'] },
+  { flag: '🇦🇴', name: 'Angola', wrong: ['Mozambik', 'Zambiya'] },
+  { flag: '🇦🇬', name: 'Antigua va Barbuda', wrong: ['Barbados', 'Yamayka'] },
+  { flag: '🇦🇷', name: 'Argentina', wrong: ['Chili', 'Urugvay'] },
+  { flag: '🇦🇲', name: 'Armaniston', wrong: ['Gruziya', 'Ozarbayjon'] },
+  { flag: '🇦🇺', name: 'Avstraliya', wrong: ['Yangi Zelandiya', 'Papua Yangi Gvineya'] },
+  { flag: '🇦🇹', name: 'Avstriya', wrong: ['Germaniya', 'Shveytsariya'] },
+  { flag: '🇦🇿', name: 'Ozarbayjon', wrong: ['Armaniston', 'Gruziya'] },
+  { flag: '🇧🇸', name: 'Bagama orollari', wrong: ['Kuba', 'Yamayka'] },
+  { flag: '🇧🇭', name: 'Bahrayn', wrong: ['Qatar', 'Quvayt'] },
+  { flag: '🇧🇩', name: 'Bangladesh', wrong: ['Hindiston', 'Shri-Lanka'] },
+  { flag: '🇧🇧', name: 'Barbados', wrong: ['Antigua', 'Trinidad'] },
+  { flag: '🇧🇾', name: 'Belarus', wrong: ['Ukraina', 'Latviya'] },
+  { flag: '🇧🇪', name: 'Belgiya', wrong: ['Niderlandiya', 'Lyuksemburg'] },
+  { flag: '🇧🇿', name: 'Beliz', wrong: ['Gvatemala', 'Gonduras'] },
+  { flag: '🇧🇯', name: 'Benin', wrong: ['Togo', 'Gana'] },
+  { flag: '🇧🇹', name: 'Butan', wrong: ['Nepal', 'Hindiston'] },
+  { flag: '🇧🇴', name: 'Boliviya', wrong: ['Peru', 'Paragvay'] },
+  { flag: '🇧🇦', name: 'Bosniya va Gersegovina', wrong: ['Xorvatiya', 'Serbiya'] },
+  { flag: '🇧🇼', name: 'Botsvana', wrong: ['Zimbabve', 'Namibiya'] },
+  { flag: '🇧🇷', name: 'Braziliya', wrong: ['Argentina', 'Kolumbiya'] },
+  { flag: '🇧🇳', name: 'Bruney', wrong: ['Malayziya', 'Singapur'] },
+  { flag: '🇧🇬', name: 'Bolgariya', wrong: ['Ruminiya', 'Serbiya'] },
+  { flag: '🇧🇫', name: 'Burkina-Faso', wrong: ['Mali', 'Niger'] },
+  { flag: '🇧🇮', name: 'Burundi', wrong: ['Ruanda', 'Uganda'] },
+  { flag: '🇨🇻', name: 'Kabo-Verde', wrong: ['Senegal', 'Gambiya'] },
+  { flag: '🇰🇭', name: 'Kambodja', wrong: ['Tailand', 'Vyetnam'] },
+  { flag: '🇨🇲', name: 'Kamerun', wrong: ['Nigeri', 'Gabon'] },
+  { flag: '🇨🇦', name: 'Kanada', wrong: ['AQSh', 'Avstraliya'] },
+  { flag: '🇨🇫', name: 'Markaziy Afrika Respublikasi', wrong: ['Kamerun', 'Kongo'] },
+  { flag: '🇹🇩', name: 'Chad', wrong: ['Niger', 'Sudan'] },
+  { flag: '🇨🇱', name: 'Chili', wrong: ['Argentina', 'Peru'] },
+  { flag: '🇨🇳', name: 'Xitoy', wrong: ['Yaponiya', 'Koreya'] },
+  { flag: '🇨🇴', name: 'Kolumbiya', wrong: ['Venesuela', 'Ekvador'] },
+  { flag: '🇰🇲', name: 'Komor orollari', wrong: ['Madagaskar', 'Mavrikiy'] },
+  { flag: '🇨🇬', name: 'Kongo Respublikasi', wrong: ['Kamerun', 'Gabon'] },
+  { flag: '🇨🇩', name: 'Kongo DRespublikasi', wrong: ['Angola', 'Zambiya'] },
+  { flag: '🇨🇷', name: 'Kosta-Rika', wrong: ['Panama', 'Nikaragua'] },
+  { flag: '🇭🇷', name: 'Xorvatiya', wrong: ['Serbiya', 'Sloveniya'] },
+  { flag: '🇨🇺', name: 'Kuba', wrong: ['Yamayka', 'Gaiti'] },
+  { flag: '🇨🇾', name: 'Kipr', wrong: ['Gretsiya', 'Malta'] },
+  { flag: '🇨🇿', name: 'Chexiya', wrong: ['Slovakiya', 'Avstriya'] },
+  { flag: '🇩🇰', name: 'Daniya', wrong: ['Norvegiya', 'Shvetsiya'] },
+  { flag: '🇩🇯', name: 'Jibuti', wrong: ['Somali', 'Efiopiya'] },
+  { flag: '🇩🇲', name: 'Dominika', wrong: ['Dominikan Respublikasi', 'Sent-Lusiya'] },
+  { flag: '🇩🇴', name: 'Dominikan Respublikasi', wrong: ['Kuba', 'Gaiti'] },
+  { flag: '🇪🇨', name: 'Ekvador', wrong: ['Peru', 'Kolumbiya'] },
+  { flag: '🇪🇬', name: 'Misr', wrong: ['Liviya', 'Sudan'] },
+  { flag: '🇸🇻', name: 'Salvador', wrong: ['Gvatemala', 'Gonduras'] },
+  { flag: '🇬🇶', name: 'Ekvatorial Gvineya', wrong: ['Gabon', 'Kamerun'] },
+  { flag: '🇪🇷', name: 'Eritreya', wrong: ['Efiopiya', 'Jibuti'] },
+  { flag: '🇪🇪', name: 'Estoniya', wrong: ['Latviya', 'Litva'] },
+  { flag: '🇸🇿', name: 'Esvatini', wrong: ['Lesoto', 'Mozambik'] },
+  { flag: '🇪🇹', name: 'Efiopiya', wrong: ['Kenyа', 'Sudan'] },
+  { flag: '🇫🇯', name: 'Fiji', wrong: ['Samoa', 'Tonga'] },
+  { flag: '🇫🇮', name: 'Finlandiya', wrong: ['Shvetsiya', 'Estoniya'] },
+  { flag: '🇫🇷', name: 'Fransiya', wrong: ['Belgiya', 'Italiya'] },
+  { flag: '🇬🇦', name: 'Gabon', wrong: ['Kamerun', 'Kongo'] },
+  { flag: '🇬🇲', name: 'Gambiya', wrong: ['Senegal', 'Gvineya'] },
+  { flag: '🇬🇪', name: 'Gruziya', wrong: ['Armaniston', 'Ozarbayjon'] },
+  { flag: '🇩🇪', name: 'Germaniya', wrong: ['Avstriya', 'Shveytsariya'] },
+  { flag: '🇬🇭', name: 'Gana', wrong: ['Kot-dIvuar', 'Togo'] },
+  { flag: '🇬🇷', name: 'Gretsiya', wrong: ['Kipr', 'Albaniya'] },
+  { flag: '🇬🇩', name: 'Grenada', wrong: ['Barbados', 'Sent-Vinsent'] },
+  { flag: '🇬🇹', name: 'Gvatemala', wrong: ['Meksika', 'Belize'] },
+  { flag: '🇬🇳', name: 'Gvineya', wrong: ['Senegal', 'Syerra-Leone'] },
+  { flag: '🇬🇼', name: 'Gvineya-Bisau', wrong: ['Gvineya', 'Senegal'] },
+  { flag: '🇬🇾', name: 'Gayana', wrong: ['Surinam', 'Venesuela'] },
+  { flag: '🇭🇹', name: 'Gaiti', wrong: ['Kuba', 'Dominikan R.'] },
+  { flag: '🇭🇳', name: 'Gonduras', wrong: ['Nikaragua', 'Salvador'] },
+  { flag: '🇭🇺', name: 'Vengriya', wrong: ['Chexiya', 'Avstriya'] },
+  { flag: '🇮🇸', name: 'Islandiya', wrong: ['Norvegiya', 'Irlandiya'] },
+  { flag: '🇮🇳', name: 'Hindiston', wrong: ['Pokiston', 'Bangladesh'] },
+  { flag: '🇮🇩', name: 'Indoneziya', wrong: ['Malayziya', 'Filippin'] },
+  { flag: '🇮🇷', name: 'Eron', wrong: ['Iroq', 'Afgʻoniston'] },
+  { flag: '🇮🇶', name: 'Iroq', wrong: ['Eron', 'Suriya'] },
+  { flag: '🇮🇪', name: 'Irlandiya', wrong: ['Britaniya', 'Islandiya'] },
+  { flag: '🇮🇱', name: 'Isroil', wrong: ['Iordaniya', 'Livan'] },
+  { flag: '🇮🇹', name: 'Italiya', wrong: ['Ispaniya', 'Fransiya'] },
+  { flag: '🇯🇲', name: 'Yamayka', wrong: ['Kuba', 'Trinid va Tobago'] },
+  { flag: '🇯🇵', name: 'Yaponiya', wrong: ['Koreya', 'Xitoy'] },
+  { flag: '🇯🇴', name: 'Iordaniya', wrong: ['Isroil', 'Suriya'] },
+  { flag: '🇰🇿', name: 'Qozogʻiston', wrong: ['Oʻzbekiston', 'Qirgʻiziston'] },
+  { flag: '🇰🇪', name: 'Keniya', wrong: ['Tanzaniya', 'Uganda'] },
+  { flag: '🇰🇮', name: 'Kiribati', wrong: ['Tuvalu', 'Nauru'] },
+  { flag: '🇰🇵', name: 'Shimoliy Koreya', wrong: ['Janubiy Koreya', 'Xitoy'] },
+  { flag: '🇰🇷', name: 'Janubiy Koreya', wrong: ['Yaponiya', 'Shimoliy Koreya'] },
+  { flag: '🇽🇰', name: 'Kosovo', wrong: ['Serbiya', 'Albaniya'] },
+  { flag: '🇰🇼', name: 'Quvayt', wrong: ['Qatar', 'Bahrayn'] },
+  { flag: '🇰🇬', name: 'Qirgʻiziston', wrong: ['Tojikiston', 'Qozogʻiston'] },
+  { flag: '🇱🇦', name: 'Laos', wrong: ['Tailand', 'Kambodja'] },
+  { flag: '🇱🇻', name: 'Latviya', wrong: ['Litva', 'Estoniya'] },
+  { flag: '🇱🇧', name: 'Livan', wrong: ['Suriya', 'Isroil'] },
+  { flag: '🇱🇸', name: 'Lesoto', wrong: ['Esvatini', 'Namibiya'] },
+  { flag: '🇱🇷', name: 'Liberiya', wrong: ['Syerra-Leone', 'Gvineya'] },
+  { flag: '🇱🇾', name: 'Liviya', wrong: ['Misr', 'Tunis'] },
+  { flag: '🇱🇮', name: 'Lixtenshteyn', wrong: ['Shveytsariya', 'Avstriya'] },
+  { flag: '🇱🇹', name: 'Litva', wrong: ['Latviya', 'Estoniya'] },
+  { flag: '🇱🇺', name: 'Lyuksemburg', wrong: ['Belgiya', 'Niderlandiya'] },
+  { flag: '🇲🇬', name: 'Madagaskar', wrong: ['Mozambik', 'Tanzaniya'] },
+  { flag: '🇲🇼', name: 'Malavi', wrong: ['Zambiya', 'Mozambik'] },
+  { flag: '🇲🇾', name: 'Malayziya', wrong: ['Indoneziya', 'Tailand'] },
+  { flag: '🇲🇻', name: 'Maldiv orollari', wrong: ['Shri-Lanka', 'Hindiston'] },
+  { flag: '🇲🇱', name: 'Mali', wrong: ['Niger', 'Burkina-Faso'] },
+  { flag: '🇲🇹', name: 'Malta', wrong: ['Kipr', 'Italiya'] },
+  { flag: '🇲🇭', name: 'Marshall orollari', wrong: ['Mikroneziya', 'Palau'] },
+  { flag: '🇲🇷', name: 'Mavritaniya', wrong: ['Marokash', 'Senegal'] },
+  { flag: '🇲🇺', name: 'Mavrikiy', wrong: ['Seyshel', 'Madagaskar'] },
+  { flag: '🇲🇽', name: 'Meksika', wrong: ['Gvatemala', 'Kolumbiya'] },
+  { flag: '🇫🇲', name: 'Mikroneziya', wrong: ['Palau', 'Marshall orollari'] },
+  { flag: '🇲🇩', name: 'Moldova', wrong: ['Ruminiya', 'Ukraina'] },
+  { flag: '🇲🇨', name: 'Monako', wrong: ['Andorra', 'San-Marino'] },
+  { flag: '🇲🇳', name: 'Mongʻoliya', wrong: ['Xitoy', 'Qozogʻiston'] },
+  { flag: '🇲🇪', name: 'Chernogoriya', wrong: ['Serbiya', 'Bosniya'] },
+  { flag: '🇲🇦', name: 'Marokash', wrong: ['Jazoir', 'Tunis'] },
+  { flag: '🇲🇿', name: 'Mozambik', wrong: ['Tanzaniya', 'Zimbabve'] },
+  { flag: '🇲🇲', name: 'Myanma', wrong: ['Tailand', 'Bangladesh'] },
+  { flag: '🇳🇦', name: 'Namibiya', wrong: ['Botsvana', 'Angola'] },
+  { flag: '🇳🇷', name: 'Nauru', wrong: ['Tuvalu', 'Kiribati'] },
+  { flag: '🇳🇵', name: 'Nepal', wrong: ['Butan', 'Hindiston'] },
+  { flag: '🇳🇱', name: 'Niderlandiya', wrong: ['Belgiya', 'Germaniya'] },
+  { flag: '🇳🇿', name: 'Yangi Zelandiya', wrong: ['Avstraliya', 'Fiji'] },
+  { flag: '🇳🇮', name: 'Nikaragua', wrong: ['Gonduras', 'Kosta-Rika'] },
+  { flag: '🇳🇪', name: 'Niger', wrong: ['Mali', 'Chad'] },
+  { flag: '🇳🇬', name: 'Nigeriya', wrong: ['Kamerun', 'Benin'] },
+  { flag: '🇲🇰', name: 'Shimoliy Makedoniya', wrong: ['Albaniya', 'Gretsiya'] },
+  { flag: '🇳🇴', name: 'Norvegiya', wrong: ['Shvetsiya', 'Daniya'] },
+  { flag: '🇴🇲', name: 'Ummon', wrong: ['Yaman', 'BAA'] },
+  { flag: '🇵🇰', name: 'Pokiston', wrong: ['Hindiston', 'Afgʻoniston'] },
+  { flag: '🇵🇼', name: 'Palau', wrong: ['Mikroneziya', 'Marshall orollari'] },
+  { flag: '🇵🇸', name: 'Falastin', wrong: ['Iordaniya', 'Isroil'] },
+  { flag: '🇵🇦', name: 'Panama', wrong: ['Kosta-Rika', 'Kolumbiya'] },
+  { flag: '🇵🇬', name: 'Papua Yangi Gvineya', wrong: ['Indoneziya', 'Fiji'] },
+  { flag: '🇵🇾', name: 'Paragvay', wrong: ['Urugvay', 'Boliviya'] },
+  { flag: '🇵🇪', name: 'Peru', wrong: ['Ekvador', 'Boliviya'] },
+  { flag: '🇵🇭', name: 'Filippin', wrong: ['Indoneziya', 'Malayziya'] },
+  { flag: '🇵🇱', name: 'Polsha', wrong: ['Chexiya', 'Germaniya'] },
+  { flag: '🇵🇹', name: 'Portugaliya', wrong: ['Ispaniya', 'Fransiya'] },
+  { flag: '🇶🇦', name: 'Qatar', wrong: ['Bahrayn', 'Quvayt'] },
+  { flag: '🇷🇴', name: 'Ruminiya', wrong: ['Moldova', 'Bolgariya'] },
+  { flag: '🇷🇺', name: 'Rossiya', wrong: ['Belarus', 'Ukraina'] },
+  { flag: '🇷🇼', name: 'Ruanda', wrong: ['Burundi', 'Uganda'] },
+  { flag: '🇰🇳', name: 'Sent-Kits va Nevis', wrong: ['Antigua', 'Dominika'] },
+  { flag: '🇱🇨', name: 'Sent-Lusiya', wrong: ['Dominika', 'Barbados'] },
+  { flag: '🇻🇨', name: 'Sent-Vinsent va Grenadinlar', wrong: ['Grenada', 'Barbados'] },
+  { flag: '🇼🇸', name: 'Samoa', wrong: ['Tonga', 'Fiji'] },
+  { flag: '🇸🇲', name: 'San-Marino', wrong: ['Monako', 'Andorra'] },
+  { flag: '🇸🇹', name: 'San-Tome va Prinsipi', wrong: ['Kabo-Verde', 'Komor'] },
+  { flag: '🇸🇦', name: 'Saudiya Arabistoni', wrong: ['BAA', 'Qatar'] },
+  { flag: '🇸🇳', name: 'Senegal', wrong: ['Gambiya', 'Gvineya'] },
+  { flag: '🇷🇸', name: 'Serbiya', wrong: ['Xorvatiya', 'Bosniya'] },
+  { flag: '🇸🇨', name: 'Seyshel', wrong: ['Mavrikiy', 'Madagaskar'] },
+  { flag: '🇸🇱', name: 'Syerra-Leone', wrong: ['Liberiya', 'Gvineya'] },
+  { flag: '🇸🇬', name: 'Singapur', wrong: ['Malayziya', 'Bruney'] },
+  { flag: '🇸🇰', name: 'Slovakiya', wrong: ['Chexiya', 'Vengriya'] },
+  { flag: '🇸🇮', name: 'Sloveniya', wrong: ['Xorvatiya', 'Avstriya'] },
+  { flag: '🇸🇧', name: 'Solomon orollari', wrong: ['Vanuatu', 'Papua Y.G.'] },
+  { flag: '🇸🇴', name: 'Somali', wrong: ['Efiopiya', 'Keniya'] },
+  { flag: '🇿🇦', name: 'Janubiy Afrika', wrong: ['Botsvana', 'Zimbabve'] },
+  { flag: '🇸🇸', name: 'Janubiy Sudan', wrong: ['Sudan', 'Efiopiya'] },
+  { flag: '🇪🇸', name: 'Ispaniya', wrong: ['Portugaliya', 'Fransiya'] },
+  { flag: '🇱🇰', name: 'Shri-Lanka', wrong: ['Maldiv', 'Hindiston'] },
+  { flag: '🇸🇩', name: 'Sudan', wrong: ['Misr', 'Janubiy Sudan'] },
+  { flag: '🇸🇷', name: 'Surinam', wrong: ['Gayana', 'Venesuela'] },
+  { flag: '🇸🇪', name: 'Shvetsiya', wrong: ['Norvegiya', 'Daniya'] },
+  { flag: '🇨🇭', name: 'Shveytsariya', wrong: ['Avstriya', 'Lixtenshteyn'] },
+  { flag: '🇸🇾', name: 'Suriya', wrong: ['Iroq', 'Livan'] },
+  { flag: '🇹🇼', name: 'Tayvan', wrong: ['Yaponiya', 'Xitoy'] },
+  { flag: '🇹🇯', name: 'Tojikiston', wrong: ['Oʻzbekiston', 'Qirgʻiziston'] },
+  { flag: '🇹🇿', name: 'Tanzaniya', wrong: ['Keniya', 'Mozambik'] },
+  { flag: '🇹🇭', name: 'Tailand', wrong: ['Kambodja', 'Myanma'] },
+  { flag: '🇹🇱', name: 'Sharqiy Timor', wrong: ['Indoneziya', 'Papua Y.G.'] },
+  { flag: '🇹🇬', name: 'Togo', wrong: ['Benin', 'Gana'] },
+  { flag: '🇹🇴', name: 'Tonga', wrong: ['Samoa', 'Fiji'] },
+  { flag: '🇹🇹', name: 'Trinidad va Tobago', wrong: ['Barbados', 'Yamayka'] },
+  { flag: '🇹🇳', name: 'Tunis', wrong: ['Liviya', 'Jazoir'] },
+  { flag: '🇹🇷', name: 'Turkiya', wrong: ['Ozarbayjon', 'Eron'] },
+  { flag: '🇹🇲', name: 'Turkmaniston', wrong: ['Oʻzbekiston', 'Qozogʻiston'] },
+  { flag: '🇹🇻', name: 'Tuvalu', wrong: ['Nauru', 'Kiribati'] },
+  { flag: '🇺🇬', name: 'Uganda', wrong: ['Ruanda', 'Keniya'] },
+  { flag: '🇺🇦', name: 'Ukraina', wrong: ['Moldova', 'Belarus'] },
+  { flag: '🇦🇪', name: 'Birlashgan Arab Amirliklari', wrong: ['Qatar', 'Saudiya Arabistoni'] },
+  { flag: '🇬🇧', name: 'Britaniya', wrong: ['Irlandiya', 'Niderlandiya'] },
+  { flag: '🇺🇸', name: 'AQSh', wrong: ['Kanada', 'Avstraliya'] },
+  { flag: '🇺🇾', name: 'Urugvay', wrong: ['Argentina', 'Paragvay'] },
+  { flag: '🇺🇿', name: 'Oʻzbekiston', wrong: ['Qozogʻiston', 'Tojikiston'] },
+  { flag: '🇻🇺', name: 'Vanuatu', wrong: ['Solomon orollari', 'Fiji'] },
+  { flag: '🇻🇦', name: 'Vatikan', wrong: ['San-Marino', 'Monako'] },
+  { flag: '🇻🇪', name: 'Venesuela', wrong: ['Kolumbiya', 'Gayana'] },
+  { flag: '🇻🇳', name: 'Vyetnam', wrong: ['Laos', 'Kambodja'] },
+  { flag: '🇾🇪', name: 'Yaman', wrong: ['Ummon', 'Saudiya Arabistoni'] },
+  { flag: '🇿🇲', name: 'Zambiya', wrong: ['Zimbabve', 'Malavi'] },
+  { flag: '🇿🇼', name: 'Zimbabve', wrong: ['Zambiya', 'Mozambik'] },
+];
+
+// Bayroqlar quizini yaratish funksiyasi
+function generateFlagQuiz(count = 10) {
+  const shuffled = shuffle([...FLAGS]).slice(0, count);
+  return shuffled.map(item => {
+    const opts = shuffle([item.name, item.wrong[0], item.wrong[1]]);
+    return {
+      q: `Bu qaysi davlatning bayrog'i?\n${item.flag}`,
+      flag: item.flag,
+      opts,
+      ans: opts.indexOf(item.name),
+      law: `Bu ${item.name} davlatining bayrog'i.`,
+      cat: 'geografiya'
+    };
+  });
+}
+
+// ==================== QUIZ DATA ====================
+// Har bir savol: { q, opts:[3ta], ans(0-2), law, cat, img(ixtiyoriy) }
+const QUIZ_DATA = {
+  bayroqlar: [
+    { q: "Bu qaysi davlatning bayrog'i? 🇯🇵", opts: ["Xitoy", "Yaponiya", "Koreya"], ans: 1, law: "Yaponiyaning bayrog'i oq fonda qizil doira — 'quyosh'ni anglatadi." },
+    { q: "Bu qaysi davlatning bayrog'i? 🇧🇷", opts: ["Argentina", "Braziliya", "Kolumbiya"], ans: 1, law: "Braziliya bayrog'i yashil, sariq va ko'k ranglardan iborat." },
+    { q: "Bu qaysi davlatning bayrog'i? 🇨🇦", opts: ["Kanada", "AQSh", "Avstriya"], ans: 0, law: "Kanada bayrog'ida qizil zabar barg tasviri bor." },
+    { q: "Bu qaysi davlatning bayrog'i? 🇩🇪", opts: ["Belgiya", "Germaniya", "Niderlandiya"], ans: 1, law: "Germaniya bayrog'i qora, qizil va sariq gorizontal chiziqlardan iborat." },
+    { q: "Bu qaysi davlatning bayrog'i? 🇸🇦", opts: ["Eron", "Iroq", "Saudiya Arabistoni"], ans: 2, law: "Saudiya Arabistoni bayrog'i yashil fonda arab yozuvi va qilich tasviri." },
+    { q: "Bu qaysi davlatning bayrog'i? 🇦🇺", opts: ["Yangi Zelandiya", "Avstriya", "Avstraliya"], ans: 2, law: "Avstraliya bayrog'ida Britaniya bayrog'i va Janubiy xoch yulduzlari bor." },
+    { q: "Bu qaysi davlatning bayrog'i? 🇺🇿", opts: ["Qozog'iston", "O'zbekiston", "Tojikiston"], ans: 1, law: "O'zbekiston bayrog'i ko'k, oq, yashil ranglar va yarim oy+yulduzdan iborat." },
+    { q: "Bu qaysi davlatning bayrog'i? 🇹🇷", opts: ["Pokiston", "Turkiya", "Ozarbayjon"], ans: 1, law: "Turkiya bayrog'i qizil fonda oq yarim oy va yulduzdan iborat." },
+    { q: "Bu qaysi davlatning bayrog'i? 🇰🇷", opts: ["Yaponiya", "Xitoy", "Janubiy Koreya"], ans: 2, law: "Janubiy Koreya bayrog'i oq fonda Taekuk belgisi va trigram ramzlaridan iborat." },
+    { q: "Bu qaysi davlatning bayrog'i? 🇮🇳", opts: ["Hindiston", "Myanma", "Bangladesh"], ans: 0, law: "Hindiston bayrog'ida to'q sariq, oq va yashil ranglar hamda Ashoka g'ildiragi bor." },
+  ],
+  geografiya: [
+    { q: "Dunyo bo'yicha eng katta okean qaysi?", opts: ["Atlantika", "Tinch", "Hind"], ans: 1, law: "Tinch okeani dunyoning eng katta va chuqur okeani hisoblanadi — Yer yuzasining 46%ini egallaydi." },
+    { q: "O'zbekistonning poytaxti qaysi shahar?", opts: ["Samarqand", "Namangan", "Toshkent"], ans: 2, law: "Toshkent O'zbekistonning poytaxti va eng yirik shahri hisoblanadi." },
+    { q: "Dunyo bo'yicha eng uzun daryo qaysi?", opts: ["Amazon", "Nil", "Yangtsze"], ans: 1, law: "Nil daryosi 6650 km uzunligi bilan dunyoning eng uzun daryosi hisoblanadi." },
+    { q: "Osiyo va Yevropani ajratib turuvchi tog' tizmasi?", opts: ["Qoraqum", "Ural", "Hindukush"], ans: 1, law: "Ural tog' tizmasi Osiyo va Yevropani ajratib turuvchi tabiiy chegara hisoblanadi." },
+    { q: "Dunyodagi eng katta cho'l qaysi?", opts: ["Saxara", "Gobi", "Qoraqum"], ans: 0, law: "Sahara cho'li 9,2 mln km² maydoni bilan dunyoning eng katta issiq cho'li hisoblanadi." },
+    { q: "Qaysi mamlakat aholisi soni bo'yicha dunyoda birinchi?", opts: ["Hindiston", "Xitoy", "AQSh"], ans: 0, law: "2023-yildan boshlab Hindiston aholisi (1,43 mlrd) Xitoyni ortda qoldirdi." },
+    { q: "Dunyo bo'yicha eng baland tog' qaysi?", opts: ["K2", "Everest", "Kangchenjunga"], ans: 1, law: "Everest (8848 m) dengiz sathidan eng baland tog' cho'qqisi hisoblanadi." },
+    { q: "O'rta Osiyo mamlakatlar soni nechta?", opts: ["4", "5", "6"], ans: 1, law: "O'rta Osiyoda 5 ta davlat bor: O'zbekiston, Qozog'iston, Qirg'iziston, Tojikiston, Turkmaniston." },
+    { q: "Qaysi davlat eng ko'p neft qazib chiqaradi?", opts: ["Rossiya", "Saudiya Arabistoni", "AQSh"], ans: 2, law: "AQSh hozirda kuniga 13 mln barrel neft qazib, dunyoda birinchi o'rinda turadi." },
+    { q: "Dunyo bo'yicha eng kichik davlat qaysi?", opts: ["Monako", "Vatikan", "San-Marino"], ans: 1, law: "Vatikan 0,44 km² maydoni bilan dunyoning eng kichik mustaqil davlati hisoblanadi." },
+  ],
+  tarix: [
+    { q: "Birinchi jahon urushi qachon boshlangan?", opts: ["1912", "1914", "1916"], ans: 1, law: "Birinchi jahon urushi 1914-yil 28-iyulda boshlangan va 1918-yil 11-noyabrda tugagan." },
+    { q: "Buyuk Ipak yo'li qayerdan qayerga o'tgan?", opts: ["Xitoydan Italiyagacha", "Hindistondan Egyptgacha", "Arabistondan Xitoyga"], ans: 0, law: "Buyuk Ipak yo'li Xitoydan O'rta Osiyo orqali O'rta er dengizigacha cho'zilgan." },
+    { q: "Amerika Qo'shma Shtatlari qachon mustaqillik e'lon qilgan?", opts: ["1776", "1783", "1789"], ans: 0, law: "AQSh 1776-yil 4-iyulda Britaniya imperiyasidan mustaqilligini e'lon qildi." },
+    { q: "Amir Temur qaysi yillarda yashagan?", opts: ["1336-1405", "1295-1370", "1380-1450"], ans: 0, law: "Amir Temur (Temurlan) 1336-yil 9-aprelda Shahrisabzda tug'ilib, 1405-yil 18-fevralda vafot etgan." },
+    { q: "Ikkinchi jahon urushi necha yil davom etgan?", opts: ["4 yil", "6 yil", "5 yil"], ans: 1, law: "Ikkinchi jahon urushi 1939-1945 yillar, ya'ni 6 yil davom etgan." },
+    { q: "Qaysi shahar 1000 yildan ortiq Rim imperiyasining poytaxti bo'lgan?", opts: ["Rim", "Konstantinopol", "Afina"], ans: 0, law: "Rim shahri miloddan avvalgi 753-yildan boshlab Rim imperiyasining poytaxti bo'lgan." },
+    { q: "O'zbekiston mustaqilligini qachon e'lon qildi?", opts: ["1990-yil", "1991-yil", "1992-yil"], ans: 1, law: "O'zbekiston Respublikasi 1991-yil 1-sentabrda mustaqilligini e'lon qildi." },
+    { q: "Buyuk Britaniyada sanoat inqilobi qachon boshlangan?", opts: ["1750-yillar", "1800-yillar", "1820-yillar"], ans: 0, law: "Sanoat inqilobi 1750-60-yillarda Britaniyada boshlanib, keyinchalik Yevropaga tarqaldi." },
+    { q: "Qaysi davlat Ikkinchi jahon urushida Germaniyaga kapitulyatsiya imzolagan?", opts: ["Fransiya", "Polsha", "Belgiya"], ans: 0, law: "Fransiya 1940-yil 22-iyunda Germaniyaga kapitulyatsiya imzolagan." },
+    { q: "Ulug'bek rasadxonasi qaysi shaharda qurilgan?", opts: ["Buxoro", "Toshkent", "Samarqand"], ans: 2, law: "Ulug'bek rasadxonasi 1428-yilda Samarqandda qurilgan va o'z davrining eng yirik rasadxonasi bo'lgan." },
+  ],
+  hayvonlar: [
+    { q: "Qaysi hayvon 'hayvonlar podshohi' deb ataladi?", opts: ["Yo'lbars", "Sher", "Gepard"], ans: 1, law: "Sher 'hayvonlar podshohi' deb ataladi va Afrika savannalarining eng yirik yirtqichi hisoblanadi." },
+    { q: "Qaysi hayvon eng uzoq umr ko'radi?", opts: ["Fil", "Toshbaqa", "Kit"], ans: 1, law: "Ba'zi toshbaqa turlari 150-200 yil yashashi mumkin. Jonathon ismli toshbaqa 191 yoshga kirgan." },
+    { q: "Qaysi hayvon eng tez yuguradi?", opts: ["Yo'lbars", "Gepard", "Shoh burgut"], ans: 1, law: "Gepard soatiga 120 km/h tezlikka yetib, quruqlikdagi eng tez hayvon hisoblanadi." },
+    { q: "Qaysi hayvon eng katta miyaga ega?", opts: ["Fil", "Kitsimon delfinlar", "Katta kit"], ans: 2, law: "Katta kit (sperma kit) 7-9 kg og'irlikdagi miya bilan quruqlik va dengiz hayvonlari orasida rekordchi." },
+    { q: "Qaysi hayvon ucha olmaydi?", opts: ["Pingvin", "Laylak", "Burgut"], ans: 0, law: "Pingvinlar qanot tuzilishi tufayli ucha olmaydi, lekin suvda juda yaxshi suzadi." },
+    { q: "Fillar necha yil yashaydi (o'rtacha)?", opts: ["40-50 yil", "60-70 yil", "25-35 yil"], ans: 1, law: "Yovvoyi holda fillar o'rtacha 60-70 yil yashaydi, ba'zilari 80 yoshdan oshadi." },
+    { q: "Qaysi baliq suvda nafas olmaydi?", opts: ["Muringi (akula)", "Dengiz oti", "Hech biri — barchasi suvda nafas oladi"], ans: 2, law: "Baliqlar jabra orqali suvdagi kislorodni oladi. Barcha baliqlar suvda nafas oladi." },
+    { q: "Qaysi hayvon eng og'ir?", opts: ["Fil", "Ko'k kit", "Karkidon"], ans: 1, law: "Ko'k kit 150-200 tonna og'irligi bilan Yer tarixidagi eng og'ir tirik mavjudot hisoblanadi." },
+    { q: "Qaysi hayvon har kecha uxlamaydi (ko'p qismi)?", opts: ["Jirafа", "Sichqon", "Fil"], ans: 0, law: "Jirafalar sutkasiga 10-120 daqiqa uxlaydi — bu hayvonlar orasida eng kam uyqu." },
+    { q: "Qaysi hayvon ko'p rangli ko'radi?", opts: ["It", "Mantis qisqichbaqasi", "Inson"], ans: 1, law: "Mantis qisqichbaqasi 16 turdagi rang receptoriga ega — insondagi 3 ta o'rniga." },
+  ],
+  mantiq: [
+    { q: "5 ta olma bor, 2 tasini yedingiz. Qancha olma qoldi?", opts: ["2 ta", "3 ta", "5 ta"], ans: 1, law: "5 - 2 = 3. Yeganingiz qolmaydi, lekin qoldiq 3 ta." },
+    { q: "Bir otaning 3 ta o'g'li bor, har o'g'lining 1 ta singlisi bor. Jami nechta bola?", opts: ["6 ta", "4 ta", "3 ta"], ans: 1, law: "3 ta o'g'il + 1 ta singil (hammasi uchun umumiy) = 4 ta bola." },
+    { q: "Devor yong'ichi shimolga qarab uchadi. Shamol esa g'arbdan esadi. Tutun qayerga boradi?", opts: ["Sharqqa", "G'arbga", "Tutun chiqmaydi"], ans: 2, law: "Yong'ichda tutun chiqmaydi — u elektr bilan ishlaydi!" },
+    { q: "Xona og'irtoshlari: 5 kg paxta va 5 kg temir — qaysi og'irroq?", opts: ["Temir", "Paxta", "Teng og'ir"], ans: 2, law: "Ikkalasi ham 5 kg. Og'irlik teng — material faqat hajmni farqlantiradi." },
+    { q: "Bir tuxum 3 minutda pishadi. 3 tuxum necha minutda pishadi?", opts: ["9 minut", "3 minut", "6 minut"], ans: 1, law: "3 tuxumni bitta idishda bir vaqtda qaynatsa, baribir 3 minut ketadi." },
+    { q: "Qaysi so'z har doim noto'g'ri yoziladi?", opts: ["Alifbo", "Kompyuter", "Noto'g'ri"], ans: 2, law: "'Noto'g'ri' so'zi doim 'noto'g'ri' yoziladi — bu savolning qiziqarli qismi!" },
+    { q: "Yilning qaysi oyida 28 kun bor?", opts: ["Fevral", "Mart", "Hammada"], ans: 2, law: "Barcha oylar kamida 28 kun bor. Fevralda 28 (yoki 29), qolganlarida undan ko'p." },
+    { q: "Stolda 2 ta olma, 3 ta apelsin bor. Stol ustida jami nechta meva?", opts: ["5 ta", "6 ta", "Farq qilmaydi"], ans: 0, law: "2 + 3 = 5 ta meva." },
+    { q: "Ko'p bilgan narsangiz haqida kamroq bilar edingiz nima?", opts: ["Ilm", "Sirlar", "Jaholat"], ans: 2, law: "Jaholat haqida qanchalik ko'p bilsangiz, u shunchalik kamayadi — bu paradoks." },
+    { q: "Bir avtobus birinchi bekatda to'la yuk bilan yo'lga chiqdi. Ikkinchi bekatda 3 kishi tushdi. Avtobusga nechta eshik bor?", opts: ["2 ta", "Bilinmaydi", "4 ta"], ans: 1, law: "Savol avtobusga nechi kishi chiqqanini aytmadi. Eshik soni bilinmaydi." },
+  ],
+  ingliz: [
+    { q: "\"Apple\" o'zbek tilida nima degan ma'noni anglatadi?", opts: ["Olmа", "Nok", "Tarvuz"], ans: 0, law: "Apple = Olma. Bu ingliz tilida eng ko'p ishlatiladigan meva so'zlaridan biri." },
+    { q: "\"I am happy\" jumlasida qaysi so'z sifat (adjective)?", opts: ["I", "am", "happy"], ans: 2, law: "'Happy' sifat bo'lib, holat (state) ni bildiradi. 'Am' - fe'l, 'I' - olmosh." },
+    { q: "\"Yesterday\" qaysi zamonni bildiradi?", opts: ["Hozirgi", "O'tgan", "Kelasi"], ans: 1, law: "'Yesterday' = kecha, ya'ni o'tgan zamonda ishlatiladi (Past Simple)." },
+    { q: "\"She ___ to school every day\" jumlasini to'ldiring.", opts: ["go", "goes", "going"], ans: 1, law: "She (u, ayol) bilan Present Simple da fe'lga -s/-es qo'shiladi: goes." },
+    { q: "\"Book\" so'zining ko'plik shakli qaysi?", opts: ["Bookes", "Books", "Booksies"], ans: 1, law: "Ko'pchilik inglizcha so'zlarda ko'plik uchun -s qo'shiladi: book → books." },
+    { q: "\"Beautiful\" so'zining antonimi (qarshit ma'noli so'zi) qaysi?", opts: ["Ugly", "Pretty", "Nice"], ans: 0, law: "Beautiful (chiroyli) ning antonimi Ugly (xunuk) hisoblanadi." },
+    { q: "\"Thank you\" ga to'g'ri javob qaysi?", opts: ["Yes please", "You're welcome", "I'm fine"], ans: 1, law: "'You're welcome' = 'Iltimos' yoki 'Bajonidil' — minnatdorchilikka to'g'ri javob." },
+    { q: "\"I ___ a student\" jumlasini to'ldiring.", opts: ["is", "are", "am"], ans: 2, law: "I (men) bilan 'am' ishlatiladi. Qoida: I-am, he/she/it-is, we/you/they-are." },
+    { q: "\"Cat\" va \"Hat\" — qaysi qoida bilan uyqashlashadi?", opts: ["Rhyme (qofiya)", "Synonym (sinonim)", "Antonym (antonim)"], ans: 0, law: "Cat va Hat oxiri -at bilan tugab, rhyme (qofiya) hosil qiladi." },
+    { q: "\"How are you?\" savoliga to'g'ri javob qaysi?", opts: ["I am 20", "I am fine, thanks", "My name is Ali"], ans: 1, law: "'How are you?' = Qandaysiz? Javob: 'I am fine, thanks' = Yaxshi, rahmat." },
+  ],
+};
+
+const CATEGORIES = [
+  { id: 'bayroqlar', name: 'Bayroqlar', emoji: '🚩', color: '#FF6B9D', bg: '#FFF0F6', count: 195, badge: 'hot' },
+  { id: 'geografiya', name: 'Geografiya', emoji: '🌍', color: '#3B82F6', bg: '#EFF6FF', count: 10, badge: 'new' },
+  { id: 'tarix', name: 'Tarix', emoji: '📜', color: '#F59E0B', bg: '#FEF3C7', count: 10, badge: '' },
+  { id: 'hayvonlar', name: 'Hayvonlar', emoji: '🦁', color: '#22C55E', bg: '#DCFCE7', count: 10, badge: 'new' },
+  { id: 'mantiq', name: 'Mantiqiy savollar', emoji: '🧠', color: '#8B5CF6', bg: '#F5F3FF', count: 10, badge: '' },
+  { id: 'ingliz', name: "Ingliz tili", emoji: '🇬🇧', color: '#EF4444', bg: '#FEF2F2', count: 10, badge: '' },
+];
+
+// Rang xaritasi — global
+const COLOR_HEX = {
+  purple:'#6C63FF', blue:'#3B82F6', green:'#16A34A', red:'#EF4444',
+  orange:'#F97316', yellow:'#EAB308', pink:'#EC4899', teal:'#14B8A6', gray:'#6B7280'
+};
+
+const SLUG_EMOJI_DEFAULTS = {
+  bayroqlar:'🌍', geografiya:'🗺️', tarix:'📜', hayvonlar:'🐯',
+  mantiq:'🧠', ingliz:'🇬🇧', huquq:'⚖️', sport:'🏆',
+  fan:'🔬', texnologiya:'💻', matematika:'🧮', tabiat:'🌱'
+};
+
+function safeEmoji(emoji, slug) {
+  const s = (slug || '').toLowerCase();
+  const defaults = {
+    bayroqlar:'🌍', bayroq:'🌍', flag:'🌍',
+    huquq:'⚖️', tarix:'📜', geografiya:'🗺️',
+    hayvonlar:'🐯', ingliz:'🇬🇧', matematika:'🧮',
+    fan:'🔬', texnologiya:'💻', sport:'🏆', tabiat:'🌱'
+  };
+  const fallback = Object.entries(defaults).find(([k]) => s.includes(k));
+  const def = fallback ? fallback[1] : '📚';
+
+  if (!emoji || !emoji.trim()) return def;
+  const e = emoji.trim();
+  // Noto'g'ri belgilar: faqat ASCII bo'lsa rad etish
+  if (/^[ -~]+$/.test(e)) return def;
+  // Juda qisqa va emojimasligi mumkin bo'lgan
+  if (e.length > 10) return def;
+  return e;
+}
+
+// ⚠️ HIMOYALANGAN — O'CHIRILMASIN
+// FLAGS array va generateFlagQuiz() bayroqlar uchun kerak
+// Bu kategoriya doim bosh sahifada ko'rinadi
+const LEGACY_FLAGS_CATEGORY = {
+  slug: 'bayroqlar',
+  title: "Dunyo davlatlari bayroqlari",
+  emoji: '🏳️',
+  description: "195 ta davlat bayroqlarini toping",
+  status: 'published',
+  order: 1,
+  type: 'legacy-flags',
+  color: 'pink'
+};
+
+// ==================== STATE ====================
+let currentUser = null, confirmResult = null;
+let quiz = [], cur = 0, score = 0, answered = false;
+let timerIntervalId = null, activeTimerToken = null, tLeft = 20, times = [], wrongAnswers = [];
+let questionStartTime = Date.now(); // Global — pick() va autoAnswer() uchun
+let currentCat = null, lastResult = null, currentResult = null;
+const LR_KEY = 'dunyoquiz_lastResult';
+
+function saveLR(data) {
+  lastResult = data;
+  try { localStorage.setItem(LR_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function loadLR() {
+  try {
+    const raw = localStorage.getItem(LR_KEY);
+    if (raw) lastResult = JSON.parse(raw);
+  } catch(e) {}
+}
+function clearLR() {
+  // localStorage ni tozalaymiz, lekin lastResult/currentResult xotirada qoladi
+  try { localStorage.removeItem(LR_KEY); } catch(e) {}
+  if (lastResult) lastResult.savedToDb = true;
+}
+
+// ==================== FIREBASE AUTH ====================
+let autoSaveInProgress = false;
+
+auth.onAuthStateChanged(async user => {
+  // currentUser ni faqat null bo'lsa yangilaymiz
+  // OTP dan keyin set qilingan user ni o'chirmaymiz
+  if (user) {
+    currentUser = user;
+  } else if (!currentUser) {
+    currentUser = null;
+  }
+  // Agar currentUser allaqachon set bo'lgan bo'lsa — o'zgartirmaymiz
+
+  const av = document.getElementById('user-avatar');
+  if (user) {
+    if (av) { av.style.display = 'flex'; av.textContent = user.phoneNumber ? user.phoneNumber.slice(-2) : '👤'; }
+    // onAuthStateChanged da auto-save qilmaymiz
+    // Bu verifyOTP da amalga oshiriladi
+  } else {
+    if (av) av.style.display = 'none';
+  }
+});
+
+// App ni darhol ishga tushir
+initApp();
+
+async function showApp() {
+  document.getElementById('s-auth').classList.remove('active');
+  document.getElementById('s-app').classList.add('active');
+  renderCategories();
+  goTab('home');
+}
+
+async function initApp() {
+  loadLR();
+  goTab('home');
+  renderCategories(); // async - orqada yuklanadi
+}
+
+function skipAuth() { showApp(); }
+function showPhoneView() {
+  document.getElementById('auth-otp-view').style.display = 'none';
+  document.getElementById('auth-phone-view').style.display = 'block';
+}
+
+async function sendOTP() {
+  const phone = document.getElementById('phone-input').value.trim();
+  if (phone.length < 9) { showErr('auth-error', 'Telefon raqamni kiriting'); return; }
+  const fullPhone = '+998' + phone;
+  const btn = document.getElementById('send-otp-btn');
+  btn.disabled = true; btn.textContent = 'Yuborilmoqda...';
+  hideErr('auth-error');
+  try {
+    // Avvalgi verifier ni tozalash
+    if (window.recaptchaVerifier) {
+      try { window.recaptchaVerifier.clear(); } catch(e) {}
+      window.recaptchaVerifier = null;
+    }
+    document.getElementById('recaptcha-container').innerHTML = '';
+
+    // Invisible reCAPTCHA — foydalanuvchi hech narsa bosmaydi
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+      size: 'invisible',
+      'expired-callback': () => {
+        window.recaptchaVerifier = null;
+      }
+    });
+
+    // To'g'ridan SMS yuborish
+    const result = await auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier);
+    confirmResult = result;
+    document.getElementById('otp-hint').textContent = fullPhone + ' ga SMS yuborildi';
+    document.getElementById('auth-phone-view').style.display = 'none';
+    document.getElementById('auth-otp-view').style.display = 'block';
+    btn.disabled = false; btn.textContent = 'SMS yuborish →';
+
+  } catch (e) {
+    const errMsg = firebaseErrMsg(e);
+    showErr('auth-error', errMsg);
+    console.error('[Auth Error]', e.code, e.message);
+    btn.disabled = false; btn.textContent = 'SMS yuborish →';
+    try { window.recaptchaVerifier.clear(); } catch(ex) {}
+    window.recaptchaVerifier = null;
+    document.getElementById('recaptcha-container').innerHTML = '';
+  }
+}
+
+function verifyOTP() {
+  const code = document.getElementById('otp-input').value.trim();
+  if (code.length < 6) { showErr('otp-error', '6 raqamli kod kiriting'); return; }
+  const btn = document.getElementById('verify-btn');
+  btn.disabled = true; btn.textContent = 'Tekshirilmoqda...';
+  confirmResult.confirm(code)
+    .then(async result => {
+      // 1. user ni to'g'ridan olish
+      const user = result.user;
+      currentUser = user;
+
+      // 2. Ism bormi tekshirish
+      // Guest natijani HALI saqlamaymiz — avval ism kerak
+      try {
+        const doc = await db.collection('users').doc(user.uid).get();
+        if (doc.exists && doc.data().name) {
+          // Ism bor — guest natijani saqlashga harakat
+          await trySaveGuestResult(user, doc.data().name);
+          showApp();
+        } else {
+          // Ism yo'q — name ekranini ko'rsat
+          // Guest natija saveName dan keyin saqlanadi
+          document.getElementById('auth-otp-view').style.display = 'none';
+          document.getElementById('auth-name-view').style.display = 'block';
+          document.getElementById('save-name-btn').onclick = () => saveName(user);
+          setTimeout(initEmojiGrid, 100);
+        }
+      } catch(e) {
+        console.error('[verifyOTP DB error]', e.code, e.message);
+        document.getElementById('auth-otp-view').style.display = 'none';
+        document.getElementById('auth-name-view').style.display = 'block';
+        document.getElementById('save-name-btn').onclick = () => saveName(user);
+        setTimeout(initEmojiGrid, 100);
+      }
+    })
+    .catch((e) => {
+      const errMsg = firebaseErrMsg(e);
+      showErr('otp-error', errMsg);
+      console.error('[OTP Error]', e.code, e.message);
+      btn.disabled = false; btn.textContent = 'Tasdiqlash';
+    });
+}
+
+const EMOJIS = ['⚡','🌍','🏆','🔥','💡','🚀','💪','🦁','🐯','🦅','🌟','💎','🧠','👑','🎯','⚖️','🎓','📚','🏅','🌈'];
+let selEmoji = '⚡';
+function initEmojiGrid() {
+  const g = document.getElementById('emoji-grid');
+  if (!g) return;
+  g.innerHTML = EMOJIS.map((e, i) => `<button class="em-btn ${i===0?'active':''}" onclick="pickEmoji('${e}',this)">${e}</button>`).join('');
+}
+function pickEmoji(e, btn) {
+  selEmoji = e;
+  document.querySelectorAll('.em-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sel-emoji').textContent = e;
+  const inp = document.getElementById('name-input');
+  inp.value = e + inp.value.replace(/^\p{Emoji}+/u, '').trim();
+}
+async function saveName(explicitUser) {
+  const name = document.getElementById('name-input').value.trim();
+  if (name.length < 3) { showErr('name-error', 'Kamida 3 belgi'); return; }
+  if (name.length > 20) { showErr('name-error', "Ko'pi 20 belgi"); return; }
+
+  const user = explicitUser;
+  if (!user || !user.uid) {
+    showErr('name-error', 'Kirish xatosi. Sahifani yangilab qayta urining.');
+    console.error('[saveName] user missing');
+    return;
+  }
+
+  try {
+    // 1. Ism saqlash (private)
+    await db.collection('users').doc(user.uid).set({
+      name,
+      phone: user.phoneNumber || '',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    // 2. Leaderboard ga FAQAT ism — bestPct/bestAvg yo'q (natija keyinroq yoziladi)
+    await db.collection('leaderboard').doc(user.uid).set({
+      name,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    // MUHIM: bestPct: 0 yoki bestAvg: 0 YOZMAYMIZ
+
+    currentUser = user;
+
+    // 3. Ism saqlangandan KEYIN guest natijani saqlash
+    await trySaveGuestResult(user, name);
+
+    showApp();
+  } catch (e) {
+    console.error('[saveName error]', e.code, e.message);
+    showErr('name-error', `Xatolik (${e.code || 'nomalum'}): ${e.message || 'Qayta urining'}`);
+  }
+}
+function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.style.display = 'block'; }
+
+function firebaseErrMsg(e) {
+  const codes = {
+    'auth/invalid-phone-number':     "📵 Telefon raqam noto'g'ri formatda. (+998XXXXXXXXX)",
+    'auth/too-many-requests':        "⏳ Juda ko'p urinish. Biroz kuting va qayta urining.",
+    'auth/quota-exceeded':           "📵 SMS kvota tugadi. Iltimos, keyinroq urinib ko'ring.",
+    'auth/invalid-verification-code':"🔐 Kod noto'g'ri. Qayta tekshiring.",
+    'auth/code-expired':             "⏰ Kod muddati tugadi. Yangi SMS so'rang.",
+    'auth/missing-phone-number':     "📱 Telefon raqam kiritilmagan.",
+    'auth/invalid-app-credential':   "🔒 reCAPTCHA xatosi. Sahifani yangilab qayta urinib ko'ring.",
+    'auth/captcha-check-failed':     "🤖 reCAPTCHA tasdiqlanmadi. Qayta urinib ko'ring.",
+    'auth/network-request-failed':   "🌐 Internet aloqasi yo'q. Ulanishni tekshiring.",
+    'auth/billing-not-enabled':      "💳 SMS xizmati hozircha ishlamayapti. Keyinroq urinib ko'ring.",
+    'auth/operation-not-allowed':    "🚫 Telefon orqali kirish vaqtincha o'chirilgan.",
+    'auth/user-disabled':            "🚫 Bu foydalanuvchi bloklangan.",
+    'auth/session-expired':          "⏰ Sessiya muddati tugadi. Qayta boshlang.",
+  };
+  const uz = codes[e.code];
+  if (uz) return uz;
+  return `❌ Xatolik (${e.code || 'nomalum'}): ${e.message || "Qayta urinib ko'ring."}`;
+}
+function hideErr(id) { document.getElementById(id).style.display = 'none'; }
+
+// ==================== NAV ====================
+function goTab(tab) {
+  ['home','leaderboard','profile'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.style.display = 'none';
+    const nav = document.getElementById('nav-' + t);
+    if (nav) nav.classList.remove('active');
+  });
+  document.getElementById('tab-quiz').style.display = 'none';
+  document.getElementById('tab-result').style.display = 'none';
+  const navBar = document.querySelector('.nav-bar');
+  if (navBar) navBar.style.display = 'flex';
+
+  const target = document.getElementById('tab-' + tab);
+  if (target) target.style.display = 'block';
+  const navEl = document.getElementById('nav-' + tab);
+  if (navEl) navEl.classList.add('active');
+
+  if (tab === 'leaderboard') loadLeaderboard('score');
+  if (tab === 'profile') renderProfile();
+}
+
+// ==================== CATEGORIES ====================
+function catCardHTML(slug, id, emoji, title, desc, colorKey, isLegacy) {
+  const color = COLOR_HEX[colorKey] || '#6C63FF';
+  const safeE = safeEmoji(emoji, slug);
+  const onclick = isLegacy
+    ? `startLegacyFlags()`
+    : `openCategory('${id}','${slug}')`;
+  // Legacy emas va desc yo'q bo'lsa — "Mavzularni ko'rish"
+  const displayDesc = desc || (isLegacy ? 'Testni boshlash' : "Mavzularni ko'rish");
+  return `<div class="cat-card" style="border-color:${color}20" onclick="${onclick}">
+    <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,${color}22,${color}11);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:10px;border:1.5px solid ${color}22">${safeE}</div>
+    <div class="cat-name">${title}</div>
+    <div class="cat-count" style="color:${color}">${displayDesc}</div>
+  </div>`;
+}
+
+async function renderCategories() {
+  const grid = document.getElementById('cat-grid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
+
+  // Legacy flags doim birinchi
+  console.log('[legacy flags category loaded]');
+  const legacyCard = catCardHTML(
+    LEGACY_FLAGS_CATEGORY.slug, LEGACY_FLAGS_CATEGORY.slug,
+    LEGACY_FLAGS_CATEGORY.emoji, LEGACY_FLAGS_CATEGORY.title,
+    LEGACY_FLAGS_CATEGORY.description, LEGACY_FLAGS_CATEGORY.color, true
+  );
+
+  try {
+    // orderBy olib tashlandi — composite index kerak emas
+    const snap = await db.collection('categories')
+      .where('status','==','published')
+      .get();
+
+    // JS da tartiblaymiz
+    const firestoreCats = snap.docs
+      .filter(doc => {
+        const s = doc.data().slug || doc.id;
+        return s !== 'bayroqlar'; // duplicate oldini olish
+      })
+      .sort((a, b) => (a.data().order || 99) - (b.data().order || 99));
+
+    const firestoreCards = firestoreCats.map(doc => {
+      const c = doc.data();
+      return catCardHTML(c.slug||doc.id, doc.id, c.emoji||'📚', c.title, c.description||'', c.color||'purple', false);
+    }).join('');
+
+    grid.innerHTML = legacyCard + firestoreCards;
+
+  } catch(e) {
+    // Xato bo'lsa legacy + eski CATEGORIES
+    const oldCards = CATEGORIES.filter(c => c.id !== 'bayroqlar').map(c =>
+      `<div class="cat-card" style="border-color:${c.color}20" onclick="startCategory('${c.id}')">
+        <span class="cat-emoji">${c.emoji}</span>
+        <div class="cat-name">${c.name}</div>
+        <div class="cat-count" style="color:${c.color}">${c.count} ta savol</div>
+      </div>`
+    ).join('');
+    grid.innerHTML = legacyCard + oldCards;
+  }
+}
+
+// ⚠️ HIMOYALANGAN FUNKSIYA — O'CHIRILMASIN
+function startLegacyFlags() {
+  console.log('[start legacy flags quiz]', FLAGS.length);
+  const banner = document.getElementById('login-prompt-banner');
+  if (banner) banner.remove();
+
+  currentCat = { id: 'bayroqlar', name: LEGACY_FLAGS_CATEGORY.title, emoji: LEGACY_FLAGS_CATEGORY.emoji };
+  questionStartTime = Date.now();
+  quiz = generateFlagQuiz(10);
+  cur = 0; score = 0; answered = false; times = []; wrongAnswers = [];
+  console.log('[legacy flag questions generated]', quiz.length);
+
+  // Quiz UI ni ko'rsatish — to'g'ridan
+  document.querySelector('.nav-bar').style.display = 'none';
+  ['home','leaderboard','profile'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('tab-result').style.display = 'none';
+  document.getElementById('tab-quiz').style.display = 'block';
+  document.getElementById('cat-label').textContent = currentCat.emoji + ' ' + currentCat.name;
+  renderQ();
+}
+
+function scrollToCats() {
+  document.getElementById('cats-anchor').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function openCategory(catId, catSlug) {
+  console.log('[category clicked]', catId, catSlug);
+  currentCat = CATEGORIES.find(c => c.id === catId || c.id === catSlug) ||
+               {id:catId, name:catId, emoji:'📚'};
+
+  // home tab faol bo'lishi kerak
+  if (document.getElementById('tab-home').style.display === 'none') {
+    goTab('home');
+    await new Promise(r => setTimeout(r, 80));
+  }
+
+  const tGrid = document.getElementById('topics-grid');
+  const tHeader = document.getElementById('topics-header');
+  const sView = document.getElementById('home-sections-view');
+  const tView = document.getElementById('home-topics-view');
+
+  if (!tGrid || !tView) {
+    console.log('[openCategory] elements not found, retrying...');
+    await new Promise(r => setTimeout(r, 150));
+    const tg2 = document.getElementById('topics-grid');
+    const tv2 = document.getElementById('home-topics-view');
+    if (!tg2 || !tv2) { showToast("Sahifa yuklanmadi, qayta urining"); return; }
+  }
+
+  const g = document.getElementById('topics-grid');
+  const h = document.getElementById('topics-header');
+  const sv = document.getElementById('home-sections-view');
+  const tv = document.getElementById('home-topics-view');
+
+  g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
+  if (sv) sv.style.display = 'none';
+  tv.style.display = 'block';
+  console.log('[opening category topics]', catId);
+
+  try {
+    // Kategoriya ma'lumotlari
+    const catDoc = await db.collection('categories').doc(catId).get();
+    const catData = catDoc.exists ? catDoc.data() : {};
+    const color = COLOR_HEX[catData.color] || COLOR_HEX['purple'];
+
+    const tg = document.getElementById('topics-grid');
+    const th = document.getElementById('topics-header');
+
+    if (th) th.innerHTML =
+      '<div style="font-size:28px;margin-bottom:6px">' + safeEmoji(catData.emoji, catId) + '</div>' +
+      '<div style="font-size:18px;font-weight:700;color:var(--text)">' + (catData.title||catId) + '</div>' +
+      '<div style="font-size:13px;color:var(--text2);margin-top:4px">Mavzular</div>';
+
+    // catId va catSlug (ikkalasi) bilan barcha variantlarni qidiramiz
+    const slugsToSearch = new Set([catId, catSlug].filter(Boolean));
+    const allSnaps = await Promise.all([...slugsToSearch].flatMap(s => [
+      db.collection('topics').where('categorySlug','==',s).where('status','==','published').get(),
+      db.collection('topics').where('categoryId','==',s).where('status','==','published').get()
+    ]));
+
+    const seen = new Set();
+    let allTopics = [];
+    for (const snap of allSnaps) {
+      for (const doc of snap.docs) {
+        if (!seen.has(doc.id)) { seen.add(doc.id); allTopics.push({id:doc.id,...doc.data()}); }
+      }
+    }
+    console.log('[all topics loaded]', allTopics.length, allTopics.map(t=>(t.type||'no-type')+':'+t.id));
+
+    // Top-level: type=level EMAS, parentTopicId YO'Q
+    const topLevelTopics = allTopics
+      .filter(t => {
+        const isLevel = t.type === 'level';
+        const hasParent = t.parentTopicId || t.parentTopicSlug;
+        return !isLevel && !hasParent;
+      })
+      .sort((a,b) => (a.order||99)-(b.order||99));
+    console.log('[parent topics loaded]', topLevelTopics.length, topLevelTopics.map(t=>t.id));
+
+    if (!topLevelTopics.length) {
+      tg.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:32px;color:var(--text2)'>Bu kategoriyada mavzular tez orada qo\'shiladi 🚀</div>";
+      return;
+    }
+
+    // folder yoki parent-topic type bo'lsa — list ko'rsatish
+    const hasParentTopics = topLevelTopics.some(t => t.type === 'parent-topic' || t.type === 'folder');
+
+    if (topLevelTopics.length === 1 && !hasParentTopics) {
+      // Bitta oddiy topic — levels bormi tekshir
+      const lvSnap = await db.collection('topics')
+        .where('parentTopicId','==',topLevelTopics[0].id)
+        .where('status','==','published').get();
+      if (lvSnap.empty) {
+        startTopicQuiz(topLevelTopics[0].id, topLevelTopics[0].title, catId);
+      } else {
+        showLevels(topLevelTopics[0].id, topLevelTopics[0].title, catId, color);
+      }
+      return;
+    }
+
+    renderTopicCards(topLevelTopics, catId, color, tg, true);
+
+  } catch(e) {
+    console.error('[openCategory error]', e.message);
+    const tg = document.getElementById('topics-grid');
+    if (tg) tg.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:32px;color:var(--red)'>Xatolik yuz berdi: " + e.message + "</div>";
+  }
+}
+
+function renderTopicCards(topics, catId, color, tGrid, hasChildren) {
+  // data-id orqali onclick — apostrof xatosiz
+  tGrid.innerHTML = topics.map(t => {
+    const desc = t.description || "Mavzularni korish";
+    const isParent = t.type === 'parent-topic' || t.type === 'folder' || hasChildren;
+    const dtype = isParent ? 'folder' : 'topic';
+    return '<div class="cat-card topic-card" data-id="' + t.id + '" data-dtype="' + dtype + '" style="border-color:' + color + '20">' +
+      '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">📚</div>' +
+      '<div class="cat-name">' + t.title + '</div>' +
+      '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
+  }).join('');
+  // Event listeners qo'shish
+  tGrid.querySelectorAll('.topic-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var id = this.dataset.id;
+      var dtype = this.dataset.dtype;
+      if (dtype === 'folder') showLevels(id, id, catId, color);
+      else startTopicQuiz(id, id, catId);
+    });
+  });
+}
+
+async function showLevels(topicId, topicTitle, catId, color) {
+  console.log('[topic clicked]', topicId);
+  const tGrid = document.getElementById('topics-grid');
+  const tHeader = document.getElementById('topics-header');
+  if (!tGrid) return;
+
+  tGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2)">Yuklanmoqda...</div>';
+
+  const snap = await db.collection('topics')
+    .where('parentTopicId','==',topicId)
+    .where('status','==','published')
+    .get();
+
+  const children = snap.docs.map(d=>({id:d.id,...d.data()}))
+    .sort((a,b) => (a.order||99)-(b.order||99));
+  console.log('[children loaded]', children.length);
+
+  // Child yo'q — to'g'ridan quiz
+  if (!children.length) {
+    startTopicQuiz(topicId, topicTitle, catId);
+    return;
+  }
+
+  if (tHeader) {
+    const backBtn = '<button onclick="backToCategories()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--purple);font-size:13px;cursor:pointer;margin-bottom:10px;padding:0;font-weight:600">Kategoriyalar</button>';
+    const titleDiv = '<div style="font-size:18px;font-weight:700;color:var(--text)">' + topicTitle + '</div>';
+    const subDiv = '<div style="font-size:13px;color:var(--text2);margin-top:4px">Bolim tanlang</div>';
+    tHeader.innerHTML = backBtn + titleDiv + subDiv;
+  }
+
+  tGrid.innerHTML = children.map(function(c) {
+    var isFolder = c.type === 'folder' || c.type === 'parent-topic';
+    var isLevel  = c.type === 'level';
+    var icon     = isFolder ? '📚' : isLevel ? '📖' : '📝';
+    var desc     = c.description || (isLevel ? '25 ta savol' : 'Bolimlarni korish');
+    var dtype    = isFolder ? 'folder' : 'level';
+    return '<div class="cat-card topic-card" data-id="' + c.id + '" data-dtype="' + dtype + '" style="border-color:' + color + '20">' +
+      '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">' + icon + '</div>' +
+      '<div class="cat-name">' + c.title + '</div>' +
+      '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
+  }).join('');
+  // Event listeners
+  var _catId = catId, _color = color;
+  tGrid.querySelectorAll('.topic-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var id = this.dataset.id;
+      var dtype = this.dataset.dtype;
+      if (dtype === 'folder') showLevels(id, id, _catId, _color);
+      else startTopicQuiz(id, id, _catId);
+    });
+  });
+}
+
+function showTopicsList(topics, catId, tGrid, tHeader, color) {
+  tGrid.innerHTML = topics.map(t => {
+    const desc = t.description || "Mavzularni korish";
+    return '<div class="cat-card topic-card" data-id="' + t.id + '" data-dtype="folder" style="border-color:' + color + '20">' +
+      '<div style="width:44px;height:44px;border-radius:12px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:8px">📚</div>' +
+      '<div class="cat-name">' + t.title + '</div>' +
+      '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
+  }).join('');
+  var _c = catId, _col = color;
+  tGrid.querySelectorAll('.topic-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      showLevels(this.dataset.id, this.dataset.id, _c, _col);
+    });
+  });
+}
+
+function backToCategories() {
+  const tv = document.getElementById('home-topics-view');
+  const sv = document.getElementById('home-sections-view');
+  if (tv) tv.style.display = 'none';
+  if (sv) sv.style.display = 'block';
+}
+
+async function startTopicQuiz(topicId, topicTitle, catId) {
+  console.log('[startLevelQuiz]', topicId);
+  const banner = document.getElementById('login-prompt-banner');
+  if (banner) banner.remove();
+
+  // Avvalgi timerni to'xtatish
+  if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+  activeTimerToken = null;
+
+  currentCat = CATEGORIES.find(c => c.id === catId) || {id:catId, name:topicTitle, emoji:'📖'};
+
+  try {
+    // 1. Topic meta
+    const topicDoc = await db.collection('topics').doc(topicId).get();
+    const topicMeta = topicDoc.exists ? topicDoc.data() : {};
+    const isLevel = topicMeta.type === 'level' || !!topicMeta.parentTopicId;
+    const quizMode = topicMeta.quizMode || (isLevel ? 'ordered' : 'random');
+    const questionLimit = topicMeta.questionLimit || (isLevel ? 'all' : 10);
+
+    // 2. Savollarni yuklash
+    const snap = await db.collection('questions')
+      .where('topicId','==',topicId)
+      .where('status','==','published')
+      .get();
+
+    // 3. Deduplication — topicId+order primary key, fallback topicId+word+answer
+    const seen = new Set();
+    let pool = [];
+    for (const doc of snap.docs) {
+      const q = doc.data();
+      const tId = q.topicId || q.topicSlug || topicId;
+      const ord = q.order || q.wordRank || 0;
+      const primaryKey = tId + '|' + ord;
+      const fallbackKey = tId + '|' + (q.word || '') + '|' + (q.correctAnswer || String(q.correctIndex || 0));
+      const key = (ord > 0) ? primaryKey : fallbackKey;
+      if (seen.has(key)) {
+        console.warn('[dedup skipped]', key);
+        continue;
+      }
+      seen.add(key);
+      pool.push({
+        q: q.question,
+        opts: q.options,
+        ans: q.correctIndex,
+        law: q.explanation,
+        cat: catId,
+        diff: q.difficulty || 'medium',
+        order: ord,
+        word: q.word || ''
+      });
+    }
+
+    console.log('[questions loaded]', snap.docs.length);
+    console.log('[questions after dedup]', pool.length);
+
+    if (!pool.length) {
+      showToast("Bu mavzuda savol yo'q!");
+      return;
+    }
+
+    // 4. quizMode va questionLimit bo'yicha
+    let finalQuiz;
+    if (isLevel && (quizMode === 'ordered' || questionLimit === 'all')) {
+      pool.sort((a, b) => (a.order || 0) - (b.order || 0));
+      finalQuiz = [...pool]; // yangi array — reference muammo yo'q
+    } else {
+      const limit = questionLimit === 'all'
+        ? pool.length
+        : Math.min(Number(questionLimit) || 10, pool.length);
+      finalQuiz = shuffle([...pool]).slice(0, limit);
+    }
+
+    console.log('[quiz final count]', finalQuiz.length);
+
+    // 5. State reset — bitta joyda, to'liq
+    quiz = finalQuiz;
+    cur = 0;
+    score = 0;
+    answered = false;
+    times = [];
+    wrongAnswers = [];
+    questionStartTime = Date.now();
+    currentCat = { id: catId, name: topicTitle, emoji: currentCat?.emoji || '📖' };
+
+    // 6. UI
+    document.querySelector('.nav-bar').style.display = 'none';
+    ['home','leaderboard','profile'].forEach(t => {
+      const el = document.getElementById('tab-' + t);
+      if (el) el.style.display = 'none';
+    });
+    document.getElementById('tab-result').style.display = 'none';
+    document.getElementById('tab-quiz').style.display = 'block';
+    document.getElementById('cat-label').textContent = currentCat.emoji + ' ' + currentCat.name;
+
+    // 7. Bitta renderQ chaqiruvi
+    renderQ();
+
+  } catch(e) {
+    showToast('Savollar yuklanmadi!');
+    console.error('[startTopicQuiz error]', e);
+  }
+}
+
+// ==================== QUIZ ====================
+function startCategory(catId) {
+  // Quiz boshlanishida bannerni o'chirish
+  const banner = document.getElementById('login-prompt-banner');
+  if (banner) banner.remove();
+
+  currentCat = CATEGORIES.find(c => c.id === catId);
+  if (!currentCat) return;
+  questionStartTime = Date.now(); // Quiz boshida reset
+
+  // Bayroqlar uchun dinamik generator
+  if (catId === 'bayroqlar') {
+    quiz = generateFlagQuiz(10);
+    cur = 0; score = 0; answered = false; times = []; wrongAnswers = [];
+    document.getElementById('cat-label').textContent = currentCat.emoji + ' ' + currentCat.name;
+    document.querySelector('.nav-bar').style.display = 'none';
+    ['home','leaderboard','profile'].forEach(t => { const el = document.getElementById('tab-' + t); if (el) el.style.display = 'none'; });
+    document.getElementById('tab-result').style.display = 'none';
+    document.getElementById('tab-quiz').style.display = 'block';
+    renderQ();
+    return;
+  }
+
+  const pool = QUIZ_DATA[catId] || [];
+  if (!pool.length) { showToast("Bu kategoriyada savollar yo'q hali!"); return; }
+  quiz = shuffle([...pool]);
+  cur = 0; score = 0; answered = false; times = []; wrongAnswers = [];
+  // Guest sifatida o'ynash mumkin - login kerak emas
+  document.getElementById('cat-label').textContent = currentCat.emoji + ' ' + currentCat.name;
+  document.querySelector('.nav-bar').style.display = 'none';
+  ['home','leaderboard','profile'].forEach(t => { const el = document.getElementById('tab-' + t); if (el) el.style.display = 'none'; });
+  document.getElementById('tab-result').style.display = 'none';
+  document.getElementById('tab-quiz').style.display = 'block';
+  renderQ();
+}
+
+function renderQ() {
+  const q = quiz[cur];
+  console.log('[renderQ]', cur, q ? (q.word || q.q || '').substring(0,30) : 'NO Q');
+
+  // 1. Timer tozalash
+  if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+  activeTimerToken = null;
+  answered = false;
+  tLeft = 20;
+  questionStartTime = Date.now();
+
+  const total = quiz.length;
+  document.getElementById('q-label').textContent = `Savol ${cur + 1}/${total}`;
+  document.getElementById('q-prog-fill').style.width = `${(cur / total) * 100}%`;
+  document.getElementById('q-chip').innerHTML = currentCat ? `${currentCat.emoji} ${currentCat.name}` : '';
+  // Bayroq emojini katta ko'rsatish
+  if (q.flag) {
+    document.getElementById('q-text').innerHTML = `
+      <div style="font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">Bu qaysi davlatning bayrog'i?</div>
+      <div style="
+        display:flex;align-items:center;justify-content:center;
+        background:linear-gradient(135deg,#f8f9ff,#eef0ff);
+        border-radius:20px;
+        border:2px solid rgba(108,99,255,0.12);
+        padding:28px 20px;
+        margin-bottom:8px;
+        box-shadow:0 4px 20px rgba(108,99,255,0.1)
+      ">
+        <span style="font-size:120px;line-height:1;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.15))">${q.flag}</span>
+      </div>
+    `; 
+  } else {
+    document.getElementById('q-text').textContent = q.q;
+  }
+  // DOM tozalash — avvalgi savolni to'liq o'chirish
+  const optsEl = document.getElementById('q-opts');
+  optsEl.innerHTML = '';
+  optsEl.innerHTML = q.opts.map((o, i) =>
+    `<button class="opt-btn" id="opt${i}" onclick="pick(${i})">
+      <span class="opt-letter">${['A','B','C'][i]}</span>${o}
+    </button>`).join('');
+  document.getElementById('explain-box').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'none';
+
+  // Timer — ikki alohida: intervalId va token
+  const circle = document.getElementById('timer-circle');
+  const timerTxt = document.getElementById('timer-text');
+  const circumference = 106.81;
+  circle.style.stroke = 'var(--purple)';
+  timerTxt.style.color = 'var(--purple)';
+
+  // 3. Yangi token yaratish
+  const myToken = Symbol('timer');
+  activeTimerToken = myToken;
+
+  // 4. localTimeLeft — closure ichida mustaqil
+  let localTimeLeft = 20;
+
+  // 5. Yangi interval — ID ni alohida saqlash
+  timerIntervalId = setInterval(() => {
+    // 6. Token tekshiruvi — eski interval bo'lsa to'xtaydi
+    if (activeTimerToken !== myToken) {
+      clearInterval(timerIntervalId);
+      timerIntervalId = null;
+      return;
+    }
+    localTimeLeft--;
+    timerTxt.textContent = localTimeLeft;
+    circle.style.strokeDashoffset = circumference * (1 - localTimeLeft / 20);
+    if (localTimeLeft <= 5) {
+      circle.style.stroke = 'var(--red)';
+      timerTxt.style.color = 'var(--red)';
+    }
+    if (localTimeLeft <= 0) {
+      clearInterval(timerIntervalId);
+      timerIntervalId = null;
+      activeTimerToken = null;
+      autoAnswer();
+    }
+  }, 1000);
+}
+
+function autoAnswer() {
+  if (answered) return;
+  answered = true;
+  // Timerni to'xtatish
+  if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+  activeTimerToken = null;
+  if (!questionStartTime) questionStartTime = Date.now();
+  const autoElapsed = Date.now() - questionStartTime;
+  const autoSpent = Math.max(1, Math.min(20, Math.round((autoElapsed / 1000) * 10) / 10));
+  times.push(autoSpent);
+  const q = quiz[cur];
+  document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+  document.getElementById('opt' + q.ans).classList.add('correct');
+  wrongAnswers.push({ q: q.q, userAns: '⏰ Vaqt tugadi', correctAns: q.opts[q.ans], law: q.law });
+  showExplain(q, true);
+}
+
+function pick(i) {
+  console.log('[pick]', cur, i);
+  if (answered) return;
+  const btn = document.getElementById('opt' + i);
+  if (!btn || btn.disabled) return;
+
+  // DARHOL disable — ikki marta bosilishni oldini olish
+  document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+  answered = true;
+  // Timerni to'xtatish
+  if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+  activeTimerToken = null;
+
+  if (!questionStartTime) questionStartTime = Date.now();
+  const elapsedMs = Date.now() - questionStartTime;
+  const spent = Math.max(1, Math.min(20, Math.round((elapsedMs / 1000) * 10) / 10));
+  times.push(spent);
+
+  const q = quiz[cur];
+  btn.classList.add(i === q.ans ? 'correct' : 'wrong');
+  if (i !== q.ans) document.getElementById('opt' + q.ans).classList.add('correct');
+  if (i === q.ans) score++;
+  else wrongAnswers.push({ q: q.q, userAns: q.opts[i], correctAns: q.opts[q.ans], law: q.law });
+  showExplain(q, false);
+}
+
+function showExplain(q, timeout) {
+  const ex = document.getElementById('explain-box');
+  ex.innerHTML = timeout
+    ? `<span class="explain-label">⏰ Vaqt tugadi!</span>To'g'ri javob: <b>${q.opts[q.ans]}</b><br>${q.law}`
+    : `<span class="explain-label">💡 Izoh:</span>${q.law}`;
+  ex.style.display = 'block';
+  document.getElementById('next-btn').style.display = 'block';
+}
+
+function nextQ() {
+  console.log('[nextQ before]', cur);
+  cur++;
+  console.log('[nextQ after]', cur);
+  if (cur >= quiz.length) { showResult(); return; }
+  renderQ();
+}
+
+function exitQuiz() {
+  if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+  activeTimerToken = null;
+  document.getElementById('tab-quiz').style.display = 'none';
+  document.querySelector('.nav-bar').style.display = 'flex';
+  goTab('home');
+}
+
+// ==================== RESULT ====================
+function showResult() {
+  if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+  activeTimerToken = null;
+  const pct = Math.round(score / quiz.length * 100);
+  const avgRaw = times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0;
+  const avg = Math.max(0.1, Math.round(avgRaw * 10) / 10); // 1 decimal, min 0.1
+  const resultData = { 
+    pct, score, total: quiz.length, avg, 
+    cat: currentCat?.name || '',
+    catId: currentCat?.id || '',
+    savedToDb: false
+  };
+  currentResult = resultData; // Xotirada nusxa — UI uchun
+  saveLR(resultData);         // localStorage — duplicate save uchun
+
+  const emojis = pct >= 90 ? '🏆' : pct >= 70 ? '🌟' : pct >= 50 ? '💪' : '📚';
+  const msgs = pct >= 90 ? 'Ajoyib! Siz haqiqiy bilimdonsiz!' :
+               pct >= 70 ? 'Zo\'r natija! Davom eting!' :
+               pct >= 50 ? 'Yaxshi harakat! Ko\'proq mashq qiling.' : 'Qo\'shilmang! Bilim oshirish vaqti!';
+
+  document.getElementById('res-emoji').textContent = emojis;
+  document.getElementById('res-pct').textContent = pct + '%';
+  document.getElementById('res-msg').textContent = msgs;
+  document.getElementById('res-correct').textContent = score;
+  document.getElementById('res-wrong').textContent = quiz.length - score;
+  document.getElementById('res-time').textContent = avg + 's';
+
+  const retryBtn = document.getElementById('btn-retry-wrong');
+  retryBtn.style.display = wrongAnswers.length ? 'block' : 'none';
+  if (wrongAnswers.length) retryBtn.textContent = `❌ Xatolar ustida ishlash (${wrongAnswers.length} ta)`;
+
+  // Wrong analysis
+  const wa = document.getElementById('wrong-analysis');
+  if (wrongAnswers.length === 0) {
+    wa.innerHTML = `<div class="all-correct"><div class="all-correct-icon">🎉</div><p>Zo'r! Barcha savollarga to'g'ri javob berdingiz!</p></div>`;
+  } else {
+    wa.innerHTML = `<div class="wrong-section">
+      <div class="wrong-section-title">❌ Xato javoblar (${wrongAnswers.length} ta)</div>
+      ${wrongAnswers.map((w, i) => `<div class="wrong-item">
+        <div class="wrong-q-text">${i+1}. ${w.q}</div>
+        <div class="wrong-ans-row">
+          <div class="wrong-user">❌ Sizning javobingiz: ${w.userAns}</div>
+          <div class="wrong-correct">✅ To'g'ri javob: ${w.correctAns}</div>
+        </div>
+        <div class="wrong-law">💡 ${w.law}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  document.getElementById('tab-quiz').style.display = 'none';
+  document.getElementById('tab-result').style.display = 'block';
+  document.querySelector('.nav-bar').style.display = 'flex';
+
+  if (currentUser) {
+    saveResult(pct, avg);
+  } else {
+    // Guest uchun login taklifi ko'rsat
+    setTimeout(() => showLoginPrompt(pct), 800);
+  }
+}
+
+function retryWrong() {
+  currentResult = null; // Yangi o'yin boshlanadi
+  if (!wrongAnswers.length) return;
+  const wrongQs = wrongAnswers.map(w => quiz.find(q => q.q === w.q)).filter(Boolean);
+  if (!wrongQs.length) return;
+  quiz = shuffle([...wrongQs]);
+  cur = 0; score = 0; answered = false; times = []; wrongAnswers = [];
+  document.getElementById('tab-result').style.display = 'none';
+  document.querySelector('.nav-bar').style.display = 'none';
+  document.getElementById('tab-quiz').style.display = 'block';
+  renderQ();
+}
+
+function restartQuiz() {
+  if (!currentCat) return;
+  startCategory(currentCat.id);
+}
+
+function showLoginPrompt(pct) {
+  const existing = document.getElementById('login-prompt-banner');
+  if (existing) existing.remove();
+  const banner = document.createElement('div');
+  banner.id = 'login-prompt-banner';
+  banner.style.cssText = `
+    position:fixed;bottom:80px;left:16px;right:16px;
+    background:linear-gradient(135deg,var(--purple),var(--pink));
+    color:white;border-radius:16px;padding:16px 20px;
+    box-shadow:0 8px 32px rgba(108,99,255,0.3);
+    z-index:150;animation:slideUp .3s ease
+  `;
+  banner.innerHTML = `
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">🏆 ${pct}% natija!</div>
+    <div style="font-size:13px;opacity:.9;margin-bottom:12px">Natijangizni saqlash va reytingda ko'rinish uchun kiring</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="openAuthFromPrompt()" style="flex:1;padding:9px;background:white;color:var(--purple);border:none;border-radius:99px;font-size:13px;font-weight:700;cursor:pointer">Kirish →</button>
+      <button onclick="document.getElementById('login-prompt-banner').remove()" style="padding:9px 14px;background:rgba(255,255,255,.2);color:white;border:none;border-radius:99px;font-size:13px;cursor:pointer">Keyinroq</button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+  setTimeout(() => { if(banner.parentNode) banner.remove(); }, 8000);
+}
+
+function openAuthFromPrompt() {
+  const banner = document.getElementById('login-prompt-banner');
+  if (banner) banner.remove();
+  document.getElementById('s-app').classList.remove('active');
+  document.getElementById('s-auth').classList.add('active');
+}
+
+function shareResult() {
+  const r = currentResult || lastResult;
+  if (!r) return;
+  const text = `${currentCat?.emoji || '🌍'} Dunyo Quiz — ${r.cat}\n\nNatijam: ${r.pct}% 🏆\n✅ To'g'ri: ${r.score}/${r.total}\n⚡ O'rtacha: ${r.avg}s\n\nSen ham sinab ko'r 👇\nhttps://dunyoquiz.uz`;
+  window.open('https://t.me/share/url?url=https://dunyoquiz.uz&text=' + encodeURIComponent(text));
+}
+
+// ==================== FIRESTORE ====================
+// User ni to'g'ridan qabul qiluvchi helper
+async function saveResultForUser(user, lr, name) {
+
+  // result.pct va result.avg mavjudligini tekshirish
+  const newPct = (lr && lr.pct !== undefined && lr.pct !== null) ? Number(lr.pct) : null;
+  const newAvg = (lr && lr.avg !== undefined && lr.avg !== null) ? Number(lr.avg) : null;
+
+
+  if (newPct === null || newAvg === null || isNaN(newPct) || isNaN(newAvg)) {
+    console.error('[saveResultForUser] result.pct or result.avg missing!', lr);
+    showToast('❌ Natija malumotlari toliq emas. Qayta sinab koring.');
+    return;
+  }
+
+  // 1. results kolleksiyasiga yozish
+  await db.collection('results').add({
+    uid: user.uid,
+    pct: newPct,
+    avg: newAvg,
+    cat: lr.catId || '',
+    total: Number(lr.total) || 0,
+    correct: Number(lr.score) || 0,
+    date: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  // 2. Leaderboard ni oldingi qiymat bilan taqqoslab yangilash
+  const lbRef = db.collection('leaderboard').doc(user.uid);
+  const lbDoc = await lbRef.get();
+  const existingData = lbDoc.exists ? lbDoc.data() : null;
+
+  // bestPct va bestAvg faqat haqiqiy raqam bo'lsa olinadi
+  const prevPct = (existingData && typeof existingData.bestPct === 'number') ? existingData.bestPct : null;
+  const prevAvg = (existingData && typeof existingData.bestAvg === 'number') ? existingData.bestAvg : null;
+  const lbName = name || (existingData && existingData.name) || '???';
+
+  // Yangilash mantiqi:
+  // 1. Avvalgi ball yo'q → yangilash
+  // 2. Yangi ball yuqori → yangilash
+  // 3. Ball teng, vaqt tezroq → faqat bestAvg yangilash
+  let shouldUpdate = false;
+  let newLbData = { name: lbName, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+
+  if (prevPct === null) {
+    // Birinchi marta
+    shouldUpdate = true;
+    newLbData.bestPct = newPct;
+    newLbData.bestAvg = newAvg;
+  } else if (newPct > prevPct) {
+    // Yangi rekord
+    shouldUpdate = true;
+    newLbData.bestPct = newPct;
+    newLbData.bestAvg = newAvg;
+  } else if (newPct === prevPct && prevAvg !== null && newAvg < prevAvg) {
+    // Ball teng, tezroq
+    shouldUpdate = true;
+    newLbData.bestPct = newPct;
+    newLbData.bestAvg = newAvg;
+  }
+
+  if (shouldUpdate) {
+    try {
+      await lbRef.set(newLbData, { merge: true });
+    } catch(e) {
+      console.error('[leaderboard save error]', e.code, e.message);
+      showToast(`❌ Reyting saqlanmadi: ${e.code || e.message}`);
+    }
+  } else {
+  }
+
+  // 3. users da bestPct yangilash
+  const userRef = db.collection('users').doc(user.uid);
+  const userDoc = await userRef.get();
+  const prevUserPct = (userDoc.exists && typeof userDoc.data().bestPct === 'number')
+    ? userDoc.data().bestPct : null;
+
+  if (prevUserPct === null || newPct > prevUserPct) {
+    await userRef.set({
+      bestPct: newPct,
+      bestAvg: newAvg,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  }
+
+  // 4. Faqat muvaffaqiyatdan keyin localStorage tozalash
+  if (lr) lr.savedToDb = true;
+}
+
+// Guest natijani saqlashga harakat
+async function trySaveGuestResult(user, name) {
+  let lr = lastResult;
+  if (!lr) {
+    try { const r = localStorage.getItem(LR_KEY); lr = r ? JSON.parse(r) : null; } catch(e) {}
+  }
+  if (!lr || lr.savedToDb) return;
+  try {
+    await saveResultForUser(user, lr, name);
+    clearLR();
+    showToast('✅ Natijangiz saqlandi!');
+  } catch(e) {
+    console.error('[save error]', e.code, e.message);
+    showToast(`❌ Natija saqlanmadi: ${e.code || e.message}`);
+  }
+}
+
+async function saveResult(pct, avg, fromLastResult = false) {
+  try {
+    // lastResult dan yoki hozirgi o'yindan ma'lumot olish
+    const savePct = fromLastResult ? lastResult.pct : pct;
+    const saveAvg = fromLastResult ? lastResult.avg : avg;
+    const saveCatId = fromLastResult ? lastResult.catId : (currentCat?.id || '');
+    const saveTotal = fromLastResult ? lastResult.total : quiz.length;
+    const saveCorrect = fromLastResult ? lastResult.score : score;
+
+    // 1. Natijani saqlash (private) — phone YO'Q
+    await db.collection('results').add({
+      uid: currentUser.uid,
+      pct: savePct,
+      avg: saveAvg,
+      cat: saveCatId,
+      total: saveTotal,
+      correct: saveCorrect,
+      date: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // 2. Private users koleksiyasini yangilash
+    const userRef = db.collection('users').doc(currentUser.uid);
+    const userDoc = await userRef.get();
+    if (!userDoc.exists || (userDoc.data().bestPct || 0) < savePct) {
+      await userRef.set({
+        bestPct: savePct,
+        bestAvg: saveAvg,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      // 3. Public leaderboard koleksiyasini yangilash (phone YO'Q)
+      const lbRef = db.collection('leaderboard').doc(currentUser.uid);
+      const name = userDoc.exists && userDoc.data().name ? userDoc.data().name : '???';
+      // leaderboard: faqat public ma'lumotlar — phone HECH QACHON
+      await lbRef.set({
+        name,
+        bestPct: savePct,
+        bestAvg: saveAvg,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    }
+  } catch(e) { console.error('[saveResult error]', e.code, e.message); }
+}
+
+async function loadLeaderboard(type) {
+  const list = document.getElementById('lb-list');
+  list.innerHTML = '<div class="loading">Yuklanmoqda...</div>';
+  try {
+    const field = type === 'score' ? 'bestPct' : 'bestAvg';
+    const order = type === 'score' ? 'desc' : 'asc';
+    const snap = await db.collection('leaderboard').orderBy(field, order).limit(20).get();
+    if (snap.empty) { list.innerHTML = '<div class="loading">Hali natijalar yo\'q</div>'; return; }
+    list.innerHTML = snap.docs.map((doc, i) => {
+      const d = doc.data();
+      const rClass = i===0?'r1':i===1?'r2':i===2?'r3':'r-other';
+      const val = type==='score'
+        ? (typeof d.bestPct === 'number' ? d.bestPct : 0)+'%'
+        : (typeof d.bestAvg === 'number' ? d.bestAvg : 0)+'s';
+      const name = d.name || '???';
+      const isMe = currentUser && doc.id === currentUser.uid;
+      return `<div class="lb-item ${isMe?'me':''}">
+        <span class="rank-num ${rClass}">${i+1}</span>
+        <span class="lb-name">${name}</span>
+        <span class="lb-score">${val}</span>
+      </div>`;
+    }).join('');
+  } catch (e) { list.innerHTML = '<div class="loading">Xatolik</div>'; }
+}
+
+function showLB(type, el) {
+  document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  loadLeaderboard(type);
+}
+
+async function renderProfile() {
+  const el = document.getElementById('profile-content');
+  if (!currentUser) {
+    el.innerHTML = `<div class="login-prompt" style="padding:40px 20px;text-align:center">
+      <div style="font-size:56px;margin-bottom:16px">👤</div>
+      <h3 style="font-size:20px;font-weight:700;margin-bottom:8px">Hali kirmagansiz</h3>
+      <p style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6">Natijalarni saqlash va reytingda ko'rinish uchun kiring. Bu bepul!</p>
+      <button class="btn-main" onclick="openAuthFromPrompt()" style="max-width:280px;margin:0 auto">Kirish →</button>
+      <p style="font-size:12px;color:var(--text3);margin-top:16px">Telefon raqam orqali — 30 sekund</p>
+    </div>`; return;
+  }
+  const doc = await db.collection('users').doc(currentUser.uid).get();
+  const name = doc.exists && doc.data().name ? doc.data().name : currentUser.phoneNumber || '?';
+  el.innerHTML = `
+    <div class="profile-hero">
+      <div class="profile-avatar">${name.charAt(0)}</div>
+      <div class="profile-name">${name}</div>
+      <div class="profile-phone">${currentUser.phoneNumber || ''}</div>
+    </div>
+    <div class="profile-stats">
+      <div class="p-stat"><div class="p-stat-n" id="ps-tests">—</div><div class="p-stat-l">Testlar</div></div>
+      <div class="p-stat"><div class="p-stat-n" id="ps-best">—</div><div class="p-stat-l">Eng yuqori</div></div>
+      <div class="p-stat"><div class="p-stat-n" id="ps-avg">—</div><div class="p-stat-l">O'rtacha</div></div>
+    </div>
+    <div class="history-list" id="history-list"><div class="loading">Yuklanmoqda...</div></div>
+    <button class="logout-btn" onclick="logout()">Chiqish</button>`;
+
+  try {
+    // orderBy('date') olib tashlandi — composite index kerak emas
+    const snap = await db.collection('results').where('uid','==',currentUser.uid).limit(20).get();
+    if (snap.empty) {
+      document.getElementById('history-list').innerHTML = '<div class="loading">Hali natija yo\'q</div>';
+      document.getElementById('ps-tests').textContent = '0';
+      document.getElementById('ps-best').textContent = '0%';
+      document.getElementById('ps-avg').textContent = '0%';
+      return;
+    }
+    // Sana bo'yicha JS da tartiblash
+    const results = snap.docs.map(d => d.data())
+      .sort((a, b) => {
+        const ta = a.date?.seconds || 0;
+        const tb = b.date?.seconds || 0;
+        return tb - ta;
+      });
+    const avgPct = Math.round(results.reduce((s,r) => s+(r.pct||0),0)/results.length);
+    const best = Math.max(...results.map(r => r.pct||0));
+    document.getElementById('ps-tests').textContent = results.length;
+    document.getElementById('ps-best').textContent = best + '%';
+    document.getElementById('ps-avg').textContent = avgPct + '%';
+    document.getElementById('history-list').innerHTML = results.map(r => {
+      const cat = CATEGORIES.find(c => c.id === r.cat);
+      const date = r.date?.toDate ? r.date.toDate().toLocaleDateString('uz-UZ') : '';
+      return `<div class="history-item">
+        <div class="history-icon">${cat?.emoji || '📊'}</div>
+        <div class="history-info">
+          <div class="history-cat">${cat?.name || r.cat || 'Test'}</div>
+          <div class="history-date">${date} · ${r.total||0} savol · ${r.avg||0}s</div>
+        </div>
+        <div class="history-score">${r.pct||0}%</div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    console.error('[renderProfile error]', e.code, e.message);
+    document.getElementById('history-list').innerHTML = `<div class="loading">Xatolik: ${e.code || e.message}</div>`;
+  }
+}
+
+function logout() {
+  auth.signOut().then(() => { currentUser = null; goTab('home'); });
+}
+
+// ==================== UTILS ====================
+function shuffle(a) { return a.sort(() => Math.random() - .5); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Splash
+setTimeout(() => {
+  const s = document.getElementById('splash');
+  s.style.opacity = '0';
+  setTimeout(() => s.style.display = 'none', 500);
+}, 2000);
+
+// PWA
+console.log("DUNYO QUIZ version: folder-v23");
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+let deferredPrompt;
+
+function showInstallBanner() {
+  if (localStorage.getItem('installBannerDismissed')) return;
+  const banner = document.getElementById('install-banner');
+  banner.style.display = 'flex';
+  document.body.classList.add('has-install-banner');
+}
+
+function dismissInstallBanner() {
+  const banner = document.getElementById('install-banner');
+  banner.style.display = 'none';
+  document.body.classList.remove('has-install-banner');
+  localStorage.setItem('installBannerDismissed', '1');
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallBanner();
+});
+
+function doInstall() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+    dismissInstallBanner();
+  });
+}
+</script>
+</body>
+</html>
