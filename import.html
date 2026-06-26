@@ -467,7 +467,11 @@ async function runImport() {
     }
 
     // 4. Questions — overwrite: avval o'chirish
-    log('\n📝 ' + questions.length + ' ta savol...', 'info');
+    if (questions.length === 0) {
+      log('\nℹ️ Savollar yo\'q — faqat category/topic/level struktura import qilindi.', 'info');
+    } else {
+      log('\n📝 ' + questions.length + ' ta savol...', 'info');
+    }
 
     if (importMode === 'overwrite') {
       const lvSlugs = [...new Set(questions.map(q => q.levelSlug || q.topicSlug).filter(Boolean))];
