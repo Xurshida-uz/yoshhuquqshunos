@@ -358,13 +358,13 @@
     </div>
     <main>
       <div class="hero">
-        <div class="hero-badge">🔥 YANGI SAVOLLAR QO'SHILDI</div>
-        <h2>Bilimingizni sinang!</h2>
-        <p>Bilimingizni sinang, reytingga chiqing! 🌟</p>
+        <div class="hero-badge">🔥 Bugungi testlar tayyor</div>
+        <h2>O'zingizni sinab ko'ring</h2>
+        <p>Qiziqarli savollar, tezkor natija va umumiy reyting — barchasi bir joyda.</p>
         <div class="hero-chips">
           <span class="hero-chip">🏆 Reyting</span>
-          <span class="hero-chip">📅 Har kuni yangi</span>
-          <span class="hero-chip">📤 Ulashish</span>
+          <span class="hero-chip">🧠 Bilim sinovi</span>
+          <span class="hero-chip">📤 Natijani ulashish</span>
         </div>
         <button class="hero-btn" onclick="scrollToCats()">Testni boshlash →</button>
       </div>
@@ -1450,13 +1450,16 @@ async function startTopicQuiz(topicId, topicTitle, catId) {
 
     // 4. quizMode va questionLimit bo'yicha
     let finalQuiz;
-    if (isLevel && (quizMode === 'ordered' || questionLimit === 'all')) {
+    const limit = questionLimit === 'all'
+      ? pool.length
+      : Math.min(Number(questionLimit) || 10, pool.length);
+
+    if (quizMode === 'ordered') {
+      // Tartib bo'yicha — barcha savollar order asc
       pool.sort((a, b) => (a.order || 0) - (b.order || 0));
-      finalQuiz = [...pool]; // yangi array — reference muammo yo'q
+      finalQuiz = [...pool].slice(0, limit);
     } else {
-      const limit = questionLimit === 'all'
-        ? pool.length
-        : Math.min(Number(questionLimit) || 10, pool.length);
+      // Random — shuffle qilish
       finalQuiz = shuffle([...pool]).slice(0, limit);
     }
 
@@ -2063,7 +2066,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: premium-v24");
+console.log("DUNYO QUIZ version: grammar-v25");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
