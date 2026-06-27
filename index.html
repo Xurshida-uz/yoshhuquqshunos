@@ -1325,7 +1325,10 @@ async function showLevels(topicId, topicTitle, catId, color) {
     .where('status','==','published')
     .get();
 
-  const children = snap.docs.map(d=>({id:d.id,...d.data()}))
+  // categorySlug bo'yicha filter — noto'g'ri category topiclarini chiqarib tashlash
+  const children = snap.docs
+    .map(d=>({id:d.id,...d.data()}))
+    .filter(c => !c.categorySlug || c.categorySlug === catId)
     .sort((a,b) => (a.order||99)-(b.order||99));
   console.log('[children loaded]', children.length);
 
@@ -2066,7 +2069,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v25");
+console.log("DUNYO QUIZ version: grammar-v26");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 

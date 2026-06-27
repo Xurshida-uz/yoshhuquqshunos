@@ -181,6 +181,12 @@
         <div class="progress-bar" id="gen-bar" style="display:none"><div class="prog-fill" id="gen-fill" style="width:0"></div></div>
         <div class="log-box" id="gen-log" style="display:none;margin-top:12px"></div>
       </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">🔧 Grammar Topic Repair</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Grammar folder topiclarning parentTopicId ni tozalaydi va categorySlug ni to'g'rilaydi.</p>
+        <button class="btn btn-red" onclick="repairGrammarTopics()" id="repair-btn">🔧 Repair Grammar Topics</button>
+        <div class="log-box" id="repair-log" style="display:none;margin-top:12px"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -610,6 +616,80 @@ async function doDelete() {
     const qb = db.batch(); qSnap.docs.forEach(d=>qb.delete(d.ref)); await qb.commit();
     alert('O\'chirildi: ' + tSnap.size + ' topic, ' + qSnap.size + ' savol');
   } catch(e) { alert('Xato: ' + e.message); }
+}
+
+// ===== REPAIR GRAMMAR TOPICS =====
+async function repairGrammarTopics() {
+  const btn = document.getElementById('repair-btn');
+  const logEl = document.getElementById('repair-log');
+  btn.disabled = true;
+  logEl.style.display = 'block';
+  logEl.innerHTML = '';
+
+  function rlog(msg, t='info') {
+    logEl.innerHTML += '<div class="l-'+t+'">' + msg + '</div>';
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  const FOLDERS = ["verb-to-be", "pronouns-possessives", "articles-nouns", "present-simple", "present-continuous", "past-simple", "past-continuous", "present-perfect", "past-perfect", "future-forms", "mixed-tenses", "modal-verbs", "conditionals", "conjunctions-linking-words", "prepositions", "passive-voice", "reported-speech", "gerund-infinitive", "relative-clauses", "adjectives-adverbs", "quantifiers-determiners", "there-is-there-are", "questions-wh-words", "word-order-sentence-structure", "phrasal-verbs"];
+  const SUFFIXES = ["-oson", "-orta", "-qiyin", "-aralash-test"];
+  let fixedFolders = 0, fixedLevels = 0, errors = 0;
+
+  rlog('[repair grammar start]', 'info');
+
+  // 1. Folder topiclarni tuzatish — parentTopicId olib tashlash
+  for (const slug of FOLDERS) {
+    try {
+      const doc = await db.collection('topics').doc(slug).get();
+      if (!doc.exists) {
+        rlog('[skip] ' + slug + ' — topilmadi', 'warn');
+        continue;
+      }
+      const data = doc.data();
+      const update = {
+        categorySlug: 'english-grammar',
+        categoryId: 'english-grammar',
+        type: 'folder',
+        updatedAt: TS()
+      };
+      // parentTopicId ni o'chirish
+      if (data.parentTopicId) {
+        update.parentTopicId = firebase.firestore.FieldValue.delete();
+      }
+      await db.collection('topics').doc(slug).update(update);
+      rlog('[fixed folder] ' + slug, 'ok');
+      fixedFolders++;
+    } catch(e) {
+      rlog('[error] ' + slug + ': ' + e.message, 'err');
+      errors++;
+    }
+  }
+
+  // 2. Level topiclarni tuzatish
+  for (const folderSlug of FOLDERS) {
+    for (const suffix of SUFFIXES) {
+      const lvSlug = folderSlug + suffix;
+      try {
+        const doc = await db.collection('topics').doc(lvSlug).get();
+        if (!doc.exists) continue;
+        await db.collection('topics').doc(lvSlug).update({
+          categorySlug: 'english-grammar',
+          categoryId: 'english-grammar',
+          type: 'level',
+          parentTopicId: folderSlug,
+          updatedAt: TS()
+        });
+        rlog('[fixed level] ' + lvSlug + ' parent: ' + folderSlug, 'ok');
+        fixedLevels++;
+      } catch(e) {
+        rlog('[error] ' + lvSlug + ': ' + e.message, 'err');
+        errors++;
+      }
+    }
+  }
+
+  rlog('[repair grammar done] folders:' + fixedFolders + ' levels:' + fixedLevels + ' errors:' + errors, fixedFolders > 0 ? 'ok' : 'warn');
+  btn.disabled = false;
 }
 
 // ===== GENERATE LEVELS =====
