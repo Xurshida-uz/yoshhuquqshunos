@@ -1572,7 +1572,7 @@ function renderQ() {
   optsEl.innerHTML = '';
   optsEl.innerHTML = q.opts.map((o, i) =>
     `<button class="opt-btn" id="opt${i}" onclick="pick(${i})">
-      <span class="opt-letter">${['A','B','C'][i]}</span>${o}
+      <span class="opt-letter">${['A','B','C','D'][i]}</span>${o}
     </button>`).join('');
   document.getElementById('explain-box').style.display = 'none';
   document.getElementById('next-btn').style.display = 'none';
@@ -2069,7 +2069,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v26");
+console.log("DUNYO QUIZ version: grammar-v27");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
