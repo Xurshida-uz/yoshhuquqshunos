@@ -553,7 +553,7 @@ async function runImport() {
         batch.set(db.collection('questions').doc(docId), {
           categoryId: catSlug,
           categorySlug: catSlug,
-          topicId: q.topicSlug || lvSlug,
+          topicId: lvSlug,
           topicSlug: q.topicSlug || lvSlug,
           levelSlug: lvSlug,
           parentTopicId: parentTopic,
