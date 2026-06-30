@@ -430,20 +430,25 @@ async function runImport() {
     log('\n📚 ' + topics.length + ' ta topic...', 'info');
     for (const t of topics) {
       const slug = t.slug || t.id;
-      const parentId = TOPIC_PARENT[slug] || 'english-vocabulary-1000';
+      // Grammar category uchun top-level folderlar parentsiz bo'lishi kerak
+      const isGrammar = catSlug === 'english-grammar';
+      const parentId = isGrammar ? null : (TOPIC_PARENT[slug] || 'english-vocabulary-1000');
       setProgress(done, total, 'Topic: ' + t.title);
-      const ok = await smartSet('topics', slug, {
+      const topicData = {
         title: t.title || t.name,
         slug: slug,
         categoryId: catSlug,
         categorySlug: catSlug,
-        parentTopicId: parentId,
-        parentTopicSlug: parentId,
         description: t.description || '',
         order: t.order || 1,
         status: 'published',
         type: 'folder'
-      });
+      };
+      if (parentId) {
+        topicData.parentTopicId = parentId;
+        topicData.parentTopicSlug = parentId;
+      }
+      const ok = await smartSet('topics', slug, topicData);
       if (ok) stats.topics++;
       done++; setProgress(done, total);
     }
@@ -452,7 +457,8 @@ async function runImport() {
     log('\n📊 ' + levels.length + ' ta level...', 'info');
     for (const lv of levels) {
       const slug = lv.slug || lv.id;
-      const parentId = LEVEL_TOPIC[slug] || lv.parentTopicSlug || lv.parentTopicId || 'first-100-words';
+      const fallbackParent = isGrammar ? (slug.replace(/-oson$|-orta$|-qiyin$|-aralash-test$/, '')) : 'first-100-words';
+      const parentId = lv.parentTopicId || lv.parentTopicSlug || LEVEL_TOPIC[slug] || fallbackParent;
       setProgress(done, total, 'Level: ' + lv.title);
       const ok = await smartSet('topics', slug, {
         title: lv.title,
@@ -483,15 +489,20 @@ async function runImport() {
       const lvSlugs = [...new Set(questions.map(q => q.levelSlug || q.topicSlug).filter(Boolean))];
       log('🗑 ' + lvSlugs.length + ' ta level tozalanmoqda...', 'warn');
       for (const lvSlug of lvSlugs) {
-        const oldSnap = await db.collection('questions').where('topicId','==',lvSlug).get();
-        if (oldSnap.size > 0) {
+        const [snapNew, snapOld] = await Promise.all([
+          db.collection('questions').where('levelSlug','==',lvSlug).get(),
+          db.collection('questions').where('topicId','==',lvSlug).get()
+        ]);
+        const allDocs = [...snapNew.docs, ...snapOld.docs];
+        const uniqueDocs = [...new Map(allDocs.map(d => [d.id, d])).values()];
+        if (uniqueDocs.length > 0) {
           let b = db.batch(); let c = 0;
-          for (const doc of oldSnap.docs) {
+          for (const doc of uniqueDocs) {
             b.delete(doc.ref); c++;
             if (c % 400 === 0) { await b.commit(); b = db.batch(); }
           }
           await b.commit();
-          log('🗑 ' + lvSlug + ': ' + oldSnap.size + ' ta o\'chirildi', 'warn');
+          log('🗑 ' + lvSlug + ': ' + uniqueDocs.length + ' ta o\'chirildi', 'warn');
         }
       }
     }
@@ -501,7 +512,7 @@ async function runImport() {
     if (importMode === 'skip') {
       const lvSlugs = [...new Set(questions.map(q => q.levelSlug || q.topicSlug).filter(Boolean))];
       for (const lvSlug of lvSlugs) {
-        const snap = await db.collection('questions').where('topicId','==',lvSlug).get();
+        const snap = await db.collection('questions').where('levelSlug','==',lvSlug).get();
         snap.docs.forEach(d => existingIds.add(d.id));
       }
       log('ℹ️ Mavjud: ' + existingIds.size + ' ta doc', 'info');
@@ -533,7 +544,7 @@ async function runImport() {
         const lvSlug = q.levelSlug || q.topicSlug || 'level';
         const qOrder = q.order || q.wordRank || (i + chunk.indexOf(q) + 1);
         const docId = lvSlug + '-' + String(qOrder).padStart(4, '0');
-        const parentTopic = LEVEL_TOPIC[lvSlug] || 'first-100-words';
+        const parentTopic = q.topicSlug || LEVEL_TOPIC[lvSlug] || 'first-100-words';
 
         if (importMode === 'skip' && existingIds.has(docId)) {
           stats.skipped++; continue;
@@ -542,11 +553,12 @@ async function runImport() {
         batch.set(db.collection('questions').doc(docId), {
           categoryId: catSlug,
           categorySlug: catSlug,
-          topicId: lvSlug,
-          topicSlug: lvSlug,
+          topicId: q.topicSlug || lvSlug,
+          topicSlug: q.topicSlug || lvSlug,
+          levelSlug: lvSlug,
           parentTopicId: parentTopic,
           question: q.question,
-          options: q.options.slice(0, 3),
+          options: q.options,
           correctIndex: ci,
           correctAnswer: q.correctAnswer || (q.options[ci] || ''),
           explanation: q.explanation || (q.word||'') + ' = ' + (q.uzbek||'') + '. ' + (q.exampleSentence||''),
