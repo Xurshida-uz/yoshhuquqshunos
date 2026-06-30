@@ -11,6 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -1096,7 +1097,7 @@ function goTab(tab) {
 }
 
 // ==================== CATEGORIES ====================
-function catCardHTML(slug, id, emoji, title, desc, colorKey, isLegacy) {
+function catCardHTML(slug, id, emoji, title, desc, colorKey, isLegacy, imageUrl) {
   const color = COLOR_HEX[colorKey] || '#6C63FF';
   const safeE = safeEmoji(emoji, slug);
   const onclick = isLegacy
@@ -1104,8 +1105,11 @@ function catCardHTML(slug, id, emoji, title, desc, colorKey, isLegacy) {
     : `openCategory('${id}','${slug}')`;
   // Legacy emas va desc yo'q bo'lsa — "Mavzularni ko'rish"
   const displayDesc = desc || (isLegacy ? 'Testni boshlash' : "Mavzularni ko'rish");
+  const iconBlock = imageUrl
+    ? `<div style="width:100%;height:90px;border-radius:14px;overflow:hidden;margin-bottom:10px;border:1.5px solid ${color}22"><img src="${imageUrl}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.outerHTML='<div style=&quot;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,${color}22,${color}11);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:10px;border:1.5px solid ${color}22&quot;>${safeE}</div>'"></div>`
+    : `<div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,${color}22,${color}11);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:10px;border:1.5px solid ${color}22">${safeE}</div>`;
   return `<div class="cat-card" style="border-color:${color}20" onclick="${onclick}">
-    <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,${color}22,${color}11);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:10px;border:1.5px solid ${color}22">${safeE}</div>
+    ${iconBlock}
     <div class="cat-name">${title}</div>
     <div class="cat-count" style="color:${color}">${displayDesc}</div>
   </div>`;
@@ -1140,7 +1144,7 @@ async function renderCategories() {
 
     const firestoreCards = firestoreCats.map(doc => {
       const c = doc.data();
-      return catCardHTML(c.slug||doc.id, doc.id, c.emoji||'📚', c.title, c.description||'', c.color||'purple', false);
+      return catCardHTML(c.slug||doc.id, doc.id, c.emoji||'📚', c.title, c.description||'', c.color||'purple', false, c.imageUrl||null);
     }).join('');
 
     grid.innerHTML = legacyCard + firestoreCards;
@@ -1296,8 +1300,11 @@ function renderTopicCards(topics, catId, color, tGrid, hasChildren) {
     const desc = t.description || "Mavzularni korish";
     const isParent = t.type === 'parent-topic' || t.type === 'folder' || hasChildren;
     const dtype = isParent ? 'folder' : 'topic';
+    const iconBlock = t.imageUrl
+      ? '<div style="width:100%;height:80px;border-radius:14px;overflow:hidden;margin-bottom:10px"><img src="' + t.imageUrl + '" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.style.display=&quot;none&quot;"></div>'
+      : '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">📚</div>';
     return '<div class="cat-card topic-card" data-id="' + t.id + '" data-dtype="' + dtype + '" style="border-color:' + color + '20">' +
-      '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">📚</div>' +
+      iconBlock +
       '<div class="cat-name">' + t.title + '</div>' +
       '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
   }).join('');
@@ -2069,7 +2076,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v27");
+console.log("DUNYO QUIZ version: grammar-v28");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 

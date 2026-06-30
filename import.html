@@ -7,6 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{--purple:#6C63FF;--green:#16A34A;--red:#DC2626;--yellow:#D97706;--border:#E5E7EB;--bg:#F8F9FF;--card:#fff;--text:#111827;--text2:#6B7280}
@@ -187,6 +188,27 @@
         <button class="btn btn-red" onclick="repairGrammarTopics()" id="repair-btn">🔧 Repair Grammar Topics</button>
         <div class="log-box" id="repair-log" style="display:none;margin-top:12px"></div>
       </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">🖼️ Kategoriya/Topic rasmlari</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Dashboard kartalariga rasm yuklang. Rasm Firebase Storage ga saqlanadi va Firestore dagi <code>imageUrl</code> fieldga yoziladi.</p>
+        <select id="img-type" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;font-size:14px">
+          <option value="categories">Kategoriya</option>
+          <option value="topics">Topic (folder)</option>
+        </select>
+        <select id="img-target" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;font-size:14px">
+          <option value="">Yuklanmoqda...</option>
+        </select>
+        <input type="file" id="img-file" accept="image/*" style="width:100%;margin-bottom:10px">
+        <div id="img-preview" style="display:none;margin-bottom:10px">
+          <img id="img-preview-img" style="max-width:200px;max-height:120px;border-radius:8px;border:1px solid var(--border)">
+        </div>
+        <button class="btn btn-green" onclick="uploadImage()" id="img-upload-btn">⬆️ Yuklash va saqlash</button>
+        <div class="log-box" id="img-log" style="display:none;margin-top:12px"></div>
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2)">Mavjud rasmlar:</div>
+          <div id="img-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -203,6 +225,7 @@ firebase.initializeApp({
 });
 const auth = firebase.auth();
 const db = firebase.firestore();
+const storage = firebase.storage();
 const TS = () => firebase.firestore.FieldValue.serverTimestamp();
 
 let importData = null;
@@ -702,6 +725,167 @@ async function repairGrammarTopics() {
 
   rlog('[repair grammar done] folders:' + fixedFolders + ' levels:' + fixedLevels + ' errors:' + errors, fixedFolders > 0 ? 'ok' : 'warn');
   btn.disabled = false;
+}
+
+// ===== IMAGE MANAGER =====
+async function loadImgTargets() {
+  const type = document.getElementById('img-type').value;
+  const sel = document.getElementById('img-target');
+  sel.innerHTML = '<option value="">Yuklanmoqda...</option>';
+
+  let snap;
+  if (type === 'categories') {
+    snap = await db.collection('categories').get();
+  } else {
+    snap = await db.collection('topics').where('type','==','folder').get();
+  }
+
+  const items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a,b) => (a.title||a.slug||'').localeCompare(b.title||b.slug||''));
+
+  sel.innerHTML = items.map(it =>
+    `<option value="${it.slug || it.id}">${it.title || it.name || it.slug} ${it.imageUrl ? '🖼️' : ''}</option>`
+  ).join('');
+
+  loadImgGallery();
+}
+
+document.getElementById('img-type').addEventListener('change', loadImgTargets);
+
+document.getElementById('img-file').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  const preview = document.getElementById('img-preview');
+  const img = document.getElementById('img-preview-img');
+  if (file) {
+    img.src = URL.createObjectURL(file);
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+});
+
+async function uploadImage() {
+  const type = document.getElementById('img-type').value;
+  const targetSlug = document.getElementById('img-target').value;
+  const file = document.getElementById('img-file').files[0];
+  const logEl = document.getElementById('img-log');
+  const btn = document.getElementById('img-upload-btn');
+
+  logEl.style.display = 'block';
+  logEl.innerHTML = '';
+  function ilog(msg, t='info') {
+    logEl.innerHTML += '<div class="l-'+t+'">' + msg + '</div>';
+  }
+
+  if (!targetSlug) { ilog('⚠️ Avval target tanlang', 'warn'); return; }
+  if (!file) { ilog('⚠️ Rasm faylini tanlang', 'warn'); return; }
+  if (file.size > 2 * 1024 * 1024) { ilog('⚠️ Rasm 2MB dan kichik bo\'lishi kerak', 'warn'); return; }
+
+  btn.disabled = true;
+  ilog('⬆️ Yuklanmoqda...', 'info');
+
+  try {
+    const collectionName = type === 'categories' ? 'categories' : 'topics';
+
+    // 1. Eski rasmni o'chirish (agar bo'lsa) — fayl nomi farqli bo'lishi mumkin (masalan .jpg -> .png)
+    const docSnap = await db.collection(collectionName).doc(targetSlug).get();
+    const oldImageUrl = docSnap.exists ? docSnap.data().imageUrl : null;
+    if (oldImageUrl) {
+      try {
+        const oldRef = storage.refFromURL(oldImageUrl);
+        await oldRef.delete();
+        ilog('🗑 Eski rasm o\'chirildi', 'info');
+      } catch (delErr) {
+        ilog('⚠️ Eski rasmni o\'chirib bo\'lmadi (davom etiladi): ' + delErr.message, 'warn');
+      }
+    }
+
+    // 2. Yangi rasmni doimiy nom bilan yuklash (kengaytma saqlanadi, lekin asosiy nom doim bir xil)
+    const ext = file.name.split('.').pop().toLowerCase();
+    const path = `${type}/${targetSlug}.${ext}`;
+    const ref = storage.ref(path);
+    await ref.put(file, { contentType: file.type });
+    const url = await ref.getDownloadURL();
+
+    // 3. Firestore ga set(merge:true) bilan yozish — doc mavjud bo'lmasa ham xato bermaydi
+    await db.collection(collectionName).doc(targetSlug).set({
+      imageUrl: url,
+      imagePath: path,
+      updatedAt: TS()
+    }, { merge: true });
+
+    ilog('✅ Saqlandi: ' + targetSlug, 'ok');
+    ilog('URL: ' + url, 'info');
+    loadImgTargets();
+  } catch (e) {
+    ilog('❌ Xato: ' + e.message, 'err');
+  }
+  btn.disabled = false;
+}
+
+async function loadImgGallery() {
+  const type = document.getElementById('img-type').value;
+  const gallery = document.getElementById('img-gallery');
+  gallery.innerHTML = '<div style="grid-column:1/-1;color:var(--text2);font-size:13px">Yuklanmoqda...</div>';
+
+  let snap;
+  if (type === 'categories') {
+    snap = await db.collection('categories').get();
+  } else {
+    snap = await db.collection('topics').where('type','==','folder').get();
+  }
+
+  const withImages = snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(it => it.imageUrl);
+
+  if (withImages.length === 0) {
+    gallery.innerHTML = '<div style="grid-column:1/-1;color:var(--text2);font-size:13px">Hali rasm yuklanmagan</div>';
+    return;
+  }
+
+  gallery.innerHTML = withImages.map(it => `
+    <div style="text-align:center">
+      <img src="${it.imageUrl}" style="width:100%;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--text2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.title || it.slug}</div>
+      <button onclick="removeImage('${type}','${it.slug || it.id}')" style="font-size:11px;color:#e53e3e;background:none;border:none;cursor:pointer;padding:2px">✕ o'chirish</button>
+    </div>
+  `).join('');
+}
+
+async function removeImage(type, slug) {
+  if (!confirm('Rasmni o\'chirishni tasdiqlaysizmi?')) return;
+  const collectionName = type === 'categories' ? 'categories' : 'topics';
+
+  try {
+    const docSnap = await db.collection(collectionName).doc(slug).get();
+    const data = docSnap.data() || {};
+    if (data.imagePath) {
+      await storage.ref(data.imagePath).delete();
+    } else if (data.imageUrl) {
+      await storage.refFromURL(data.imageUrl).delete();
+    }
+  } catch (e) {
+    console.warn('Storage delete failed (continuing):', e.message);
+  }
+
+  await db.collection(collectionName).doc(slug).set({
+    imageUrl: firebase.firestore.FieldValue.delete(),
+    imagePath: firebase.firestore.FieldValue.delete()
+  }, { merge: true });
+
+  loadImgTargets();
+}
+
+// Image manager ni gen-card ko'ringanda yuklash
+const origGenCardShow = document.getElementById('gen-card');
+if (origGenCardShow) {
+  const obs = new MutationObserver(() => {
+    if (origGenCardShow.style.display !== 'none') {
+      loadImgTargets();
+    }
+  });
+  obs.observe(origGenCardShow, { attributes: true, attributeFilter: ['style'] });
 }
 
 // ===== GENERATE LEVELS =====
