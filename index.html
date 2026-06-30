@@ -1122,10 +1122,18 @@ async function renderCategories() {
 
   // Legacy flags doim birinchi
   console.log('[legacy flags category loaded]');
+
+  // Bayroqlar uchun rasm Firestore'da alohida saqlanishi mumkin (status:archived bo'lsa ham)
+  let legacyImageUrl = null;
+  try {
+    const flagDoc = await db.collection('categories').doc('dunyo-davlatlari-bayroqlari').get();
+    if (flagDoc.exists) legacyImageUrl = flagDoc.data().imageUrl || null;
+  } catch(e) { /* indamay davom etamiz */ }
+
   const legacyCard = catCardHTML(
     LEGACY_FLAGS_CATEGORY.slug, LEGACY_FLAGS_CATEGORY.slug,
     LEGACY_FLAGS_CATEGORY.emoji, LEGACY_FLAGS_CATEGORY.title,
-    LEGACY_FLAGS_CATEGORY.description, LEGACY_FLAGS_CATEGORY.color, true
+    LEGACY_FLAGS_CATEGORY.description, LEGACY_FLAGS_CATEGORY.color, true, legacyImageUrl
   );
 
   try {
@@ -2076,7 +2084,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v28");
+console.log("DUNYO QUIZ version: grammar-v29");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
