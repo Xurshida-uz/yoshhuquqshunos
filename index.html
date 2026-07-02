@@ -2045,18 +2045,50 @@ async function renderProfile() {
     document.getElementById('ps-tests').textContent = results.length;
     document.getElementById('ps-best').textContent = best + '%';
     document.getElementById('ps-avg').textContent = avgPct + '%';
-    document.getElementById('history-list').innerHTML = results.map(r => {
-      const cat = CATEGORIES.find(c => c.id === r.cat);
-      const date = r.date?.toDate ? r.date.toDate().toLocaleDateString('uz-UZ') : '';
-      return `<div class="history-item">
-        <div class="history-icon">${cat?.emoji || '📊'}</div>
-        <div class="history-info">
-          <div class="history-cat">${cat?.name || r.cat || 'Test'}</div>
-          <div class="history-date">${date} · ${r.total||0} savol · ${r.avg||0}s</div>
+    // Kategoriya bo'yicha statistika
+    const byCat = {};
+    results.forEach(r => {
+      if (!byCat[r.cat]) byCat[r.cat] = { count: 0, pctSum: 0, total: 0 };
+      byCat[r.cat].count++;
+      byCat[r.cat].pctSum += r.pct || 0;
+      byCat[r.cat].total += r.total || 0;
+    });
+    const catStatsHTML = Object.entries(byCat).map(([catId, stat]) => {
+      const cat = CATEGORIES.find(c => c.id === catId);
+      const avgCatPct = Math.round(stat.pctSum / stat.count);
+      const color = avgCatPct >= 80 ? '#10b981' : avgCatPct >= 50 ? '#f59e0b' : '#ef4444';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--card-bg);border-radius:12px;margin-bottom:8px;border:1px solid var(--border)">
+        <div style="font-size:22px">${cat?.emoji || '📊'}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--text1)">${cat?.name || catId}</div>
+          <div style="font-size:11px;color:var(--text2)">${stat.count} ta test · ${stat.total} savol</div>
+          <div style="margin-top:5px;height:4px;background:var(--border);border-radius:2px">
+            <div style="height:100%;width:${avgCatPct}%;background:${color};border-radius:2px"></div>
+          </div>
         </div>
-        <div class="history-score">${r.pct||0}%</div>
+        <div style="font-size:18px;font-weight:800;color:${color}">${avgCatPct}%</div>
       </div>`;
     }).join('');
+
+    document.getElementById('history-list').innerHTML = `
+      <div style="padding:0 16px">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;letter-spacing:.5px">KATEGORIYALAR BO'YICHA</div>
+        ${catStatsHTML}
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin:18px 0 10px;letter-spacing:.5px">SO'NGGI TESTLAR</div>
+        ${results.map(r => {
+          const cat = CATEGORIES.find(c => c.id === r.cat);
+          const date = r.date?.toDate ? r.date.toDate().toLocaleDateString('uz-UZ') : '';
+          const color = (r.pct||0) >= 80 ? '#10b981' : (r.pct||0) >= 50 ? '#f59e0b' : '#ef4444';
+          return `<div class="history-item">
+            <div class="history-icon">${cat?.emoji || '📊'}</div>
+            <div class="history-info">
+              <div class="history-cat">${cat?.name || r.cat || 'Test'}</div>
+              <div class="history-date">${date} · ${r.total||0} savol · ${r.avg||0}s</div>
+            </div>
+            <div class="history-score" style="color:${color}">${r.pct||0}%</div>
+          </div>`;
+        }).join('')}
+      </div>`;
   } catch (e) {
     console.error('[renderProfile error]', e.code, e.message);
     document.getElementById('history-list').innerHTML = `<div class="loading">Xatolik: ${e.code || e.message}</div>`;
@@ -2084,7 +2116,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v29");
+console.log("DUNYO QUIZ version: grammar-v30");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
