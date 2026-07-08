@@ -443,9 +443,17 @@
       <div class="top-logo">🏆 Reyting</div>
     </div>
     <div class="lb-wrap">
-      <div class="lb-tabs">
-        <button class="lb-tab active" onclick="showLB('score',this)">🏆 Eng yuqori ball</button>
+      <div class="lb-tabs" style="display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 12px">
+        <button class="lb-tab active" onclick="showLB('score',this)">🏆 Umumiy</button>
+        <button class="lb-tab" onclick="showLB('weekly',this)">📅 Haftalik</button>
+        <button class="lb-tab" onclick="showLB('monthly',this)">📆 Oylik</button>
         <button class="lb-tab" onclick="showLB('speed',this)">⚡ Eng tez</button>
+        <button class="lb-tab" onclick="showLB('xp',this)">⭐ XP</button>
+      </div>
+      <div id="lb-cat-filter" style="display:none;padding:0 16px 10px">
+        <select id="lb-cat-select" onchange="showLB('category',null)" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid var(--border);font-size:14px;background:var(--card-bg);color:var(--text1)">
+          <option value="">Kategoriya tanlang...</option>
+        </select>
       </div>
       <div id="lb-list"><div class="loading">Yuklanmoqda...</div></div>
     </div>
@@ -1820,10 +1828,9 @@ function shareResult() {
 // User ni to'g'ridan qabul qiluvchi helper
 async function saveResultForUser(user, lr, name) {
 
-  // result.pct va result.avg mavjudligini tekshirish
   const newPct = (lr && lr.pct !== undefined && lr.pct !== null) ? Number(lr.pct) : null;
   const newAvg = (lr && lr.avg !== undefined && lr.avg !== null) ? Number(lr.avg) : null;
-
+  const catId = lr.catId || '';
 
   if (newPct === null || newAvg === null || isNaN(newPct) || isNaN(newAvg)) {
     console.error('[saveResultForUser] result.pct or result.avg missing!', lr);
@@ -1836,57 +1843,122 @@ async function saveResultForUser(user, lr, name) {
     uid: user.uid,
     pct: newPct,
     avg: newAvg,
-    cat: lr.catId || '',
+    cat: catId,
     total: Number(lr.total) || 0,
     correct: Number(lr.score) || 0,
     date: firebase.firestore.FieldValue.serverTimestamp()
   });
 
-  // 2. Leaderboard ni oldingi qiymat bilan taqqoslab yangilash
+  // Hafta va oy key lari
+  const now = new Date();
+  const weekKey = `${now.getFullYear()}-W${String(Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7)).padStart(2,'0')}`;
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  // 2. Umumiy leaderboard yangilash
   const lbRef = db.collection('leaderboard').doc(user.uid);
   const lbDoc = await lbRef.get();
-  const existingData = lbDoc.exists ? lbDoc.data() : null;
+  const existing = lbDoc.exists ? lbDoc.data() : {};
+  const lbName = name || existing.name || '???';
+  const prevPct = typeof existing.bestPct === 'number' ? existing.bestPct : -1;
+  const prevAvg = typeof existing.bestAvg === 'number' ? existing.bestAvg : 999;
+  const prevTotal = typeof existing.totalTests === 'number' ? existing.totalTests : 0;
+  const prevXP = typeof existing.xp === 'number' ? existing.xp : 0;
 
-  // bestPct va bestAvg faqat haqiqiy raqam bo'lsa olinadi
-  const prevPct = (existingData && typeof existingData.bestPct === 'number') ? existingData.bestPct : null;
-  const prevAvg = (existingData && typeof existingData.bestAvg === 'number') ? existingData.bestAvg : null;
-  const lbName = name || (existingData && existingData.name) || '???';
+  const xpGain = Math.round(newPct / 10) + (newPct === 100 ? 5 : 0);
+  const newXP = prevXP + xpGain;
+  const newTotal = prevTotal + 1;
 
-  // Yangilash mantiqi:
-  // 1. Avvalgi ball yo'q → yangilash
-  // 2. Yangi ball yuqori → yangilash
-  // 3. Ball teng, vaqt tezroq → faqat bestAvg yangilash
-  let shouldUpdate = false;
-  let newLbData = { name: lbName, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  const lbUpdate = {
+    name: lbName,
+    totalTests: newTotal,
+    xp: newXP,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
 
-  if (prevPct === null) {
-    // Birinchi marta
-    shouldUpdate = true;
-    newLbData.bestPct = newPct;
-    newLbData.bestAvg = newAvg;
-  } else if (newPct > prevPct) {
-    // Yangi rekord
-    shouldUpdate = true;
-    newLbData.bestPct = newPct;
-    newLbData.bestAvg = newAvg;
-  } else if (newPct === prevPct && prevAvg !== null && newAvg < prevAvg) {
-    // Ball teng, tezroq
-    shouldUpdate = true;
-    newLbData.bestPct = newPct;
-    newLbData.bestAvg = newAvg;
-  }
-
-  if (shouldUpdate) {
-    try {
-      await lbRef.set(newLbData, { merge: true });
-    } catch(e) {
-      console.error('[leaderboard save error]', e.code, e.message);
-      showToast(`❌ Reyting saqlanmadi: ${e.code || e.message}`);
-    }
+  if (newPct > prevPct || (newPct === prevPct && newAvg < prevAvg)) {
+    lbUpdate.bestPct = newPct;
+    lbUpdate.bestAvg = newAvg;
   } else {
+    lbUpdate.bestPct = prevPct >= 0 ? prevPct : newPct;
+    lbUpdate.bestAvg = prevAvg < 999 ? prevAvg : newAvg;
   }
 
-  // 3. users da bestPct yangilash
+  try { await lbRef.set(lbUpdate, { merge: true }); }
+  catch(e) { console.error('[leaderboard save error]', e.code, e.message); }
+
+  // 3. Kategoriya leaderboard yangilash
+  if (catId) {
+    const catLbRef = db.collection('categoryLeaderboard').doc(catId).collection('users').doc(user.uid);
+    const catDoc = await catLbRef.get();
+    const catExisting = catDoc.exists ? catDoc.data() : {};
+    const prevCatPct = typeof catExisting.bestPct === 'number' ? catExisting.bestPct : -1;
+    const prevCatAvg = typeof catExisting.bestAvg === 'number' ? catExisting.bestAvg : 999;
+
+    const catUpdate = {
+      name: lbName,
+      totalTests: (catExisting.totalTests || 0) + 1,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if (newPct > prevCatPct || (newPct === prevCatPct && newAvg < prevCatAvg)) {
+      catUpdate.bestPct = newPct;
+      catUpdate.bestAvg = newAvg;
+    } else {
+      catUpdate.bestPct = prevCatPct >= 0 ? prevCatPct : newPct;
+      catUpdate.bestAvg = prevCatAvg < 999 ? prevCatAvg : newAvg;
+    }
+    try { await catLbRef.set(catUpdate, { merge: true }); }
+    catch(e) { console.error('[categoryLeaderboard error]', e.code); }
+  }
+
+  // 4. Haftalik leaderboard yangilash
+  const weekRef = db.collection('weeklyLeaderboard').doc(weekKey).collection('users').doc(user.uid);
+  const weekDoc = await weekRef.get();
+  const weekEx = weekDoc.exists ? weekDoc.data() : {};
+  try {
+    await weekRef.set({
+      name: lbName,
+      xp: (weekEx.xp || 0) + xpGain,
+      totalTests: (weekEx.totalTests || 0) + 1,
+      weekKey,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  } catch(e) { console.error('[weeklyLeaderboard error]', e.code); }
+
+  // 5. Oylik leaderboard yangilash
+  const monthRef = db.collection('monthlyLeaderboard').doc(monthKey).collection('users').doc(user.uid);
+  const monthDoc = await monthRef.get();
+  const monthEx = monthDoc.exists ? monthDoc.data() : {};
+  try {
+    await monthRef.set({
+      name: lbName,
+      xp: (monthEx.xp || 0) + xpGain,
+      totalTests: (monthEx.totalTests || 0) + 1,
+      monthKey,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  } catch(e) { console.error('[monthlyLeaderboard error]', e.code); }
+
+  // 6. Badges yangilash
+  if (catId) {
+    const CAT_BADGE_MAP = {
+      'english-grammar': 'grammarMaster',
+      'english-vocabulary': 'vocabularyMaster',
+      'bayroqlar': 'flagsMaster',
+      'huquq': 'lawMaster'
+    };
+    const badge = CAT_BADGE_MAP[catId];
+    if (badge && newPct >= 80) {
+      const badgeRef = db.collection('badges').doc(user.uid);
+      try {
+        await badgeRef.set({
+          [badge]: true,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      } catch(e) { console.error('[badges error]', e.code); }
+    }
+  }
+
+  // 7. users da bestPct yangilash
   const userRef = db.collection('users').doc(user.uid);
   const userDoc = await userRef.get();
   const prevUserPct = (userDoc.exists && typeof userDoc.data().bestPct === 'number')
@@ -1900,7 +1972,6 @@ async function saveResultForUser(user, lr, name) {
     }, { merge: true });
   }
 
-  // 4. Faqat muvaffaqiyatdan keyin localStorage tozalash
   if (lr) lr.savedToDb = true;
 }
 
@@ -1923,14 +1994,17 @@ async function trySaveGuestResult(user, name) {
 
 async function saveResult(pct, avg, fromLastResult = false) {
   try {
-    // lastResult dan yoki hozirgi o'yindan ma'lumot olish
     const savePct = fromLastResult ? lastResult.pct : pct;
     const saveAvg = fromLastResult ? lastResult.avg : avg;
     const saveCatId = fromLastResult ? lastResult.catId : (currentCat?.id || '');
     const saveTotal = fromLastResult ? lastResult.total : quiz.length;
     const saveCorrect = fromLastResult ? lastResult.score : score;
+    const now = new Date();
+    const weekKey = `${now.getFullYear()}-W${String(Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7)).padStart(2,'0')}`;
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const xpGain = Math.round(savePct / 10) + (savePct === 100 ? 5 : 0);
 
-    // 1. Natijani saqlash (private) — phone YO'Q
+    // 1. results kolleksiyasiga yozish
     await db.collection('results').add({
       uid: currentUser.uid,
       pct: savePct,
@@ -1941,58 +2015,167 @@ async function saveResult(pct, avg, fromLastResult = false) {
       date: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    // 2. Private users koleksiyasini yangilash
+    // 2. users yangilash
     const userRef = db.collection('users').doc(currentUser.uid);
     const userDoc = await userRef.get();
-    if (!userDoc.exists || (userDoc.data().bestPct || 0) < savePct) {
+    const userData = userDoc.exists ? userDoc.data() : {};
+    if (!userDoc.exists || (userData.bestPct || 0) < savePct) {
       await userRef.set({
         bestPct: savePct,
         bestAvg: saveAvg,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
+    }
 
-      // 3. Public leaderboard koleksiyasini yangilash (phone YO'Q)
-      const lbRef = db.collection('leaderboard').doc(currentUser.uid);
-      const name = userDoc.exists && userDoc.data().name ? userDoc.data().name : '???';
-      // leaderboard: faqat public ma'lumotlar — phone HECH QACHON
-      await lbRef.set({
-        name,
-        bestPct: savePct,
-        bestAvg: saveAvg,
+    // 3. Umumiy leaderboard
+    const lbRef = db.collection('leaderboard').doc(currentUser.uid);
+    const lbDoc = await lbRef.get();
+    const lbEx = lbDoc.exists ? lbDoc.data() : {};
+    const lbName = userData.name || lbEx.name || '???';
+    const prevPct = typeof lbEx.bestPct === 'number' ? lbEx.bestPct : -1;
+    const prevAvg = typeof lbEx.bestAvg === 'number' ? lbEx.bestAvg : 999;
+    const prevXP = typeof lbEx.xp === 'number' ? lbEx.xp : 0;
+
+    const lbUpdate = {
+      name: lbName,
+      totalTests: (lbEx.totalTests || 0) + 1,
+      xp: prevXP + xpGain,
+      bestPct: savePct > prevPct ? savePct : (prevPct >= 0 ? prevPct : savePct),
+      bestAvg: (savePct > prevPct || (savePct === prevPct && saveAvg < prevAvg)) ? saveAvg : (prevAvg < 999 ? prevAvg : saveAvg),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await lbRef.set(lbUpdate, { merge: true });
+
+    // 4. Kategoriya leaderboard
+    if (saveCatId) {
+      const catLbRef = db.collection('categoryLeaderboard').doc(saveCatId).collection('users').doc(currentUser.uid);
+      const catDoc = await catLbRef.get();
+      const catEx = catDoc.exists ? catDoc.data() : {};
+      const prevCatPct = typeof catEx.bestPct === 'number' ? catEx.bestPct : -1;
+      const prevCatAvg = typeof catEx.bestAvg === 'number' ? catEx.bestAvg : 999;
+      await catLbRef.set({
+        name: lbName,
+        totalTests: (catEx.totalTests || 0) + 1,
+        bestPct: savePct > prevCatPct ? savePct : (prevCatPct >= 0 ? prevCatPct : savePct),
+        bestAvg: (savePct > prevCatPct || (savePct === prevCatPct && saveAvg < prevCatAvg)) ? saveAvg : (prevCatAvg < 999 ? prevCatAvg : saveAvg),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
     }
+
+    // 5. Haftalik leaderboard
+    const weekRef = db.collection('weeklyLeaderboard').doc(weekKey).collection('users').doc(currentUser.uid);
+    const weekDoc = await weekRef.get();
+    const weekEx = weekDoc.exists ? weekDoc.data() : {};
+    await weekRef.set({
+      name: lbName,
+      xp: (weekEx.xp || 0) + xpGain,
+      totalTests: (weekEx.totalTests || 0) + 1,
+      weekKey,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    // 6. Oylik leaderboard
+    const monthRef = db.collection('monthlyLeaderboard').doc(monthKey).collection('users').doc(currentUser.uid);
+    const monthDoc = await monthRef.get();
+    const monthEx = monthDoc.exists ? monthDoc.data() : {};
+    await monthRef.set({
+      name: lbName,
+      xp: (monthEx.xp || 0) + xpGain,
+      totalTests: (monthEx.totalTests || 0) + 1,
+      monthKey,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    // 7. Badges
+    const CAT_BADGE_MAP = {
+      'english-grammar': 'grammarMaster',
+      'english-vocabulary': 'vocabularyMaster',
+      'bayroqlar': 'flagsMaster',
+      'huquq': 'lawMaster'
+    };
+    const badge = CAT_BADGE_MAP[saveCatId];
+    if (badge && savePct >= 80) {
+      await db.collection('badges').doc(currentUser.uid).set({
+        [badge]: true,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    }
+
   } catch(e) { console.error('[saveResult error]', e.code, e.message); }
 }
 
 async function loadLeaderboard(type) {
   const list = document.getElementById('lb-list');
+  const catFilter = document.getElementById('lb-cat-filter');
   list.innerHTML = '<div class="loading">Yuklanmoqda...</div>';
+
+  // Kategoriya filter faqat category tipida ko'rinadi
+  catFilter.style.display = type === 'category' ? 'block' : 'none';
+
+  // Kategoriya select ni to'ldirish (bir marta)
+  if (type === 'category') {
+    const catSel = document.getElementById('lb-cat-select');
+    if (catSel.options.length <= 1) {
+      CATEGORIES.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = (c.emoji || '') + ' ' + c.name;
+        catSel.appendChild(opt);
+      });
+    }
+  }
+
   try {
-    const field = type === 'score' ? 'bestPct' : 'bestAvg';
-    const order = type === 'score' ? 'desc' : 'asc';
-    const snap = await db.collection('leaderboard').orderBy(field, order).limit(20).get();
-    if (snap.empty) { list.innerHTML = '<div class="loading">Hali natijalar yo\'q</div>'; return; }
-    list.innerHTML = snap.docs.map((doc, i) => {
-      const d = doc.data();
+    let snap, field, order, data = [];
+    const now = new Date();
+    const weekKey = `${now.getFullYear()}-W${String(Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7)).padStart(2,'0')}`;
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+    if (type === 'score') {
+      snap = await db.collection('leaderboard').orderBy('bestPct','desc').limit(20).get();
+      data = snap.docs.map(d => ({ id: d.id, ...d.data(), val: (d.data().bestPct||0)+'%' }));
+    } else if (type === 'speed') {
+      snap = await db.collection('leaderboard').orderBy('bestAvg','asc').limit(20).get();
+      data = snap.docs.map(d => ({ id: d.id, ...d.data(), val: (d.data().bestAvg||0)+'s' }));
+    } else if (type === 'xp') {
+      snap = await db.collection('leaderboard').orderBy('xp','desc').limit(20).get();
+      data = snap.docs.map(d => ({ id: d.id, ...d.data(), val: '⭐'+(d.data().xp||0) }));
+    } else if (type === 'weekly') {
+      snap = await db.collection('weeklyLeaderboard').doc(weekKey).collection('users').orderBy('xp','desc').limit(20).get();
+      data = snap.docs.map(d => ({ id: d.id, ...d.data(), val: '⭐'+(d.data().xp||0) }));
+    } else if (type === 'monthly') {
+      snap = await db.collection('monthlyLeaderboard').doc(monthKey).collection('users').orderBy('xp','desc').limit(20).get();
+      data = snap.docs.map(d => ({ id: d.id, ...d.data(), val: '⭐'+(d.data().xp||0) }));
+    } else if (type === 'category') {
+      const catId = document.getElementById('lb-cat-select').value;
+      if (!catId) { list.innerHTML = '<div class="loading">Kategoriya tanlang</div>'; return; }
+      snap = await db.collection('categoryLeaderboard').doc(catId).collection('users').orderBy('bestPct','desc').limit(20).get();
+      data = snap.docs.map(d => ({ id: d.id, ...d.data(), val: (d.data().bestPct||0)+'%' }));
+    }
+
+    if (!data.length) { list.innerHTML = '<div class="loading">Hali natijalar yo\'q</div>'; return; }
+
+    list.innerHTML = data.map((d, i) => {
       const rClass = i===0?'r1':i===1?'r2':i===2?'r3':'r-other';
-      const val = type==='score'
-        ? (typeof d.bestPct === 'number' ? d.bestPct : 0)+'%'
-        : (typeof d.bestAvg === 'number' ? d.bestAvg : 0)+'s';
-      const name = d.name || '???';
-      const isMe = currentUser && doc.id === currentUser.uid;
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      const isMe = currentUser && d.id === currentUser.uid;
       return `<div class="lb-item ${isMe?'me':''}">
-        <span class="rank-num ${rClass}">${i+1}</span>
-        <span class="lb-name">${name}</span>
-        <span class="lb-score">${val}</span>
+        <span class="rank-num ${rClass}">${medal||i+1}</span>
+        <span class="lb-name">${d.name||'???'}${isMe?' (siz)':''}</span>
+        <span class="lb-score">${d.val}</span>
       </div>`;
     }).join('');
-  } catch (e) { list.innerHTML = '<div class="loading">Xatolik</div>'; }
+  } catch (e) {
+    console.error('[loadLeaderboard]', e);
+    list.innerHTML = '<div class="loading">Xatolik: ' + e.message + '</div>';
+  }
 }
 
 function showLB(type, el) {
-  document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
+  if (el) {
+    document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
   loadLeaderboard(type);
 }
 
@@ -2009,12 +2192,35 @@ async function renderProfile() {
   }
   const doc = await db.collection('users').doc(currentUser.uid).get();
   const name = doc.exists && doc.data().name ? doc.data().name : currentUser.phoneNumber || '?';
+
+  // Leaderboard dan XP va totalTests olish
+  const lbDoc = await db.collection('leaderboard').doc(currentUser.uid).get();
+  const lbData = lbDoc.exists ? lbDoc.data() : {};
+  const userXP = lbData.xp || 0;
+  const userTotalTests = lbData.totalTests || 0;
+
+  // Badges
+  const badgeDoc = await db.collection('badges').doc(currentUser.uid).get();
+  const badges = badgeDoc.exists ? badgeDoc.data() : {};
+  const BADGE_INFO = {
+    grammarMaster: { emoji: '📘', label: 'Grammar Master' },
+    vocabularyMaster: { emoji: '📚', label: 'Vocabulary Master' },
+    flagsMaster: { emoji: '🌍', label: 'Flags Master' },
+    lawMaster: { emoji: '⚖️', label: 'Law Master' }
+  };
+  const badgesHTML = Object.entries(BADGE_INFO)
+    .filter(([key]) => badges[key])
+    .map(([key, info]) => `<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:linear-gradient(135deg,#f59e0b22,#f59e0b11);border:1px solid #f59e0b44;border-radius:20px;font-size:12px;color:#f59e0b;font-weight:600">${info.emoji} ${info.label}</div>`)
+    .join('');
+
   el.innerHTML = `
     <div class="profile-hero">
       <div class="profile-avatar">${name.charAt(0)}</div>
       <div class="profile-name">${name}</div>
       <div class="profile-phone">${currentUser.phoneNumber || ''}</div>
+      <div style="margin-top:10px;font-size:18px;font-weight:800">⭐ ${userXP} XP</div>
     </div>
+    ${badgesHTML ? `<div style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px">${badgesHTML}</div>` : ''}
     <div class="profile-stats">
       <div class="p-stat"><div class="p-stat-n" id="ps-tests">—</div><div class="p-stat-l">Testlar</div></div>
       <div class="p-stat"><div class="p-stat-n" id="ps-best">—</div><div class="p-stat-l">Eng yuqori</div></div>
@@ -2116,7 +2322,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v30");
+console.log("DUNYO QUIZ version: grammar-v31");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
