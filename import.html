@@ -189,6 +189,22 @@
         <div class="log-box" id="repair-log" style="display:none;margin-top:12px"></div>
       </div>
       <div class="card" style="margin-top:12px">
+        <div class="card-title">🎖️ Foydalanuvchiga badge berish</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Foydalanuvchi UID si va badge turini tanlang. Badges faqat admin berishi mumkin.</p>
+        <input type="text" id="badge-uid" placeholder="Foydalanuvchi UID" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;font-size:14px;box-sizing:border-box">
+        <select id="badge-type" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;font-size:14px">
+          <option value="grammarMaster">📘 Grammar Master</option>
+          <option value="vocabularyMaster">📚 Vocabulary Master</option>
+          <option value="flagsMaster">🌍 Flags Master</option>
+          <option value="lawMaster">⚖️ Law Master</option>
+        </select>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-green" onclick="giveBadge(true)" style="flex:1">✅ Badge berish</button>
+          <button class="btn btn-red" onclick="giveBadge(false)" style="flex:1">❌ Badge olish</button>
+        </div>
+        <div class="log-box" id="badge-log" style="display:none;margin-top:12px"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
         <div class="card-title">🖼️ Kategoriya/Topic rasmlari</div>
         <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Dashboard kartalariga rasm yuklang. Rasm Firebase Storage ga saqlanadi va Firestore dagi <code>imageUrl</code> fieldga yoziladi.</p>
         <select id="img-type" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;font-size:14px">
@@ -886,6 +902,50 @@ if (origGenCardShow) {
     }
   });
   obs.observe(origGenCardShow, { attributes: true, attributeFilter: ['style'] });
+}
+
+// ===== BADGE MANAGER =====
+async function giveBadge(give) {
+  // Frontend himoya — admin emasmi?
+  const currentUser = auth.currentUser;
+  if (!currentUser || currentUser.uid !== ADMIN_UID) {
+    alert('Ruxsat yo\'q — faqat admin badge bera oladi');
+    return;
+  }
+
+  const uid = document.getElementById('badge-uid').value.trim();
+  const badge = document.getElementById('badge-type').value;
+  const logEl = document.getElementById('badge-log');
+  logEl.style.display = 'block';
+  logEl.innerHTML = '';
+
+  function blog(msg, t='info') {
+    logEl.innerHTML += '<div class="l-'+t+'">' + msg + '</div>';
+  }
+
+  if (!uid) { blog('⚠️ UID kiriting', 'warn'); return; }
+  if (!badge) { blog('⚠️ Badge turini tanlang', 'warn'); return; }
+
+  try {
+    // Server tomonida Firestore Rules isAdmin() ni tekshiradi
+    // (uid === ADMIN_UID — bu ikkinchi himoya qatlami)
+    if (give) {
+      await db.collection('badges').doc(uid).set({
+        [badge]: true,
+        updatedAt: TS()
+      }, { merge: true });
+      blog('✅ Badge berildi: ' + badge + ' → ' + uid, 'ok');
+    } else {
+      await db.collection('badges').doc(uid).set({
+        [badge]: firebase.firestore.FieldValue.delete(),
+        updatedAt: TS()
+      }, { merge: true });
+      blog('🗑 Badge olindi: ' + badge + ' → ' + uid, 'warn');
+    }
+  } catch(e) {
+    // Firestore Rules bloklasa bu yerda permission-denied xatosi chiqadi
+    blog('❌ ' + (e.code === 'permission-denied' ? 'Ruxsat yo\'q (Firestore Rules)' : e.message), 'err');
+  }
 }
 
 // ===== GENERATE LEVELS =====

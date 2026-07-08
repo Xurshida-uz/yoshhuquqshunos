@@ -1938,27 +1938,7 @@ async function saveResultForUser(user, lr, name) {
     }, { merge: true });
   } catch(e) { console.error('[monthlyLeaderboard error]', e.code); }
 
-  // 6. Badges yangilash
-  if (catId) {
-    const CAT_BADGE_MAP = {
-      'english-grammar': 'grammarMaster',
-      'english-vocabulary': 'vocabularyMaster',
-      'bayroqlar': 'flagsMaster',
-      'huquq': 'lawMaster'
-    };
-    const badge = CAT_BADGE_MAP[catId];
-    if (badge && newPct >= 80) {
-      const badgeRef = db.collection('badges').doc(user.uid);
-      try {
-        await badgeRef.set({
-          [badge]: true,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-      } catch(e) { console.error('[badges error]', e.code); }
-    }
-  }
-
-  // 7. users da bestPct yangilash
+  // 6. users da bestPct yangilash
   const userRef = db.collection('users').doc(user.uid);
   const userDoc = await userRef.get();
   const prevUserPct = (userDoc.exists && typeof userDoc.data().bestPct === 'number')
@@ -2085,21 +2065,6 @@ async function saveResult(pct, avg, fromLastResult = false) {
       monthKey,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-
-    // 7. Badges
-    const CAT_BADGE_MAP = {
-      'english-grammar': 'grammarMaster',
-      'english-vocabulary': 'vocabularyMaster',
-      'bayroqlar': 'flagsMaster',
-      'huquq': 'lawMaster'
-    };
-    const badge = CAT_BADGE_MAP[saveCatId];
-    if (badge && savePct >= 80) {
-      await db.collection('badges').doc(currentUser.uid).set({
-        [badge]: true,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-    }
 
   } catch(e) { console.error('[saveResult error]', e.code, e.message); }
 }
@@ -2322,7 +2287,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v31");
+console.log("DUNYO QUIZ version: grammar-v32");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
