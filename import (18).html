@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Import Tool — Dunyo Quiz Admin</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--purple:#6C63FF;--green:#16A34A;--red:#DC2626;--yellow:#D97706;--border:#E5E7EB;--bg:#F8F9FF;--card:#fff;--text:#111827;--text2:#6B7280}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+    #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+    .login-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;width:100%;max-width:400px;text-align:center}
+    .login-box h1{font-size:22px;font-weight:700;color:var(--purple);margin-bottom:4px}
+    .login-box p{font-size:13px;color:var(--text2);margin-bottom:24px}
+    .inp{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;margin-bottom:10px}
+    .inp:focus{border-color:var(--purple)}
+    .btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+    .btn-pri{background:var(--purple);color:white}
+    .btn-full{width:100%}
+    .btn-green{background:var(--green);color:white}
+    .btn-red{background:var(--red);color:white}
+    .btn-gray{background:#6B7280;color:white}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .err-msg{font-size:13px;color:var(--red);margin-top:8px;display:none}
+    #main-screen{display:none}
+    .topbar{background:var(--purple);color:white;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .topbar h1{font-size:16px;font-weight:700}
+    .logout-btn{background:rgba(255,255,255,.2);color:white;border:none;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer}
+    .wrap{max-width:900px;margin:0 auto;padding:24px 16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+    .card-title{font-size:15px;font-weight:600;margin-bottom:14px}
+    .steps{display:flex;gap:0;margin-bottom:24px}
+    .step{flex:1;text-align:center;position:relative}
+    .step::after{content:'';position:absolute;top:16px;left:50%;width:100%;height:2px;background:var(--border);z-index:0}
+    .step:last-child::after{display:none}
+    .step-dot{width:32px;height:32px;border-radius:50%;background:var(--border);color:var(--text2);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;position:relative;z-index:1}
+    .step.active .step-dot{background:var(--purple);color:white}
+    .step.done .step-dot{background:var(--green);color:white}
+    .step-label{font-size:11px;color:var(--text2)}
+    .step.active .step-label{color:var(--purple);font-weight:600}
+    .upload-zone{border:2px dashed var(--border);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer}
+    .upload-zone:hover{border-color:var(--purple);background:#F5F3FF}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px}
+    .stat-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+    .stat-n{font-size:22px;font-weight:700;color:var(--purple)}
+    .stat-l{font-size:11px;color:var(--text2);margin-top:3px}
+    .field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px}
+    .field-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;font-size:12px;font-weight:500}
+    .f-ok{background:#DCFCE7;color:#15803D}
+    .f-miss{background:#FEE2E2;color:#991B1B}
+    .table-wrap{overflow-x:auto;max-height:280px;overflow-y:auto}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{text-align:left;padding:7px 10px;border-bottom:2px solid var(--border);color:var(--text2)}
+    td{padding:7px 10px;border-bottom:1px solid var(--border)}
+    .badge{display:inline-block;padding:2px 7px;border-radius:99px;font-size:11px;font-weight:600}
+    .b-ok{background:#DCFCE7;color:#15803D}
+    .b-warn{background:#FEF3C7;color:#92400E}
+    .b-err{background:#FEE2E2;color:#991B1B}
+    .mode-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    .mode-btn{padding:7px 14px;border:1.5px solid var(--border);border-radius:6px;background:var(--card);font-size:13px;cursor:pointer}
+    .mode-btn.active{border-color:var(--purple);background:#EEF0FF;color:var(--purple);font-weight:600}
+    .progress-bar{height:8px;background:var(--border);border-radius:99px;overflow:hidden;margin:8px 0}
+    .prog-fill{height:8px;background:var(--purple);border-radius:99px;transition:width .3s}
+    .log-box{background:#1A1B2E;border-radius:10px;padding:14px;font-size:12px;font-family:monospace;max-height:400px;overflow-y:auto;margin-top:12px}
+    .l-ok{color:#4ADE80}.l-err{color:#F87171}.l-info{color:#94A3B8}.l-warn{color:#FCD34D}
+    .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <h1>🌍 Dunyo Quiz</h1>
+    <p>Import Tool — Faqat Admin</p>
+    <input class="inp" id="email" type="email" placeholder="Admin email"/>
+    <input class="inp" id="pass" type="password" placeholder="Parol"/>
+    <div class="err-msg" id="login-err"></div>
+    <button class="btn btn-pri btn-full" id="login-btn" onclick="doLogin()">Kirish</button>
+  </div>
+</div>
+
+<div id="main-screen">
+  <div class="topbar">
+    <h1>📥 Import Tool</h1>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="user-lbl" style="font-size:13px;opacity:.8"></span>
+      <button class="logout-btn" onclick="auth.signOut()">Chiqish</button>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="steps">
+      <div class="step active" id="s1"><div class="step-dot">1</div><div class="step-label">Fayl</div></div>
+      <div class="step" id="s2"><div class="step-dot">2</div><div class="step-label">Preview</div></div>
+      <div class="step" id="s3"><div class="step-dot">3</div><div class="step-label">Import</div></div>
+      <div class="step" id="s4"><div class="step-dot">4</div><div class="step-label">Natija</div></div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div id="step1">
+      <div class="card">
+        <div class="card-title">📁 JSON fayl yuklang</div>
+        <div class="upload-zone" onclick="document.getElementById('file-inp').click()">
+          <input type="file" id="file-inp" accept=".json" style="display:none" onchange="onFileSelect(event)"/>
+          <div style="font-size:40px;margin-bottom:10px">📂</div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:6px">JSON faylni tanlang</div>
+          <div style="font-size:13px;color:var(--text2)">yoki shu yerga sudrab tashlang</div>
+        </div>
+        <div id="file-ok" style="display:none;margin-top:12px;padding:10px 14px;background:#F0FDF4;border-radius:8px;font-size:13px;color:var(--green)"></div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="step2" style="display:none">
+      <div class="card">
+        <div class="card-title">📊 Data tarkibi</div>
+        <div class="stats-grid" id="prev-stats"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">✅ Maydon tekshiruvi</div>
+        <div class="field-grid" id="field-grid"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Birinchi 5 ta savol</div>
+        <div class="table-wrap">
+          <table><thead><tr><th>#</th><th>Word</th><th>Savol</th><th>Level</th><th>Status</th></tr></thead>
+          <tbody id="prev-body"></tbody></table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚙️ Import rejimi</div>
+        <div class="mode-row">
+          <button class="mode-btn active" id="m-skip" onclick="setMode('skip')">⏭ Skip</button>
+          <button class="mode-btn" id="m-update" onclick="setMode('update')">🔄 Update</button>
+          <button class="mode-btn" id="m-over" onclick="setMode('overwrite')">♻️ Overwrite</button>
+        </div>
+        <div id="mode-info" style="font-size:13px;color:var(--text2)">Mavjud documentlar o'tkazib yuboriladi.</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-gray" onclick="goStep(1)">← Orqaga</button>
+        <button class="btn btn-green" onclick="goStep(3)">▶ Importni boshlash</button>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div id="step3" style="display:none">
+      <div class="card">
+        <div class="card-title">⏳ Import jarayoni</div>
+        <div id="prog-lbl" style="font-size:13px;color:var(--text2);margin-bottom:6px"></div>
+        <div class="progress-bar"><div class="prog-fill" id="prog-fill" style="width:0"></div></div>
+        <div id="prog-stat" style="font-size:13px;color:var(--text2);margin-top:6px"></div>
+        <div class="log-box" id="log"></div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div id="step4" style="display:none">
+      <div class="card" style="text-align:center">
+        <div id="res-icon" style="font-size:48px;margin-bottom:12px">🎉</div>
+        <h2 id="res-title" style="font-size:20px;font-weight:700;margin-bottom:8px"></h2>
+        <p id="res-desc" style="font-size:14px;color:var(--text2);margin-bottom:20px"></p>
+        <div class="stats-grid" id="res-stats" style="max-width:600px;margin:0 auto 20px"></div>
+        <div class="btn-row" style="justify-content:center">
+          <button class="btn btn-pri" onclick="window.open('https://dunyoquiz.uz','_blank')">🌍 Saytni ko'rish</button>
+          <button class="btn btn-gray" onclick="goStep(1)">↺ Yangi import</button>
+          <button class="btn btn-red" onclick="doDelete()">🗑 O'chirish</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GENERATE LEVELS -->
+    <div id="gen-card" style="display:none;margin-top:16px">
+      <div class="card">
+        <div class="card-title">⚙️ Vocabulary Level Topics yaratish</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Words 101–1000 uchun level topics yaratadi (36 ta).</p>
+        <button class="btn btn-green" onclick="createMissingFolders()" id="folders-btn" style="margin-bottom:10px">📂 Create Missing Folders (xavfsiz)</button>
+        <br>
+        <button class="btn btn-green" onclick="generateLevels()" id="gen-btn">🚀 Generate Vocabulary Levels</button>
+        <div class="progress-bar" id="gen-bar" style="display:none"><div class="prog-fill" id="gen-fill" style="width:0"></div></div>
+        <div class="log-box" id="gen-log" style="display:none;margin-top:12px"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">🔧 Grammar Topic Repair</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Grammar folder topiclarning parentTopicId ni tozalaydi va categorySlug ni to'g'rilaydi.</p>
+        <button class="btn btn-red" onclick="repairGrammarTopics()" id="repair-btn">🔧 Repair Grammar Topics</button>
+        <div class="log-box" id="repair-log" style="display:none;margin-top:12px"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">🎖️ Foydalanuvchiga badge berish</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Foydalanuvchi UID si va badge turini tanlang. Badges faqat admin berishi mumkin.</p>
+        <input type="text" id="badge-uid" placeholder="Foydalanuvchi UID" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;font-size:14px;box-sizing:border-box">
+        <select id="badge-type" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;font-size:14px">
+          <option value="grammarMaster">📘 Grammar Master</option>
+          <option value="vocabularyMaster">📚 Vocabulary Master</option>
+          <option value="flagsMaster">🌍 Flags Master</option>
+          <option value="lawMaster">⚖️ Law Master</option>
+        </select>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-green" onclick="giveBadge(true)" style="flex:1">✅ Badge berish</button>
+          <button class="btn btn-red" onclick="giveBadge(false)" style="flex:1">❌ Badge olish</button>
+        </div>
+        <div class="log-box" id="badge-log" style="display:none;margin-top:12px"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">🖼️ Kategoriya/Topic rasmlari</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Dashboard kartalariga rasm yuklang. Rasm Firebase Storage ga saqlanadi va Firestore dagi <code>imageUrl</code> fieldga yoziladi.</p>
+        <select id="img-type" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;font-size:14px">
+          <option value="categories">Kategoriya</option>
+          <option value="topics">Topic (folder)</option>
+        </select>
+        <select id="img-target" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;font-size:14px">
+          <option value="">Yuklanmoqda...</option>
+        </select>
+        <input type="file" id="img-file" accept="image/*" style="width:100%;margin-bottom:10px">
+        <div id="img-preview" style="display:none;margin-bottom:10px">
+          <img id="img-preview-img" style="max-width:200px;max-height:120px;border-radius:8px;border:1px solid var(--border)">
+        </div>
+        <button class="btn btn-green" onclick="uploadImage()" id="img-upload-btn">⬆️ Yuklash va saqlash</button>
+        <div class="log-box" id="img-log" style="display:none;margin-top:12px"></div>
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2)">Mavjud rasmlar:</div>
+          <div id="img-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ADMIN_UID = 'HUToMkDnMFRcuJWhXL6MRfm00bl2';
+firebase.initializeApp({
+  apiKey:"AIzaSyC_ZP_n5H97f9yaPPmjqwrmDaPux8GvBX4",
+  authDomain:"yoshhuquqshunos.firebaseapp.com",
+  projectId:"yoshhuquqshunos",
+  storageBucket:"yoshhuquqshunos.firebasestorage.app",
+  messagingSenderId:"145645920762",
+  appId:"1:145645920762:web:498ebdef77cd229013c443"
+});
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+const TS = () => firebase.firestore.FieldValue.serverTimestamp();
+
+let importData = null;
+let importMode = 'skip';
+let lastCatSlug = null;
+let stats = {cats:0,topics:0,levels:0,questions:0,skipped:0,errors:0};
+
+// Topic → parent folder mapping
+const TOPIC_PARENT = {
+  'first-100-words':   'english-vocabulary-1000',
+  'second-100-words':  'english-vocabulary-1000',
+  'third-100-words':   'english-vocabulary-1000',
+  'fourth-100-words':  'english-vocabulary-1000',
+  'fifth-100-words':   'english-vocabulary-1000',
+  'sixth-100-words':   'english-vocabulary-1000',
+  'seventh-100-words': 'english-vocabulary-1000',
+  'eighth-100-words':  'english-vocabulary-1000',
+  'ninth-100-words':   'english-vocabulary-1000',
+  'tenth-100-words':   'english-vocabulary-1000',
+};
+
+// Level → parent topic mapping
+const LEVEL_TOPIC = {
+  'words-1-25':'first-100-words','words-26-50':'first-100-words','words-51-75':'first-100-words','words-76-100':'first-100-words',
+  'words-101-125':'second-100-words','words-126-150':'second-100-words','words-151-175':'second-100-words','words-176-200':'second-100-words',
+  'words-201-225':'third-100-words','words-226-250':'third-100-words','words-251-275':'third-100-words','words-276-300':'third-100-words',
+  'words-301-325':'fourth-100-words','words-326-350':'fourth-100-words','words-351-375':'fourth-100-words','words-376-400':'fourth-100-words',
+  'words-401-425':'fifth-100-words','words-426-450':'fifth-100-words','words-451-475':'fifth-100-words','words-476-500':'fifth-100-words',
+  'words-501-525':'sixth-100-words','words-526-550':'sixth-100-words','words-551-575':'sixth-100-words','words-576-600':'sixth-100-words',
+  'words-601-625':'seventh-100-words','words-626-650':'seventh-100-words','words-651-675':'seventh-100-words','words-676-700':'seventh-100-words',
+  'words-701-725':'eighth-100-words','words-726-750':'eighth-100-words','words-751-775':'eighth-100-words','words-776-800':'eighth-100-words',
+  'words-801-825':'ninth-100-words','words-826-850':'ninth-100-words','words-851-875':'ninth-100-words','words-876-900':'ninth-100-words',
+  'words-901-925':'tenth-100-words','words-926-950':'tenth-100-words','words-951-975':'tenth-100-words','words-976-1000':'tenth-100-words',
+};
+
+// ===== AUTH =====
+auth.onAuthStateChanged(u => {
+  if (u && u.uid === ADMIN_UID) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-screen').style.display = 'block';
+    document.getElementById('user-lbl').textContent = u.email;
+    document.getElementById('gen-card').style.display = 'block';
+  } else if (u) {
+    auth.signOut();
+    showErr("Ruxsat yo'q");
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('main-screen').style.display = 'none';
+  }
+});
+
+function doLogin() {
+  const e = document.getElementById('email').value.trim();
+  const p = document.getElementById('pass').value;
+  if (!e||!p) { showErr('Email va parolni kiriting'); return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled=true; btn.textContent='Kirilmoqda...';
+  hideErr();
+  auth.signInWithEmailAndPassword(e,p).catch(err => {
+    showErr("Noto'g'ri email yoki parol");
+    btn.disabled=false; btn.textContent='Kirish';
+  });
+}
+function showErr(m){const el=document.getElementById('login-err');el.textContent=m;el.style.display='block';}
+function hideErr(){document.getElementById('login-err').style.display='none';}
+
+// ===== NORMALIZE JSON =====
+function normalizeData(raw) {
+  console.log('[json keys]', Object.keys(raw));
+
+  // topics: array yoki single
+  const topics = Array.isArray(raw.topics) ? raw.topics
+    : (raw.topic ? [raw.topic] : []);
+
+  // levels: array yoki single
+  const levels = Array.isArray(raw.levels) ? raw.levels
+    : (raw.level ? [raw.level] : []);
+
+  // questions: array yoki single
+  const questions = Array.isArray(raw.questions) ? raw.questions
+    : (raw.question ? [raw.question] : []);
+
+  console.log('[normalized topics]', topics.length);
+  console.log('[normalized levels]', levels.length);
+  console.log('[normalized questions]', questions.length);
+
+  return { category: raw.category || null, topics, levels, questions };
+}
+
+// ===== STEPS =====
+function goStep(n) {
+  [1,2,3,4].forEach(i => {
+    document.getElementById('step'+i).style.display = i===n?'block':'none';
+    const s = document.getElementById('s'+i);
+    s.className = 'step'+(i<n?' done':i===n?' active':'');
+  });
+  if (n===3) runImport();
+}
+
+// ===== FILE =====
+function onFileSelect(e) { processFile(e.target.files[0]); }
+
+function processFile(file) {
+  if (!file||!file.name.endsWith('.json')) { alert('Faqat .json fayl!'); return; }
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const raw = JSON.parse(ev.target.result);
+      importData = normalizeData(raw);
+      document.getElementById('file-ok').style.display='block';
+      document.getElementById('file-ok').innerHTML = '✅ <b>' + file.name + '</b> — ' + (file.size/1024).toFixed(1) + ' KB';
+      buildPreview();
+      goStep(2);
+    } catch(err) { alert('JSON xatosi: '+err.message); }
+  };
+  r.readAsText(file);
+}
+
+// ===== PREVIEW =====
+const REQUIRED = ['categorySlug','levelSlug','word','uzbek','question','options','correctAnswer'];
+
+function buildPreview() {
+  const d = importData;
+  document.getElementById('prev-stats').innerHTML = [
+    ['Kategoriya', d.category?1:0, '--purple'],
+    ['Topic', d.topics.length, '--purple'],
+    ['Level', d.levels.length, '--green'],
+    ['Savol', d.questions.length, '--green'],
+  ].map(([l,n,c]) => '<div class="stat-card"><div class="stat-n" style="color:var('+c+')">' + n + '</div><div class="stat-l">' + l + '</div></div>').join('');
+
+  const sq = d.questions[0]||{};
+  document.getElementById('field-grid').innerHTML = REQUIRED.map(f => {
+    const ok = sq[f] !== undefined;
+    return '<div class="field-item ' + (ok?'f-ok':'f-miss') + '">' + (ok?'✅':'❌') + ' ' + f + '</div>';
+  }).join('');
+
+  document.getElementById('prev-body').innerHTML = d.questions.slice(0,5).map((q,i) => {
+    const errs = [];
+    if (!q.question) errs.push('savol yoq');
+    if (!q.options||q.options.length<2) errs.push('options');
+    if (!q.correctAnswer&&q.correctIndex===undefined) errs.push('javob');
+    const st = errs.length ? '<span class="badge b-err">❌</span>' : '<span class="badge b-ok">✅</span>';
+    return '<tr><td>' + (i+1) + '</td><td><b>' + (q.word||'—') + '</b></td><td>' + (q.question||'').substring(0,40) + '...</td><td>' + (q.levelSlug||'—') + '</td><td>' + st + '</td></tr>';
+  }).join('');
+}
+
+// ===== MODE =====
+function setMode(m) {
+  importMode = m;
+  ['skip','update','over'].forEach(x => document.getElementById('m-'+x).classList.toggle('active', x===m||(m==='overwrite'&&x==='over')));
+  document.getElementById('mode-info').textContent = {
+    skip: "Mavjud documentlar o'tkazib yuboriladi.",
+    update: "Mavjud documentlar yangilanadi.",
+    overwrite: "Avval o'chirib, keyin yozadi."
+  }[m];
+}
+
+// ===== LOG =====
+function log(msg, t='info') {
+  const el = document.getElementById('log');
+  el.innerHTML += '<div class="l-'+t+'">' + msg + '</div>';
+  el.scrollTop = el.scrollHeight;
+}
+function setProgress(done, total, lbl) {
+  const p = total > 0 ? Math.round(done/total*100) : 0;
+  document.getElementById('prog-fill').style.width = p + '%';
+  document.getElementById('prog-stat').textContent = done + '/' + total + ' (' + p + '%)';
+  if (lbl) document.getElementById('prog-lbl').textContent = lbl;
+}
+
+// ===== SMART SET =====
+async function docExists(col, id) {
+  return (await db.collection(col).doc(id).get()).exists;
+}
+async function smartSet(col, id, data) {
+  const exists = await docExists(col, id);
+  if (exists) {
+    if (importMode === 'skip') { log('⏭ Skip: ' + col + '/' + id, 'warn'); stats.skipped++; return false; }
+    await db.collection(col).doc(id).update({...data, updatedAt: TS()});
+    log('🔄 Updated: ' + col + '/' + id, 'info');
+    return true;
+  }
+  await db.collection(col).doc(id).set({...data, createdAt: TS(), updatedAt: TS()});
+  log('✅ Created: ' + col + '/' + id, 'ok');
+  return true;
+}
+
+// ===== MAIN IMPORT =====
+async function runImport() {
+  if (!importData) return;
+  stats = {cats:0, topics:0, levels:0, questions:0, skipped:0, errors:0};
+  document.getElementById('log').innerHTML = '';
+  log('🚀 Import boshlanmoqda... (rejim: ' + importMode + ')', 'info');
+
+  const d = importData;
+  const { category, topics, levels, questions } = d;
+
+  log('[normalized] topics:' + topics.length + ' levels:' + levels.length + ' questions:' + questions.length, 'info');
+
+  const catSlug = (category && (category.slug || category.id)) || 'english-vocabulary';
+  lastCatSlug = catSlug;
+  const total = 1 + topics.length + levels.length + questions.length;
+  let done = 0;
+
+  try {
+    // 1. Category
+    setProgress(done, total, 'Kategoriya...');
+    if (category && (category.title || category.name)) {
+      const ok = await smartSet('categories', catSlug, {
+        title: category.name || category.title,
+        slug: catSlug,
+        emoji: category.emoji || '📘',
+        description: category.description || '',
+        color: 'blue',
+        order: category.order || 10,
+        status: 'published'
+      });
+      if (ok) stats.cats++;
+    } else {
+      log('ℹ️ Category yo\'q — skip', 'info');
+    }
+    done++; setProgress(done, total);
+
+    // 2. Topics
+    log('\n📚 ' + topics.length + ' ta topic...', 'info');
+    for (const t of topics) {
+      const slug = t.slug || t.id;
+      // Grammar category uchun top-level folderlar parentsiz bo'lishi kerak
+      const isGrammar = catSlug === 'english-grammar';
+      const parentId = isGrammar ? null : (TOPIC_PARENT[slug] || 'english-vocabulary-1000');
+      setProgress(done, total, 'Topic: ' + t.title);
+      const topicData = {
+        title: t.title || t.name,
+        slug: slug,
+        categoryId: catSlug,
+        categorySlug: catSlug,
+        description: t.description || '',
+        order: t.order || 1,
+        status: 'published',
+        type: 'folder'
+      };
+      if (parentId) {
+        topicData.parentTopicId = parentId;
+        topicData.parentTopicSlug = parentId;
+      }
+      const ok = await smartSet('topics', slug, topicData);
+      if (ok) stats.topics++;
+      done++; setProgress(done, total);
+    }
+
+    // 3. Levels
+    log('\n📊 ' + levels.length + ' ta level...', 'info');
+    for (const lv of levels) {
+      const slug = lv.slug || lv.id;
+      const fallbackParent = isGrammar ? (slug.replace(/-oson$|-orta$|-qiyin$|-aralash-test$/, '')) : 'first-100-words';
+      const parentId = lv.parentTopicId || lv.parentTopicSlug || LEVEL_TOPIC[slug] || fallbackParent;
+      setProgress(done, total, 'Level: ' + lv.title);
+      const ok = await smartSet('topics', slug, {
+        title: lv.title,
+        slug: slug,
+        categoryId: catSlug,
+        categorySlug: catSlug,
+        parentTopicId: parentId,
+        parentTopicSlug: parentId,
+        order: lv.order || 1,
+        status: 'published',
+        type: 'level',
+        quizMode: lv.quizMode || 'ordered',
+        questionLimit: lv.questionLimit || 'all',
+        description: '25 ta savol'
+      });
+      if (ok) stats.levels++;
+      done++; setProgress(done, total);
+    }
+
+    // 4. Questions — overwrite: avval o'chirish
+    if (questions.length === 0) {
+      log('\nℹ️ Savollar yo\'q — faqat category/topic/level struktura import qilindi.', 'info');
+    } else {
+      log('\n📝 ' + questions.length + ' ta savol...', 'info');
+    }
+
+    if (importMode === 'overwrite') {
+      const lvSlugs = [...new Set(questions.map(q => q.levelSlug || q.topicSlug).filter(Boolean))];
+      log('🗑 ' + lvSlugs.length + ' ta level tozalanmoqda...', 'warn');
+      for (const lvSlug of lvSlugs) {
+        const [snapNew, snapOld] = await Promise.all([
+          db.collection('questions').where('levelSlug','==',lvSlug).get(),
+          db.collection('questions').where('topicId','==',lvSlug).get()
+        ]);
+        const allDocs = [...snapNew.docs, ...snapOld.docs];
+        const uniqueDocs = [...new Map(allDocs.map(d => [d.id, d])).values()];
+        if (uniqueDocs.length > 0) {
+          let b = db.batch(); let c = 0;
+          for (const doc of uniqueDocs) {
+            b.delete(doc.ref); c++;
+            if (c % 400 === 0) { await b.commit(); b = db.batch(); }
+          }
+          await b.commit();
+          log('🗑 ' + lvSlug + ': ' + uniqueDocs.length + ' ta o\'chirildi', 'warn');
+        }
+      }
+    }
+
+    // Skip: mavjud ID larni oldindan yuklash
+    const existingIds = new Set();
+    if (importMode === 'skip') {
+      const lvSlugs = [...new Set(questions.map(q => q.levelSlug || q.topicSlug).filter(Boolean))];
+      for (const lvSlug of lvSlugs) {
+        const snap = await db.collection('questions').where('levelSlug','==',lvSlug).get();
+        snap.docs.forEach(d => existingIds.add(d.id));
+      }
+      log('ℹ️ Mavjud: ' + existingIds.size + ' ta doc', 'info');
+    }
+
+    // Batch write
+    const BATCH = 20;
+    for (let i = 0; i < questions.length; i += BATCH) {
+      const chunk = questions.slice(i, i + BATCH);
+      const batch = db.batch();
+      let cnt = 0;
+
+      for (const q of chunk) {
+        // Validation
+        if (!q.question || !q.options || q.options.length < 2) {
+          log('❌ Row ' + (i+chunk.indexOf(q)+1) + ': validation xato', 'err');
+          stats.errors++;
+          continue;
+        }
+
+        // correctIndex
+        let ci = 0;
+        if (typeof q.correctIndex === 'number') ci = q.correctIndex;
+        else if (q.correctAnswer && q.options) {
+          const idx = q.options.indexOf(q.correctAnswer);
+          ci = idx >= 0 ? idx : 0;
+        }
+
+        const lvSlug = q.levelSlug || q.topicSlug || 'level';
+        const qOrder = q.order || q.wordRank || (i + chunk.indexOf(q) + 1);
+        const docId = lvSlug + '-' + String(qOrder).padStart(4, '0');
+        const parentTopic = q.topicSlug || LEVEL_TOPIC[lvSlug] || 'first-100-words';
+
+        if (importMode === 'skip' && existingIds.has(docId)) {
+          stats.skipped++; continue;
+        }
+
+        batch.set(db.collection('questions').doc(docId), {
+          categoryId: catSlug,
+          categorySlug: catSlug,
+          topicId: lvSlug,
+          topicSlug: q.topicSlug || lvSlug,
+          levelSlug: lvSlug,
+          parentTopicId: parentTopic,
+          question: q.question,
+          options: q.options,
+          correctIndex: ci,
+          correctAnswer: q.correctAnswer || (q.options[ci] || ''),
+          explanation: q.explanation || (q.word||'') + ' = ' + (q.uzbek||'') + '. ' + (q.exampleSentence||''),
+          difficulty: q.difficulty || 'easy',
+          status: 'published',
+          word: q.word || '',
+          uzbek: q.uzbek || '',
+          points: q.points || 10,
+          wordRank: q.wordRank || qOrder,
+          order: qOrder,
+          createdAt: TS(),
+          updatedAt: TS()
+        }, { merge: true });
+        cnt++;
+        stats.questions++;
+      }
+
+      if (cnt > 0) await batch.commit();
+      done += chunk.length;
+      setProgress(done, total, 'Savollar: ' + Math.min(i+BATCH,questions.length) + '/' + questions.length);
+      log('✅ ' + Math.min(i+BATCH,questions.length) + '/' + questions.length + ' savol', 'ok');
+    }
+
+    // Verify
+    if (importMode === 'overwrite') {
+      log('\n🔍 Tekshirilmoqda...', 'info');
+      const lvSlugs = [...new Set(questions.map(q => q.levelSlug||q.topicSlug).filter(Boolean))];
+      for (const lvSlug of lvSlugs) {
+        const snap = await db.collection('questions').where('topicId','==',lvSlug).get();
+        const exp = questions.filter(q=>(q.levelSlug||q.topicSlug)===lvSlug).length;
+        log('[verify] ' + lvSlug + ': ' + snap.size + '/' + exp + (snap.size===exp?' ✅':' ⚠️'), snap.size===exp?'ok':'warn');
+      }
+    }
+
+    log('\n🎉 Import tugadi!', 'ok');
+    showResult(true);
+  } catch(e) {
+    log('\n❌ Xatolik: ' + e.message, 'err');
+    showResult(false);
+  }
+}
+
+function showResult(ok) {
+  goStep(4);
+  document.getElementById('res-icon').textContent = ok ? '🎉' : '⚠️';
+  document.getElementById('res-title').textContent = ok ? 'Import muvaffaqiyatli!' : 'Import xatolar bilan tugadi';
+  document.getElementById('res-desc').textContent = ok ? "Ma'lumotlar Firestore ga yuklandi." : "Ba'zi savollar yuklanmadi. Log ni ko'ring.";
+  document.getElementById('res-stats').innerHTML = [
+    ['Kategoriya', stats.cats, '--purple'],
+    ['Topic', stats.topics, '--purple'],
+    ['Level', stats.levels, '--green'],
+    ['Savol', stats.questions, '--green'],
+    ['Skip', stats.skipped, '--yellow'],
+    ['Xato', stats.errors, '--red'],
+  ].map(([l,n,c]) => '<div class="stat-card"><div class="stat-n" style="color:var('+c+')">' + n + '</div><div class="stat-l">' + l + '</div></div>').join('');
+}
+
+// ===== DELETE =====
+async function doDelete() {
+  const slug = lastCatSlug || prompt('Category slug:');
+  if (!slug || !confirm(slug + ' o\'chirilsinmi?')) return;
+  try {
+    await db.collection('categories').doc(slug).delete();
+    const tSnap = await db.collection('topics').where('categorySlug','==',slug).get();
+    const tb = db.batch(); tSnap.docs.forEach(d=>tb.delete(d.ref)); await tb.commit();
+    const qSnap = await db.collection('questions').where('categorySlug','==',slug).get();
+    const qb = db.batch(); qSnap.docs.forEach(d=>qb.delete(d.ref)); await qb.commit();
+    alert('O\'chirildi: ' + tSnap.size + ' topic, ' + qSnap.size + ' savol');
+  } catch(e) { alert('Xato: ' + e.message); }
+}
+
+// ===== REPAIR GRAMMAR TOPICS =====
+async function repairGrammarTopics() {
+  const btn = document.getElementById('repair-btn');
+  const logEl = document.getElementById('repair-log');
+  btn.disabled = true;
+  logEl.style.display = 'block';
+  logEl.innerHTML = '';
+
+  function rlog(msg, t='info') {
+    logEl.innerHTML += '<div class="l-'+t+'">' + msg + '</div>';
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  const FOLDERS = ["verb-to-be", "pronouns-possessives", "articles-nouns", "present-simple", "present-continuous", "past-simple", "past-continuous", "present-perfect", "past-perfect", "future-forms", "mixed-tenses", "modal-verbs", "conditionals", "conjunctions-linking-words", "prepositions", "passive-voice", "reported-speech", "gerund-infinitive", "relative-clauses", "adjectives-adverbs", "quantifiers-determiners", "there-is-there-are", "questions-wh-words", "word-order-sentence-structure", "phrasal-verbs"];
+  const SUFFIXES = ["-oson", "-orta", "-qiyin", "-aralash-test"];
+  let fixedFolders = 0, fixedLevels = 0, errors = 0;
+
+  rlog('[repair grammar start]', 'info');
+
+  // 1. Folder topiclarni tuzatish — parentTopicId olib tashlash
+  for (const slug of FOLDERS) {
+    try {
+      const doc = await db.collection('topics').doc(slug).get();
+      if (!doc.exists) {
+        rlog('[skip] ' + slug + ' — topilmadi', 'warn');
+        continue;
+      }
+      const data = doc.data();
+      const update = {
+        categorySlug: 'english-grammar',
+        categoryId: 'english-grammar',
+        type: 'folder',
+        updatedAt: TS()
+      };
+      // parentTopicId ni o'chirish
+      if (data.parentTopicId) {
+        update.parentTopicId = firebase.firestore.FieldValue.delete();
+      }
+      await db.collection('topics').doc(slug).update(update);
+      rlog('[fixed folder] ' + slug, 'ok');
+      fixedFolders++;
+    } catch(e) {
+      rlog('[error] ' + slug + ': ' + e.message, 'err');
+      errors++;
+    }
+  }
+
+  // 2. Level topiclarni tuzatish
+  for (const folderSlug of FOLDERS) {
+    for (const suffix of SUFFIXES) {
+      const lvSlug = folderSlug + suffix;
+      try {
+        const doc = await db.collection('topics').doc(lvSlug).get();
+        if (!doc.exists) continue;
+        await db.collection('topics').doc(lvSlug).update({
+          categorySlug: 'english-grammar',
+          categoryId: 'english-grammar',
+          type: 'level',
+          parentTopicId: folderSlug,
+          updatedAt: TS()
+        });
+        rlog('[fixed level] ' + lvSlug + ' parent: ' + folderSlug, 'ok');
+        fixedLevels++;
+      } catch(e) {
+        rlog('[error] ' + lvSlug + ': ' + e.message, 'err');
+        errors++;
+      }
+    }
+  }
+
+  rlog('[repair grammar done] folders:' + fixedFolders + ' levels:' + fixedLevels + ' errors:' + errors, fixedFolders > 0 ? 'ok' : 'warn');
+  btn.disabled = false;
+}
+
+// ===== IMAGE MANAGER =====
+async function loadImgTargets() {
+  const type = document.getElementById('img-type').value;
+  const sel = document.getElementById('img-target');
+  sel.innerHTML = '<option value="">Yuklanmoqda...</option>';
+
+  let snap;
+  if (type === 'categories') {
+    snap = await db.collection('categories').get();
+  } else {
+    snap = await db.collection('topics').where('type','==','folder').get();
+  }
+
+  const items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a,b) => (a.title||a.slug||'').localeCompare(b.title||b.slug||''));
+
+  sel.innerHTML = items.map(it =>
+    `<option value="${it.slug || it.id}">${it.title || it.name || it.slug} ${it.imageUrl ? '🖼️' : ''}</option>`
+  ).join('');
+
+  loadImgGallery();
+}
+
+document.getElementById('img-type').addEventListener('change', loadImgTargets);
+
+document.getElementById('img-file').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  const preview = document.getElementById('img-preview');
+  const img = document.getElementById('img-preview-img');
+  if (file) {
+    img.src = URL.createObjectURL(file);
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+});
+
+async function uploadImage() {
+  const type = document.getElementById('img-type').value;
+  const targetSlug = document.getElementById('img-target').value;
+  const file = document.getElementById('img-file').files[0];
+  const logEl = document.getElementById('img-log');
+  const btn = document.getElementById('img-upload-btn');
+
+  logEl.style.display = 'block';
+  logEl.innerHTML = '';
+  function ilog(msg, t='info') {
+    logEl.innerHTML += '<div class="l-'+t+'">' + msg + '</div>';
+  }
+
+  if (!targetSlug) { ilog('⚠️ Avval target tanlang', 'warn'); return; }
+  if (!file) { ilog('⚠️ Rasm faylini tanlang', 'warn'); return; }
+  if (file.size > 2 * 1024 * 1024) { ilog('⚠️ Rasm 2MB dan kichik bo\'lishi kerak', 'warn'); return; }
+
+  btn.disabled = true;
+  ilog('⬆️ Yuklanmoqda...', 'info');
+
+  try {
+    const collectionName = type === 'categories' ? 'categories' : 'topics';
+
+    // 1. Eski rasmni o'chirish (agar bo'lsa) — fayl nomi farqli bo'lishi mumkin (masalan .jpg -> .png)
+    const docSnap = await db.collection(collectionName).doc(targetSlug).get();
+    const oldImageUrl = docSnap.exists ? docSnap.data().imageUrl : null;
+    if (oldImageUrl) {
+      try {
+        const oldRef = storage.refFromURL(oldImageUrl);
+        await oldRef.delete();
+        ilog('🗑 Eski rasm o\'chirildi', 'info');
+      } catch (delErr) {
+        ilog('⚠️ Eski rasmni o\'chirib bo\'lmadi (davom etiladi): ' + delErr.message, 'warn');
+      }
+    }
+
+    // 2. Yangi rasmni doimiy nom bilan yuklash (kengaytma saqlanadi, lekin asosiy nom doim bir xil)
+    const ext = file.name.split('.').pop().toLowerCase();
+    const path = `${type}/${targetSlug}.${ext}`;
+    const ref = storage.ref(path);
+    await ref.put(file, { contentType: file.type });
+    const url = await ref.getDownloadURL();
+
+    // 3. Firestore ga set(merge:true) bilan yozish — doc mavjud bo'lmasa ham xato bermaydi
+    await db.collection(collectionName).doc(targetSlug).set({
+      imageUrl: url,
+      imagePath: path,
+      updatedAt: TS()
+    }, { merge: true });
+
+    ilog('✅ Saqlandi: ' + targetSlug, 'ok');
+    ilog('URL: ' + url, 'info');
+    loadImgTargets();
+  } catch (e) {
+    ilog('❌ Xato: ' + e.message, 'err');
+  }
+  btn.disabled = false;
+}
+
+async function loadImgGallery() {
+  const type = document.getElementById('img-type').value;
+  const gallery = document.getElementById('img-gallery');
+  gallery.innerHTML = '<div style="grid-column:1/-1;color:var(--text2);font-size:13px">Yuklanmoqda...</div>';
+
+  let snap;
+  if (type === 'categories') {
+    snap = await db.collection('categories').get();
+  } else {
+    snap = await db.collection('topics').where('type','==','folder').get();
+  }
+
+  const withImages = snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(it => it.imageUrl);
+
+  if (withImages.length === 0) {
+    gallery.innerHTML = '<div style="grid-column:1/-1;color:var(--text2);font-size:13px">Hali rasm yuklanmagan</div>';
+    return;
+  }
+
+  gallery.innerHTML = withImages.map(it => `
+    <div style="text-align:center">
+      <img src="${it.imageUrl}" style="width:100%;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--text2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.title || it.slug}</div>
+      <button onclick="removeImage('${type}','${it.slug || it.id}')" style="font-size:11px;color:#e53e3e;background:none;border:none;cursor:pointer;padding:2px">✕ o'chirish</button>
+    </div>
+  `).join('');
+}
+
+async function removeImage(type, slug) {
+  if (!confirm('Rasmni o\'chirishni tasdiqlaysizmi?')) return;
+  const collectionName = type === 'categories' ? 'categories' : 'topics';
+
+  try {
+    const docSnap = await db.collection(collectionName).doc(slug).get();
+    const data = docSnap.data() || {};
+    if (data.imagePath) {
+      await storage.ref(data.imagePath).delete();
+    } else if (data.imageUrl) {
+      await storage.refFromURL(data.imageUrl).delete();
+    }
+  } catch (e) {
+    console.warn('Storage delete failed (continuing):', e.message);
+  }
+
+  await db.collection(collectionName).doc(slug).set({
+    imageUrl: firebase.firestore.FieldValue.delete(),
+    imagePath: firebase.firestore.FieldValue.delete()
+  }, { merge: true });
+
+  loadImgTargets();
+}
+
+// Image manager ni gen-card ko'ringanda yuklash
+const origGenCardShow = document.getElementById('gen-card');
+if (origGenCardShow) {
+  const obs = new MutationObserver(() => {
+    if (origGenCardShow.style.display !== 'none') {
+      loadImgTargets();
+    }
+  });
+  obs.observe(origGenCardShow, { attributes: true, attributeFilter: ['style'] });
+}
+
+// ===== BADGE MANAGER =====
+async function giveBadge(give) {
+  // Frontend himoya — admin emasmi?
+  const currentUser = auth.currentUser;
+  if (!currentUser || currentUser.uid !== ADMIN_UID) {
+    alert('Ruxsat yo\'q — faqat admin badge bera oladi');
+    return;
+  }
+
+  const uid = document.getElementById('badge-uid').value.trim();
+  const badge = document.getElementById('badge-type').value;
+  const logEl = document.getElementById('badge-log');
+  logEl.style.display = 'block';
+  logEl.innerHTML = '';
+
+  function blog(msg, t='info') {
+    logEl.innerHTML += '<div class="l-'+t+'">' + msg + '</div>';
+  }
+
+  if (!uid) { blog('⚠️ UID kiriting', 'warn'); return; }
+  if (!badge) { blog('⚠️ Badge turini tanlang', 'warn'); return; }
+
+  try {
+    // Server tomonida Firestore Rules isAdmin() ni tekshiradi
+    // (uid === ADMIN_UID — bu ikkinchi himoya qatlami)
+    if (give) {
+      await db.collection('badges').doc(uid).set({
+        [badge]: true,
+        updatedAt: TS()
+      }, { merge: true });
+      blog('✅ Badge berildi: ' + badge + ' → ' + uid, 'ok');
+    } else {
+      await db.collection('badges').doc(uid).set({
+        [badge]: firebase.firestore.FieldValue.delete(),
+        updatedAt: TS()
+      }, { merge: true });
+      blog('🗑 Badge olindi: ' + badge + ' → ' + uid, 'warn');
+    }
+  } catch(e) {
+    // Firestore Rules bloklasa bu yerda permission-denied xatosi chiqadi
+    blog('❌ ' + (e.code === 'permission-denied' ? 'Ruxsat yo\'q (Firestore Rules)' : e.message), 'err');
+  }
+}
+
+// ===== GENERATE LEVELS =====
+async function generateLevels() {
+  const btn = document.getElementById('gen-btn');
+  const logEl = document.getElementById('gen-log');
+  const bar = document.getElementById('gen-bar');
+  const fill = document.getElementById('gen-fill');
+  btn.disabled = true;
+  logEl.style.display = 'block';
+  bar.style.display = 'block';
+
+  function glog(msg, t='info') {
+    logEl.innerHTML += '<div class="l-'+t+'">' + msg + '</div>';
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  const STRUCT = [
+    {parent:'words-101-200',  ranges:[[101,125],[126,150],[151,175],[176,200]]},
+    {parent:'words-201-300',  ranges:[[201,225],[226,250],[251,275],[276,300]]},
+    {parent:'words-301-400',  ranges:[[301,325],[326,350],[351,375],[376,400]]},
+    {parent:'words-401-500',  ranges:[[401,425],[426,450],[451,475],[476,500]]},
+    {parent:'words-501-600',  ranges:[[501,525],[526,550],[551,575],[576,600]]},
+    {parent:'words-601-700',  ranges:[[601,625],[626,650],[651,675],[676,700]]},
+    {parent:'words-701-800',  ranges:[[701,725],[726,750],[751,775],[776,800]]},
+    {parent:'words-801-900',  ranges:[[801,825],[826,850],[851,875],[876,900]]},
+    {parent:'words-901-1000', ranges:[[901,925],[926,950],[951,975],[976,1000]]},
+  ];
+
+  const total = STRUCT.reduce((s,g)=>s+g.ranges.length, 0);
+  let done = 0;
+  glog("[generate levels start]", "info");
+
+  for (const g of STRUCT) {
+    for (let i = 0; i < g.ranges.length; i++) {
+      const [from, to] = g.ranges[i];
+      const slug = 'words-' + from + '-' + to;
+      const title = 'Words ' + from + '\u2013' + to;
+      await db.collection('topics').doc(slug).set({
+        title, slug,
+        categorySlug: 'english-vocabulary',
+        categoryId: 'english-vocabulary',
+        parentTopicId: g.parent,
+        parentTopicSlug: g.parent,
+        type: 'level',
+        quizMode: 'ordered',
+        questionLimit: 'all',
+        emoji: '📖',
+        description: '25 ta savol',
+        order: i + 1,
+        status: 'published',
+        createdAt: TS(),
+        updatedAt: TS()
+      }, { merge: true });
+      done++;
+      glog("[created/updated level] " + slug, "ok");
+      fill.style.width = Math.round(done/total*100) + '%';
+    }
+  }
+  glog("[generate levels done] " + done, "ok");
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
