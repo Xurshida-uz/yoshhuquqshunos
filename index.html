@@ -8,10 +8,10 @@
   <meta name="theme-color" content="#6C63FF"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon.svg"/>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.3.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.3.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.3.0/firebase-storage-compat.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -921,32 +921,68 @@ function showPhoneView() {
   document.getElementById('auth-phone-view').style.display = 'block';
 }
 
+// SMS throttling — bir browserdan suiiste'molni oldini olish
+const SMS_THROTTLE_KEY = 'sms_last_sent';
+const SMS_THROTTLE_MS = 60 * 1000; // 60 soniya
+
+function canSendSMS() {
+  const last = parseInt(localStorage.getItem(SMS_THROTTLE_KEY) || '0');
+  return Date.now() - last >= SMS_THROTTLE_MS;
+}
+
+function markSMSSent() {
+  localStorage.setItem(SMS_THROTTLE_KEY, String(Date.now()));
+}
+
+// RecaptchaVerifier — window emas, modul darajasida saqlash
+let _recaptchaVerifier = null;
+
+function _clearVerifier() {
+  if (_recaptchaVerifier) {
+    try { _recaptchaVerifier.clear(); } catch(e) {
+      console.warn('[Auth] Recaptcha cleanup failed:', e);
+    }
+    _recaptchaVerifier = null;
+  }
+  const c = document.getElementById('recaptcha-container');
+  if (c) c.innerHTML = '';
+}
+
 async function sendOTP() {
   const phone = document.getElementById('phone-input').value.trim();
   if (phone.length < 9) { showErr('auth-error', 'Telefon raqamni kiriting'); return; }
-  const fullPhone = '+998' + phone;
+
+  // Throttle tekshiruvi
+  if (!canSendSMS()) {
+    const wait = Math.ceil((SMS_THROTTLE_MS - (Date.now() - parseInt(localStorage.getItem(SMS_THROTTLE_KEY) || '0'))) / 1000);
+    showErr('auth-error', `Iltimos ${wait} soniya kuting`);
+    return;
+  }
+
+  // Race condition fix — darhol disabled qilish
   const btn = document.getElementById('send-otp-btn');
   btn.disabled = true; btn.textContent = 'Yuborilmoqda...';
   hideErr('auth-error');
-  try {
-    // Avvalgi verifier ni tozalash
-    if (window.recaptchaVerifier) {
-      try { window.recaptchaVerifier.clear(); } catch(e) {}
-      window.recaptchaVerifier = null;
-    }
-    document.getElementById('recaptcha-container').innerHTML = '';
 
-    // Invisible reCAPTCHA — foydalanuvchi hech narsa bosmaydi
-    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+  const fullPhone = '+998' + phone;
+
+  try {
+    // Eski verifier ni tozalash
+    _clearVerifier();
+
+    // Yangi invisible reCAPTCHA yaratish
+    _recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
       size: 'invisible',
       'expired-callback': () => {
-        window.recaptchaVerifier = null;
+        // Expire bo'lsa — container ham tozalanadi
+        _clearVerifier();
       }
     });
 
-    // To'g'ridan SMS yuborish
-    const result = await auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier);
+    // SMS yuborish
+    const result = await auth.signInWithPhoneNumber(fullPhone, _recaptchaVerifier);
     confirmResult = result;
+    markSMSSent();
     document.getElementById('otp-hint').textContent = fullPhone + ' ga SMS yuborildi';
     document.getElementById('auth-phone-view').style.display = 'none';
     document.getElementById('auth-otp-view').style.display = 'block';
@@ -957,13 +993,16 @@ async function sendOTP() {
     showErr('auth-error', errMsg);
     console.error('[Auth Error]', e.code, e.message);
     btn.disabled = false; btn.textContent = 'SMS yuborish →';
-    try { window.recaptchaVerifier.clear(); } catch(ex) {}
-    window.recaptchaVerifier = null;
-    document.getElementById('recaptcha-container').innerHTML = '';
+    _clearVerifier();
   }
 }
 
 function verifyOTP() {
+  // confirmResult null tekshiruvi
+  if (!confirmResult) {
+    showErr('otp-error', 'Avval SMS yuborish kerak');
+    return;
+  }
   const code = document.getElementById('otp-input').value.trim();
   if (code.length < 6) { showErr('otp-error', '6 raqamli kod kiriting'); return; }
   const btn = document.getElementById('verify-btn');
@@ -2298,7 +2337,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v34");
+console.log("DUNYO QUIZ version: grammar-v37");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
