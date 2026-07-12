@@ -1827,6 +1827,16 @@ function shareResult() {
 
 // ==================== FIRESTORE ====================
 // User ni to'g'ridan qabul qiluvchi helper
+// ISO Week Key helper — to'g'ri hafta raqami
+function getISOWeekKey(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
 async function saveResultForUser(user, lr, name) {
 
   const newPct = (lr && lr.pct !== undefined && lr.pct !== null) ? Number(lr.pct) : null;
@@ -1852,7 +1862,7 @@ async function saveResultForUser(user, lr, name) {
 
   // Hafta va oy key lari
   const now = new Date();
-  const weekKey = `${now.getFullYear()}-W${String(Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7)).padStart(2,'0')}`;
+  const weekKey = getISOWeekKey(now);
   const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 
   // 2. Umumiy leaderboard yangilash
@@ -1981,7 +1991,7 @@ async function saveResult(pct, avg, fromLastResult = false) {
     const saveTotal = fromLastResult ? lastResult.total : quiz.length;
     const saveCorrect = fromLastResult ? lastResult.score : score;
     const now = new Date();
-    const weekKey = `${now.getFullYear()}-W${String(Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7)).padStart(2,'0')}`;
+    const weekKey = getISOWeekKey(now);
     const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     const xpGain = Math.round(savePct / 10) + (savePct === 100 ? 5 : 0);
 
@@ -2094,7 +2104,7 @@ async function loadLeaderboard(type) {
   try {
     let snap, field, order, data = [];
     const now = new Date();
-    const weekKey = `${now.getFullYear()}-W${String(Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7)).padStart(2,'0')}`;
+    const weekKey = getISOWeekKey(now);
     const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 
     if (type === 'score') {
@@ -2288,7 +2298,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v33");
+console.log("DUNYO QUIZ version: grammar-v34");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
