@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dunyo-quiz-v78';
+const CACHE_NAME = 'dunyo-quiz-v79';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -16,6 +16,14 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+
+  // Faqat o'z domenimizni cache qilamiz — external domenlar (gstatic, firebase, googleapis) o'tkazib yuboriladi
+  if (url.origin !== self.location.origin) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
+
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
   );
