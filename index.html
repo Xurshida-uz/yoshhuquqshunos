@@ -1387,8 +1387,9 @@ function renderTopicCards(topics, catId, color, tGrid, hasChildren) {
     card.addEventListener('click', function() {
       var id = this.dataset.id;
       var dtype = this.dataset.dtype;
-      if (dtype === 'folder') showLevels(id, id, catId, color);
-      else startTopicQuiz(id, id, catId);
+      var title = this.querySelector('.cat-name')?.textContent || id;
+      if (dtype === 'folder') showLevels(id, title, catId, color);
+      else startTopicQuiz(id, title, catId);
     });
   });
 }
@@ -1422,7 +1423,7 @@ async function showLevels(topicId, topicTitle, catId, color) {
   if (tHeader) {
     const backBtn = '<button onclick="backToCategories()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--purple);font-size:13px;cursor:pointer;margin-bottom:10px;padding:0;font-weight:600">Kategoriyalar</button>';
     const titleDiv = '<div style="font-size:18px;font-weight:700;color:var(--text)">' + topicTitle + '</div>';
-    const subDiv = '<div style="font-size:13px;color:var(--text2);margin-top:4px">Bolim tanlang</div>';
+    const subDiv = '<div style="font-size:13px;color:var(--text2);margin-top:4px">Bo\'lim tanlang</div>';
     tHeader.innerHTML = backBtn + titleDiv + subDiv;
   }
 
@@ -2355,7 +2356,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v37");
+console.log("DUNYO QUIZ version: grammar-v38");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
