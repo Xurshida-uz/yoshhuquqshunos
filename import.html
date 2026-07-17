@@ -4,10 +4,10 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Import Tool — Dunyo Quiz Admin</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.3.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.3.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.3.0/firebase-storage-compat.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{--purple:#6C63FF;--green:#16A34A;--red:#DC2626;--yellow:#D97706;--border:#E5E7EB;--bg:#F8F9FF;--card:#fff;--text:#111827;--text2:#6B7280}
@@ -866,7 +866,22 @@ async function uploadImage() {
 
   if (!targetSlug) { ilog('⚠️ Avval target tanlang', 'warn'); return; }
   if (!file) { ilog('⚠️ Rasm faylini tanlang', 'warn'); return; }
-  if (file.size > 2 * 1024 * 1024) { ilog('⚠️ Rasm 2MB dan kichik bo\'lishi kerak', 'warn'); return; }
+
+  console.group('[Image Upload Debug]');
+  console.log('Target:', targetSlug);
+  console.log('File object:', file);
+  console.log('File name:', file?.name);
+  console.log('File type:', file?.type);
+  console.log('File size (bytes):', file?.size);
+  console.log('File size (MB):', file ? (file.size / 1024 / 1024).toFixed(2) : 'NO FILE');
+  console.log('Limit (bytes):', 2 * 1024 * 1024);
+  console.log('Too large?:', file ? file.size > 2 * 1024 * 1024 : 'NO FILE');
+  console.groupEnd();
+
+  if (file.size > 2 * 1024 * 1024) {
+    ilog('⚠️ Rasm 2MB dan kichik bo\'lishi kerak (hozirgi: ' + (file.size/1024/1024).toFixed(2) + ' MB)', 'warn');
+    return;
+  }
 
   try { requireAdmin(); } catch(e) { ilog('❌ ' + e.message, 'err'); return; }
 
