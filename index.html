@@ -1315,8 +1315,8 @@ async function openCategory(catId, catSlug) {
     // catId va catSlug (ikkalasi) bilan barcha variantlarni qidiramiz
     const slugsToSearch = new Set([catId, catSlug].filter(Boolean));
     const allSnaps = await Promise.all([...slugsToSearch].flatMap(s => [
-      db.collection('topics').where('categorySlug','==',s).where('status','==','published').get(),
-      db.collection('topics').where('categoryId','==',s).where('status','==','published').get()
+      db.collection('topics').where('categorySlug','==',s).where('status','in',['published','coming_soon']).get(),
+      db.collection('topics').where('categoryId','==',s).where('status','in',['published','coming_soon']).get()
     ]));
 
     const seen = new Set();
@@ -1369,22 +1369,30 @@ async function openCategory(catId, catSlug) {
 }
 
 function renderTopicCards(topics, catId, color, tGrid, hasChildren) {
-  // data-id orqali onclick — apostrof xatosiz
   tGrid.innerHTML = topics.map(t => {
     const desc = t.description || "Mavzularni korish";
     const isParent = t.type === 'parent-topic' || t.type === 'folder' || hasChildren;
     const dtype = isParent ? 'folder' : 'topic';
+    const isComingSoon = t.status === 'coming_soon';
+    const cardColor = isComingSoon ? '#888' : color;
+
     const iconBlock = t.imageUrl
       ? '<div style="width:100%;height:80px;border-radius:14px;overflow:hidden;margin-bottom:10px"><img src="' + t.imageUrl + '" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.style.display=&quot;none&quot;"></div>'
-      : '<div style="width:48px;height:48px;border-radius:14px;background:' + color + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">📚</div>';
-    return '<div class="cat-card topic-card" data-id="' + t.id + '" data-dtype="' + dtype + '" style="border-color:' + color + '20">' +
-      iconBlock +
-      '<div class="cat-name">' + t.title + '</div>' +
-      '<div class="cat-count" style="color:' + color + '">' + desc + '</div></div>';
+      : '<div style="width:48px;height:48px;border-radius:14px;background:' + cardColor + '18;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px">📚</div>';
+
+    const badge = isComingSoon
+      ? '<div style="position:absolute;top:8px;right:8px;background:#888;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.3px">Tez orada</div>'
+      : '';
+
+    return '<div class="cat-card topic-card" data-id="' + t.id + '" data-dtype="' + dtype + '" data-status="' + (t.status||'published') + '" style="border-color:' + cardColor + '20;position:relative;' + (isComingSoon ? 'opacity:0.55;cursor:not-allowed;' : '') + '">' +
+      badge + iconBlock +
+      '<div class="cat-name" style="' + (isComingSoon ? 'color:#888;' : '') + '">' + t.title + '</div>' +
+      '<div class="cat-count" style="color:' + cardColor + '">' + (isComingSoon ? 'Tez orada...' : desc) + '</div></div>';
   }).join('');
-  // Event listeners qo'shish
+
   tGrid.querySelectorAll('.topic-card').forEach(function(card) {
     card.addEventListener('click', function() {
+      if (this.dataset.status === 'coming_soon') return;
       var id = this.dataset.id;
       var dtype = this.dataset.dtype;
       var title = this.querySelector('.cat-name')?.textContent || id;
@@ -1404,7 +1412,7 @@ async function showLevels(topicId, topicTitle, catId, color) {
 
   const snap = await db.collection('topics')
     .where('parentTopicId','==',topicId)
-    .where('status','==','published')
+    .where('status','in',['published','coming_soon'])
     .get();
 
   // categorySlug bo'yicha filter — noto'g'ri category topiclarini chiqarib tashlash
@@ -2356,7 +2364,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v38");
+console.log("DUNYO QUIZ version: grammar-v39");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
