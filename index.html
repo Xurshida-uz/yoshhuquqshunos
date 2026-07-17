@@ -1540,7 +1540,8 @@ async function startTopicQuiz(topicId, topicTitle, catId) {
         cat: catId,
         diff: q.difficulty || 'medium',
         order: ord,
-        word: q.word || ''
+        word: q.word || '',
+        imageUrl: q.imageUrl || null
       });
     }
 
@@ -1668,7 +1669,23 @@ function renderQ() {
   } else {
     document.getElementById('q-text').textContent = q.q;
   }
-  // DOM tozalash — avvalgi savolni to'liq o'chirish
+
+  // Savol rasmi — imageUrl bo'lsa ko'rsatish
+  let imgEl = document.getElementById('q-image');
+  if (!imgEl) {
+    imgEl = document.createElement('div');
+    imgEl.id = 'q-image';
+    document.getElementById('q-text').after(imgEl);
+  }
+  if (q.imageUrl) {
+    imgEl.innerHTML = `<img src="${q.imageUrl}" alt="savol rasmi" loading="lazy"
+      style="width:100%;max-height:220px;object-fit:contain;border-radius:14px;
+      margin:12px 0;border:1px solid var(--border);background:#f8f9ff;">`;
+    imgEl.style.display = 'block';
+  } else {
+    imgEl.innerHTML = '';
+    imgEl.style.display = 'none';
+  }
   const optsEl = document.getElementById('q-opts');
   optsEl.innerHTML = '';
   optsEl.innerHTML = q.opts.map((o, i) =>
@@ -2375,7 +2392,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v40");
+console.log("DUNYO QUIZ version: grammar-v41");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 

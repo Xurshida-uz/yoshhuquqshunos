@@ -230,6 +230,21 @@
         <div class="log-box" id="badge-log" style="display:none;margin-top:12px"></div>
       </div>
       <div class="card" style="margin-top:12px">
+        <div class="card-title">🖼️ Savol rasmi yuklash</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Savol ID sini kiriting, rasm yuklang — savol docga <code>imageUrl</code> qo'shiladi.</p>
+        <input type="text" id="qimg-id" placeholder="Savol document ID (Firestore)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;font-size:14px;box-sizing:border-box">
+        <input type="text" id="qimg-collection" value="questions" placeholder="Kolleksiya nomi" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;font-size:14px;box-sizing:border-box">
+        <input type="file" id="qimg-file" accept="image/*" style="width:100%;margin-bottom:10px">
+        <div id="qimg-preview" style="display:none;margin-bottom:10px">
+          <img id="qimg-preview-img" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid var(--border)">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-green" onclick="uploadQuestionImage()" style="flex:1">⬆️ Rasm yuklash</button>
+          <button class="btn btn-red" onclick="removeQuestionImage()" style="flex:1">🗑 Rasmni o'chirish</button>
+        </div>
+        <div class="log-box" id="qimg-log" style="display:none;margin-top:12px"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
         <div class="card-title">🖼️ Kategoriya/Topic rasmlari</div>
         <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Dashboard kartalariga rasm yuklang. Rasm Firebase Storage ga saqlanadi va Firestore dagi <code>imageUrl</code> fieldga yoziladi.</p>
         <select id="img-type" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;font-size:14px">
@@ -960,6 +975,92 @@ if (origGenCardShow) {
     }
   });
   obs.observe(origGenCardShow, { attributes: true, attributeFilter: ['style'] });
+}
+
+// ===== SAVOL RASMI =====
+document.getElementById('qimg-file').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    document.getElementById('qimg-preview-img').src = URL.createObjectURL(file);
+    document.getElementById('qimg-preview').style.display = 'block';
+  }
+});
+
+async function uploadQuestionImage() {
+  try { requireAdmin(); } catch(e) { alert(e.message); return; }
+
+  const docId = document.getElementById('qimg-id').value.trim();
+  const collection = document.getElementById('qimg-collection').value.trim() || 'questions';
+  const file = document.getElementById('qimg-file').files[0];
+  const logEl = document.getElementById('qimg-log');
+  logEl.style.display = 'block';
+  logEl.innerHTML = '';
+
+  function qlog(msg, t='info') {
+    logEl.innerHTML += '<div class="l-'+t+'">' + msg + '</div>';
+  }
+
+  if (!docId) { qlog('⚠️ Savol ID kiriting', 'warn'); return; }
+  if (!file) { qlog('⚠️ Rasm faylini tanlang', 'warn'); return; }
+  if (file.size > 2 * 1024 * 1024) { qlog('⚠️ Rasm 2MB dan kichik bo\'lishi kerak', 'warn'); return; }
+
+  try {
+    // Eski rasmni o'chirish
+    const docSnap = await db.collection(collection).doc(docId).get();
+    if (docSnap.exists && docSnap.data().imageUrl) {
+      try { await storage.refFromURL(docSnap.data().imageUrl).delete(); } catch(e) {}
+    }
+
+    // Yangi rasm yuklash
+    const ext = file.name.split('.').pop().toLowerCase();
+    const path = `questions/${docId}.${ext}`;
+    const ref = storage.ref(path);
+    await ref.put(file, { contentType: file.type });
+    const url = await ref.getDownloadURL();
+
+    // Firestore ga yozish
+    await db.collection(collection).doc(docId).set({
+      imageUrl: url,
+      imagePath: path,
+      updatedAt: TS()
+    }, { merge: true });
+
+    qlog('✅ Rasm saqlandi: ' + docId, 'ok');
+    qlog('URL: ' + url.substring(0, 60) + '...', 'info');
+  } catch(e) {
+    qlog('❌ Xato: ' + e.message, 'err');
+  }
+}
+
+async function removeQuestionImage() {
+  try { requireAdmin(); } catch(e) { alert(e.message); return; }
+
+  const docId = document.getElementById('qimg-id').value.trim();
+  const collection = document.getElementById('qimg-collection').value.trim() || 'questions';
+  const logEl = document.getElementById('qimg-log');
+  logEl.style.display = 'block';
+
+  if (!docId) { logEl.innerHTML = '<div class="l-warn">⚠️ Savol ID kiriting</div>'; return; }
+  if (!confirm('Rasmni o\'chirishni tasdiqlaysizmi?')) return;
+
+  try {
+    const docSnap = await db.collection(collection).doc(docId).get();
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      if (data.imagePath) {
+        try { await storage.ref(data.imagePath).delete(); } catch(e) {}
+      } else if (data.imageUrl) {
+        try { await storage.refFromURL(data.imageUrl).delete(); } catch(e) {}
+      }
+      await db.collection(collection).doc(docId).set({
+        imageUrl: firebase.firestore.FieldValue.delete(),
+        imagePath: firebase.firestore.FieldValue.delete()
+      }, { merge: true });
+      logEl.innerHTML = '<div class="l-ok">✅ Rasm o\'chirildi</div>';
+    }
+  } catch(e) {
+    logEl.innerHTML = '<div class="l-err">❌ ' + e.message + '</div>';
+  }
 }
 
 // ===== STATUS MANAGER =====
