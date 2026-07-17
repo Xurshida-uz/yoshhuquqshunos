@@ -1163,21 +1163,32 @@ function goTab(tab) {
 }
 
 // ==================== CATEGORIES ====================
-function catCardHTML(slug, id, emoji, title, desc, colorKey, isLegacy, imageUrl) {
+function catCardHTML(slug, id, emoji, title, desc, colorKey, isLegacy, imageUrl, status) {
   const color = COLOR_HEX[colorKey] || '#6C63FF';
   const safeE = safeEmoji(emoji, slug);
-  const onclick = isLegacy
+  const isComingSoon = status === 'coming_soon';
+  const cardColor = isComingSoon ? '#888888' : color;
+  const onclick = isComingSoon ? '' : (isLegacy
     ? `startLegacyFlags()`
-    : `openCategory('${id}','${slug}')`;
-  // Legacy emas va desc yo'q bo'lsa — "Mavzularni ko'rish"
-  const displayDesc = desc || (isLegacy ? 'Testni boshlash' : "Mavzularni ko'rish");
+    : `openCategory('${id}','${slug}')`);
+  const displayDesc = isComingSoon ? 'Tez orada...' : (desc || (isLegacy ? 'Testni boshlash' : "Mavzularni ko'rish"));
+
+  const badge = isComingSoon
+    ? '<div style="position:absolute;top:8px;right:8px;background:#888;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">Tez orada</div>'
+    : '';
+
   const iconBlock = imageUrl
-    ? `<div style="width:100%;height:90px;border-radius:14px;overflow:hidden;margin-bottom:10px;border:1.5px solid ${color}22"><img src="${imageUrl}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.outerHTML='<div style=&quot;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,${color}22,${color}11);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:10px;border:1.5px solid ${color}22&quot;>${safeE}</div>'"></div>`
-    : `<div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,${color}22,${color}11);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:10px;border:1.5px solid ${color}22">${safeE}</div>`;
-  return `<div class="cat-card" style="border-color:${color}20" onclick="${onclick}">
+    ? `<div style="width:100%;height:90px;border-radius:14px;overflow:hidden;margin-bottom:10px;border:1.5px solid ${cardColor}22;${isComingSoon?'filter:grayscale(1);':''}">`
+      + `<img src="${imageUrl}" loading="lazy" style="width:100%;height:100%;object-fit:cover"`
+      + ` onerror="this.parentElement.outerHTML='<div style=&quot;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,${cardColor}22,${cardColor}11);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:10px;border:1.5px solid ${cardColor}22&quot;>${safeE}</div>'">`
+      + `</div>`
+    : `<div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,${cardColor}22,${cardColor}11);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:10px;border:1.5px solid ${cardColor}22">${safeE}</div>`;
+
+  return `<div class="cat-card" style="border-color:${cardColor}20;position:relative;${isComingSoon?'opacity:0.55;cursor:not-allowed;':''}" ${onclick ? `onclick="${onclick}"` : ''}>
+    ${badge}
     ${iconBlock}
-    <div class="cat-name">${title}</div>
-    <div class="cat-count" style="color:${color}">${displayDesc}</div>
+    <div class="cat-name" style="${isComingSoon?'color:#888;':''}">${title}</div>
+    <div class="cat-count" style="color:${cardColor}">${displayDesc}</div>
   </div>`;
 }
 
@@ -1205,7 +1216,7 @@ async function renderCategories() {
   try {
     // orderBy olib tashlandi — composite index kerak emas
     const snap = await db.collection('categories')
-      .where('status','==','published')
+      .where('status','in',['published','coming_soon'])
       .get();
 
     // JS da tartiblaymiz
@@ -1218,7 +1229,7 @@ async function renderCategories() {
 
     const firestoreCards = firestoreCats.map(doc => {
       const c = doc.data();
-      return catCardHTML(c.slug||doc.id, doc.id, c.emoji||'📚', c.title, c.description||'', c.color||'purple', false, c.imageUrl||null);
+      return catCardHTML(c.slug||doc.id, doc.id, c.emoji||'📚', c.title, c.description||'', c.color||'purple', false, c.imageUrl||null, c.status||'published');
     }).join('');
 
     grid.innerHTML = legacyCard + firestoreCards;
@@ -2364,7 +2375,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v39");
+console.log("DUNYO QUIZ version: grammar-v40");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
