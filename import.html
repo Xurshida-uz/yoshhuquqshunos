@@ -878,8 +878,8 @@ async function uploadImage() {
   console.log('Too large?:', file ? file.size > 2 * 1024 * 1024 : 'NO FILE');
   console.groupEnd();
 
-  if (file.size > 2 * 1024 * 1024) {
-    ilog('⚠️ Rasm 2MB dan kichik bo\'lishi kerak (hozirgi: ' + (file.size/1024/1024).toFixed(2) + ' MB)', 'warn');
+  if (file.size > 5 * 1024 * 1024) {
+    ilog('⚠️ Rasm 5MB dan kichik bo\'lishi kerak (hozirgi: ' + (file.size/1024/1024).toFixed(2) + ' MB)', 'warn');
     return;
   }
 
