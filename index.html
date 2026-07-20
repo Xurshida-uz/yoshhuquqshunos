@@ -1098,12 +1098,23 @@ async function saveName(explicitUser) {
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    // 2. Leaderboard ga FAQAT ism — bestPct/bestAvg yo'q (natija keyinroq yoziladi)
-    await db.collection('leaderboard').doc(user.uid).set({
-      name,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    // MUHIM: bestPct: 0 yoki bestAvg: 0 YOZMAYMIZ
+    // 2. Leaderboard ga — Rules talab qilgan barcha fieldlar bilan
+    const lbDoc = await db.collection('leaderboard').doc(user.uid).get();
+    if (!lbDoc.exists) {
+      await db.collection('leaderboard').doc(user.uid).set({
+        name,
+        bestPct: 0,
+        bestAvg: 0,
+        totalTests: 0,
+        xp: 0,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      await db.collection('leaderboard').doc(user.uid).set({
+        name,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    }
 
     currentUser = user;
 
@@ -2392,7 +2403,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v41");
+console.log("DUNYO QUIZ version: grammar-v42");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
