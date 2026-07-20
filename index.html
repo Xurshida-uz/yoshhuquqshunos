@@ -970,30 +970,12 @@ async function sendOTP() {
     // Eski verifier ni tozalash
     _clearVerifier();
 
-    // [DEBUG 1] RecaptchaVerifier yaratilishidan oldin
-    console.log('[PhoneAuth] 1. Creating RecaptchaVerifier for:', fullPhone);
-
-    // Yangi invisible reCAPTCHA yaratish
     _recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
       size: 'invisible',
-      'expired-callback': () => {
-        console.warn('[PhoneAuth] reCAPTCHA expired — clearing verifier');
-        _clearVerifier();
-      }
+      'expired-callback': () => { _clearVerifier(); }
     });
 
-    // [DEBUG 2] RecaptchaVerifier yaratilgandan keyin
-    console.log('[PhoneAuth] 2. RecaptchaVerifier created:', _recaptchaVerifier);
-
-    // [DEBUG 3] signInWithPhoneNumber dan oldin
-    console.log('[PhoneAuth] 3. Calling signInWithPhoneNumber...');
-
-    // SMS yuborish
     const result = await auth.signInWithPhoneNumber(fullPhone, _recaptchaVerifier);
-
-    // [DEBUG 4] Muvaffaqiyatli
-    console.log('[PhoneAuth] 4. SMS sent successfully. confirmResult:', result);
-
     confirmResult = result;
     markSMSSent();
     document.getElementById('otp-hint').textContent = fullPhone + ' ga SMS yuborildi';
@@ -1002,14 +984,9 @@ async function sendOTP() {
     btn.disabled = false; btn.textContent = 'SMS yuborish →';
 
   } catch (e) {
-    // [DEBUG 5] To'liq xato ma'lumoti
-    console.error('[PhoneAuth] 5. ERROR:', {
-      code: e.code,
-      message: e.message,
-      fullError: e
-    });
     const errMsg = firebaseErrMsg(e);
     showErr('auth-error', errMsg);
+    console.error('[Auth]', e.code, e.message);
     btn.disabled = false; btn.textContent = 'SMS yuborish →';
     _clearVerifier();
   }
@@ -2403,7 +2380,7 @@ setTimeout(() => {
 }, 2000);
 
 // PWA
-console.log("DUNYO QUIZ version: grammar-v42");
+console.log("DUNYO QUIZ version: grammar-v43");
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 let deferredPrompt;
 
